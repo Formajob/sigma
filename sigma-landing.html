@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5f1">
+  <meta name="description" content="Sigma relie les actes, les écoutes et les suivis pour faire avancer les équipes.">
+  <title>Sigma — Chaque acte, chaque suivi</title>
+  <style>
+    :root {
+      --ink: #17242D;
+      --ink-2: #243741;
+      --copper: #C0622D;
+      --copper-2: #D77D4D;
+      --paper: #F7F5F1;
+      --white: #FFFEFC;
+      --line: #E8E3DA;
+      --muted: #68767B;
+      --teal: #DCECE8;
+      --teal-ink: #376A64;
+      --blue: #E3EBF4;
+      --blue-ink: #46627B;
+      --peach: #F7E7DC;
+      --sage: #E5EEE4;
+      --shadow: 0 28px 80px rgba(23,36,45,.13);
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    .container { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
+    .site-header { position: relative; z-index: 5; padding: 19px 0; background: rgba(247,245,241,.88); border-bottom: 1px solid rgba(23,36,45,.07); backdrop-filter: blur(12px); }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 26px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; flex: 0 0 auto; }
+    .brand-mark { display: grid; place-items: center; width: 35px; height: 35px; }
+    .brand-mark svg { width: 35px; height: 35px; }
+    .brand-word { font: 29px/1 var(--serif); letter-spacing: -.045em; }
+    .nav-links { display: flex; align-items: center; gap: 30px; margin-left: auto; }
+    .nav-links a { color: #5D696E; font-size: 12px; font-weight: 620; text-decoration: none; transition: color .2s ease; }
+    .nav-links a:hover { color: var(--copper); }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 19px; border: 1px solid transparent; border-radius: 5px; font: 670 12px/1 var(--sans); text-decoration: none; transition: transform .2s ease, background .2s ease, box-shadow .2s ease; }
+    .button:hover { transform: translateY(-2px); }
+    .button-dark { color: white; background: var(--ink); box-shadow: 0 7px 18px rgba(23,36,45,.13); }
+    .button-dark:hover { background: var(--ink-2); box-shadow: 0 10px 24px rgba(23,36,45,.18); }
+    .button-outline { color: var(--ink); border-color: #D9D4CC; background: rgba(255,254,252,.65); }
+    .button-outline:hover { border-color: var(--ink); background: white; }
+    .button-copper { color: white; background: var(--copper); }
+    .button-copper:hover { background: #A95025; }
+    .cta-label-short { display: none; }
+    .arrow { font-size: 16px; line-height: .8; }
+
+    .hero { position: relative; isolation: isolate; padding: 78px 0 83px; overflow: hidden; }
+    .hero::before { position: absolute; z-index: -1; content: ""; width: 760px; height: 760px; right: -240px; top: -310px; border-radius: 50%; background: radial-gradient(circle, rgba(192,98,45,.17) 0, rgba(192,98,45,.08) 35%, rgba(192,98,45,0) 69%); }
+    .hero::after { position: absolute; z-index: -1; content: ""; width: 450px; height: 450px; left: -280px; bottom: -270px; border-radius: 50%; background: radial-gradient(circle, rgba(83,142,133,.15), rgba(83,142,133,0) 68%); }
+    .hero-grid { display: grid; grid-template-columns: minmax(0,.92fr) minmax(0,1.08fr); gap: 62px; align-items: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--copper); font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    .eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--copper); box-shadow: 0 0 0 4px rgba(192,98,45,.12); }
+    .hero h1 { max-width: 550px; margin: 20px 0 19px; font-size: clamp(49px,6vw,72px); line-height: .98; letter-spacing: -.067em; font-weight: 650; }
+    .hero h1 em { color: var(--copper); font: italic 400 1.04em/1 var(--serif); letter-spacing: -.065em; }
+    .hero-copy { max-width: 490px; margin: 0; color: #58676D; font-size: 15px; line-height: 1.8; }
+    .hero-copy strong { color: var(--ink); font-weight: 720; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 28px; }
+    .hero-signature { display: flex; align-items: center; gap: 10px; margin-top: 25px; color: #69767A; font-size: 10px; font-weight: 600; }
+    .signature-mark { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #DCC9BB; border-radius: 50%; color: var(--copper); font: 15px var(--serif); }
+    .hero-roles { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 22px; }
+    .hero-roles span { padding: 7px 10px; border: 1px solid rgba(23,36,45,.09); border-radius: 30px; color: #5C696E; background: rgba(255,254,252,.53); font-size: 9px; font-weight: 650; }
+
+    /* Aperçu visuel de l'outil */
+    .visual-stage { position: relative; min-width: 0; padding: 16px 4px 24px 13px; }
+    .visual-halo { position: absolute; z-index: -1; inset: 7% 0 2% 8%; border-radius: 45% 55% 42% 58% / 53% 41% 59% 47%; background: linear-gradient(145deg, rgba(220,236,232,.92), rgba(247,231,220,.76)); transform: rotate(-7deg); }
+    .app-window { position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.78); border-radius: 12px; background: var(--white); box-shadow: var(--shadow); transform: rotate(.6deg); }
+    .app-topbar { display: flex; align-items: center; justify-content: space-between; height: 47px; padding: 0 16px; border-bottom: 1px solid #EFECE6; background: #FFFEFC; }
+    .app-top-left { display: flex; align-items: center; gap: 9px; }
+    .app-symbol { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 6px; color: white; background: var(--ink); font: 15px var(--serif); }
+    .app-top-left strong { font: 17px/1 var(--serif); }
+    .window-dots { display: flex; gap: 4px; margin-left: 8px; }
+    .window-dots i { width: 5px; height: 5px; border-radius: 50%; background: #D8D7D2; }
+    .app-top-right { color: #738085; font-size: 9px; font-weight: 650; }
+    .app-body { display: grid; grid-template-columns: 43px 1fr; min-height: 370px; }
+    .app-rail { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px 0; color: #9BA5A5; background: var(--ink); }
+    .rail-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; font-size: 11px; }
+    .rail-icon.active { color: var(--ink); background: #E7B18F; }
+    .rail-spacer { flex: 1; }
+    .app-content { padding: 20px 20px 17px; }
+    .app-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .app-kicker { display: block; margin-bottom: 5px; color: #929B9D; font-size: 7px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .app-heading h2 { margin: 0; font: 21px/1.05 var(--serif); font-weight: 500; }
+    .week-select { padding: 7px 8px; border: 1px solid #EAE6DF; border-radius: 4px; color: #68767B; background: #fff; font-size: 8px; white-space: nowrap; }
+    .app-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 16px 0 16px; }
+    .summary-card { min-height: 53px; padding: 9px 10px; border: 1px solid #EEEAE4; border-radius: 5px; background: #FFFEFC; }
+    .summary-label { display: flex; align-items: center; gap: 5px; color: #879194; font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .summary-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--copper); }
+    .summary-card:nth-child(2) .summary-dot { background: #68948B; }
+    .summary-card:nth-child(3) .summary-dot { background: #7D91AA; }
+    .summary-card strong { display: block; margin-top: 7px; font-size: 10px; font-weight: 720; }
+    .agenda-head { display: flex; justify-content: space-between; align-items: center; margin: 2px 0 8px; }
+    .agenda-head strong { font-size: 9px; }
+    .agenda-head span { color: #8A9496; font-size: 8px; }
+    .agenda { display: grid; gap: 6px; }
+    .agenda-item { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 8px; min-height: 49px; padding: 7px 8px; border: 1px solid #EFECE7; border-radius: 5px; background: #fff; }
+    .agenda-time { color: #8A9597; font-size: 8px; font-weight: 700; }
+    .agenda-title { display: block; color: #26363D; font-size: 9px; font-weight: 720; }
+    .agenda-meta { display: block; margin-top: 3px; color: #899296; font-size: 7px; }
+    .agenda-tag { padding: 5px 6px; border-radius: 3px; font-size: 7px; font-weight: 750; white-space: nowrap; }
+    .tag-act { color: #8C4B29; background: #F7E7DC; }
+    .tag-quality { color: #376A64; background: #DCECE8; }
+    .tag-shared { color: #49647D; background: #E3EBF4; }
+    .team-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 11px; border-top: 1px solid #F0EDE7; }
+    .avatar-stack { display: flex; align-items: center; padding-left: 2px; }
+    .avatar { display: grid; place-items: center; width: 22px; height: 22px; margin-left: -2px; border: 2px solid white; border-radius: 50%; color: var(--ink); background: #E7D5C8; font-size: 7px; font-weight: 800; }
+    .avatar:nth-child(2) { background: #DCECE8; }
+    .avatar:nth-child(3) { background: #E3EBF4; }
+    .team-strip span:last-child { color: #6F7D80; font-size: 8px; }
+    .floating-card { position: absolute; right: -14px; bottom: -2px; display: flex; align-items: center; gap: 10px; max-width: 205px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.82); border-radius: 8px; background: white; box-shadow: 0 13px 35px rgba(23,36,45,.13); transform: rotate(-2deg); }
+    .floating-icon { display: grid; place-items: center; flex: 0 0 29px; width: 29px; height: 29px; border-radius: 50%; color: var(--teal-ink); background: var(--teal); font-size: 13px; }
+    .floating-card strong { display: block; font-size: 8px; }
+    .floating-card small { display: block; margin-top: 3px; color: #839094; font-size: 7px; }
+
+    .promise-band { position: relative; z-index: 1; border-top: 1px solid rgba(23,36,45,.08); border-bottom: 1px solid rgba(23,36,45,.08); background: rgba(255,254,252,.72); }
+    .promise-row { display: grid; grid-template-columns: repeat(3,1fr); }
+    .promise-item { display: flex; align-items: center; gap: 12px; min-height: 80px; padding: 14px 22px; border-right: 1px solid var(--line); }
+    .promise-item:first-child { padding-left: 0; }
+    .promise-item:last-child { border-right: 0; }
+    .promise-icon { display: grid; place-items: center; flex: 0 0 33px; width: 33px; height: 33px; border-radius: 10px; color: var(--copper); background: var(--peach); font: 17px var(--serif); }
+    .promise-item:nth-child(2) .promise-icon { color: var(--teal-ink); background: var(--teal); }
+    .promise-item:nth-child(3) .promise-icon { color: var(--blue-ink); background: var(--blue); }
+    .promise-item strong { display: block; font-size: 11px; }
+    .promise-item small { display: block; margin-top: 4px; color: #788488; font-size: 9px; }
+
+    .section { padding: 90px 0; }
+    .section-white { background: var(--white); }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 33px; }
+    .section-heading .heading-copy { max-width: 650px; }
+    .section-heading h2, .adapt-copy h2, .team-heading h2 { margin: 13px 0 0; font-size: clamp(34px,4vw,48px); line-height: 1.05; letter-spacing: -.055em; font-weight: 650; }
+    .section-heading h2 em, .adapt-copy h2 em, .team-heading h2 em { color: var(--copper); font: italic 400 1em/1 var(--serif); }
+    .section-heading p { max-width: 310px; margin: 0 0 3px; color: #6A777C; font-size: 12px; line-height: 1.75; }
+    .benefit-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    .benefit-card { position: relative; min-height: 221px; overflow: hidden; padding: 24px; border: 1px solid #EAE5DD; border-radius: 7px; background: #fff; transition: transform .22s ease, box-shadow .22s ease; }
+    .benefit-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(23,36,45,.08); }
+    .benefit-card::after { position: absolute; content: ""; width: 115px; height: 115px; right: -54px; bottom: -55px; border: 1px solid rgba(192,98,45,.17); border-radius: 50%; box-shadow: 0 0 0 13px rgba(192,98,45,.035), 0 0 0 27px rgba(192,98,45,.025); }
+    .benefit-icon { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 11px; color: var(--copper); background: var(--peach); font: 20px var(--serif); }
+    .benefit-card:nth-child(2) .benefit-icon { color: var(--teal-ink); background: var(--teal); }
+    .benefit-card:nth-child(3) .benefit-icon { color: var(--blue-ink); background: var(--blue); }
+    .benefit-card h3 { margin: 19px 0 8px; font: 23px/1.05 var(--serif); font-weight: 500; }
+    .benefit-card p { position: relative; z-index: 1; max-width: 280px; margin: 0; color: #6C787D; font-size: 11px; line-height: 1.75; }
+
+    .adapt-section { position: relative; overflow: hidden; padding: 90px 0; color: white; background: var(--ink); }
+    .adapt-section::after { position: absolute; content: ""; width: 580px; height: 580px; top: -310px; right: -120px; border-radius: 50%; background: radial-gradient(circle, rgba(192,98,45,.26), transparent 66%); pointer-events: none; }
+    .adapt-layout { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr .92fr; gap: 65px; align-items: center; }
+    .adapt-section .eyebrow { color: #E5A57F; }
+    .adapt-section .eyebrow-dot { background: #E5A57F; box-shadow: 0 0 0 4px rgba(229,165,127,.12); }
+    .adapt-copy h2 { max-width: 570px; margin-bottom: 16px; }
+    .adapt-copy h2 em { color: #E5A57F; }
+    .adapt-copy p { max-width: 510px; margin: 0; color: #C1CBCD; font-size: 13px; line-height: 1.8; }
+    .activity-panel { padding: 23px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; background: rgba(255,255,255,.055); backdrop-filter: blur(8px); }
+    .activity-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .activity-panel-head strong { font-size: 11px; }
+    .activity-panel-head span { color: #DFA17D; font-size: 8px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .activity-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+    .activity-tags span { padding: 9px 11px; border: 1px solid rgba(255,255,255,.15); border-radius: 4px; color: #E6EBEA; background: rgba(255,255,255,.055); font-size: 9px; }
+    .activity-tags span:nth-child(2n) { border-color: rgba(229,165,127,.28); color: #F2C9B2; }
+    .panel-divider { height: 1px; margin: 19px 0; background: rgba(255,255,255,.12); }
+    .same-core-label { display: block; margin-bottom: 9px; color: #B9C3C5; font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .core-sequence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: white; font: 16px/1.5 var(--serif); }
+    .core-sequence b { color: #E5A57F; font-weight: 400; }
+    .adapt-foot { margin-top: 19px !important; color: #9EADAF !important; font-size: 9px !important; }
+
+    .team-section { padding: 90px 0; }
+    .team-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 34px; }
+    .team-heading > div:first-child { max-width: 590px; }
+    .team-heading p { max-width: 300px; margin: 0; color: #6D7A7E; font-size: 12px; line-height: 1.75; }
+    .team-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 11px; }
+    .team-card { min-height: 178px; padding: 20px; border: 1px solid #E6E1D9; border-radius: 6px; background: rgba(255,254,252,.75); }
+    .team-top { display: flex; align-items: center; justify-content: space-between; }
+    .team-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ink); background: var(--peach); font: 16px var(--serif); }
+    .team-card:nth-child(2) .team-avatar { background: var(--teal); }
+    .team-card:nth-child(3) .team-avatar { background: var(--blue); }
+    .team-card:nth-child(4) .team-avatar { background: #EEE7D8; }
+    .team-number { color: #B9B6AE; font: italic 13px var(--serif); }
+    .team-card h3 { margin: 16px 0 6px; font-size: 12px; font-weight: 750; }
+    .team-card p { margin: 0; color: #748084; font-size: 10px; line-height: 1.65; }
+    .team-access { display: flex; align-items: center; gap: 10px; margin-top: 17px; padding: 12px 14px; border-radius: 5px; color: #516268; background: #EAEDE8; font-size: 10px; }
+    .team-access span:first-child { color: var(--teal-ink); font-size: 15px; }
+    .team-access strong { color: var(--ink); }
+
+    .flow-section { padding: 0 0 90px; }
+    .flow-panel { display: grid; grid-template-columns: 1fr 1.25fr; align-items: center; gap: 30px; padding: 27px 30px; border: 1px solid #E5DFD6; border-radius: 7px; background: #FFFEFC; }
+    .flow-copy span { color: var(--copper); font-size: 8px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .flow-copy h2 { margin: 9px 0 0; font: 23px/1.1 var(--serif); font-weight: 500; }
+    .flow-steps { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+    .flow-step { display: flex; align-items: center; gap: 8px; color: #47575E; font-size: 9px; font-weight: 700; white-space: nowrap; }
+    .flow-step b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--copper); background: var(--peach); font: 13px var(--serif); }
+    .flow-arrow { color: #B6BDBD; font-size: 14px; }
+
+    .cta-section { position: relative; isolation: isolate; overflow: hidden; padding: 74px 0 70px; color: white; background: var(--copper); text-align: center; }
+    .cta-section::before, .cta-section::after { position: absolute; z-index: -1; content: ""; width: 380px; height: 380px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; }
+    .cta-section::before { top: -260px; left: -100px; box-shadow: 0 0 0 25px rgba(255,255,255,.035), 0 0 0 50px rgba(255,255,255,.025); }
+    .cta-section::after { right: -140px; bottom: -290px; box-shadow: 0 0 0 25px rgba(255,255,255,.035), 0 0 0 50px rgba(255,255,255,.025); }
+    .cta-section .eyebrow { color: #FFE3D0; }
+    .cta-section .eyebrow-dot { background: #FFE3D0; box-shadow: 0 0 0 4px rgba(255,227,208,.18); }
+    .cta-section h2 { max-width: 670px; margin: 17px auto 12px; font-size: clamp(37px,5vw,55px); line-height: 1.02; letter-spacing: -.06em; font-weight: 650; }
+    .cta-section p { margin: 0 auto; color: #F9E4D8; font-size: 12px; line-height: 1.7; }
+    .cta-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
+    .cta-section .button-dark { color: var(--ink); background: white; box-shadow: none; }
+    .cta-section .button-dark:hover { background: #F8EEE8; }
+    .cta-section .button-outline { color: white; border-color: rgba(255,255,255,.5); background: transparent; }
+    .cta-section .button-outline:hover { border-color: white; background: rgba(255,255,255,.08); }
+    .contact-line { margin-top: 17px !important; color: #FCE9DE !important; font-size: 10px !important; }
+    .contact-line a { color: white; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .site-footer { padding: 20px 0; color: #CAD0D1; background: #121D23; }
+    .footer-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .footer-brand { display: flex; align-items: center; gap: 7px; color: white; text-decoration: none; }
+    .footer-brand .brand-word { font-size: 22px; }
+    .footer-meta, .footer-links a { color: #AEB8BA; font-size: 9px; }
+    .footer-links { display: flex; gap: 17px; }
+    .footer-links a { text-decoration: none; }
+    .footer-links a:hover { color: white; }
+
+
+    .lead-layout { position: relative; z-index: 1; display: grid; grid-template-columns: .84fr 1.16fr; align-items: center; gap: 52px; text-align: left; }
+    .lead-copy h2 { max-width: 520px; margin: 17px 0 15px; text-align: left; font-size: clamp(37px,4.5vw,53px); line-height: 1.02; letter-spacing: -.06em; }
+    .lead-copy p { max-width: 410px; margin: 0; color: #F9E4D8; text-align: left; font-size: 13px; line-height: 1.8; }
+    .lead-form { padding: 24px; border: 1px solid rgba(255,255,255,.78); border-radius: 8px; color: var(--ink); background: var(--white); box-shadow: 0 22px 55px rgba(67,34,18,.17); text-align: left; }
+    .lead-form h3 { margin: 0 0 17px; font: 23px/1.1 var(--serif); font-weight: 500; }
+    .form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .form-field { min-width: 0; }
+    .form-field-wide { grid-column: 1 / -1; }
+    .form-field label { display: block; margin-bottom: 6px; color: #536169; font-size: 9px; font-weight: 720; }
+    .form-field label span { color: #90999B; font-weight: 450; }
+    .form-field input, .form-field select, .form-field textarea { display: block; width: 100%; min-height: 40px; padding: 9px 10px; border: 1px solid #E2DED7; border-radius: 4px; outline: none; color: var(--ink); background: white; font: 11px var(--sans); }
+    .form-field textarea { min-height: 65px; resize: vertical; }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(192,98,45,.11); }
+    .lead-form .button { width: 100%; margin-top: 15px; }
+    .form-note { margin: 9px 0 0 !important; color: #839093 !important; text-align: center; font-size: 8px !important; }
+    .contact-section { padding: 34px 0; background: #FFFEFC; border-top: 1px solid var(--line); }
+    .contact-row { display: flex; align-items: center; justify-content: space-between; gap: 25px; }
+    .contact-row h2 { margin: 7px 0 0; font: 25px/1.1 var(--serif); font-weight: 500; }
+    .contact-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .contact-links a { display: grid; grid-template-columns: 1fr auto; gap: 3px 15px; min-width: 190px; padding: 11px 13px; border: 1px solid #E8E3DA; border-radius: 5px; text-decoration: none; background: white; }
+    .contact-links a > span:first-child { grid-column: 1; color: #849093; font-size: 8px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
+    .contact-links a strong { grid-column: 1; font-size: 10px; }
+    .contact-links a .arrow { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--copper); }
+    .contact-links a:hover { border-color: var(--copper); }
+
+    @media (max-width: 950px) {
+      .hero-grid { gap: 35px; }
+      .nav-links { gap: 19px; }
+      .team-grid { grid-template-columns: repeat(2,1fr); }
+      .team-card { min-height: 150px; }
+      .flow-panel { grid-template-columns: 1fr; gap: 20px; }
+      .lead-layout { gap: 32px; }
+    }
+    @media (max-width: 720px) {
+      .container { width: min(100% - 34px, 540px); }
+      .site-header { padding: 14px 0; }
+      .nav-row { gap: 8px; }
+      .nav-links { display: none; }
+      .nav-row > .button { min-height: 38px; padding: 0 9px; font-size: 9px; }
+      .login-button { flex: 0 0 auto; }
+      .cta-label-long { display: none; }
+      .cta-label-short { display: inline; }
+      .brand-word { font-size: 26px; }
+      .hero { padding: 56px 0 64px; }
+      .hero-grid, .adapt-layout { grid-template-columns: 1fr; }
+      .hero-grid { gap: 38px; }
+      .hero h1 { font-size: clamp(48px,12vw,65px); }
+      .hero-copy { font-size: 14px; }
+      .visual-stage { padding: 2px 3px 20px; }
+      .app-body { min-height: 0; }
+      .app-content { padding: 15px 13px; }
+      .app-summary { gap: 5px; }
+      .summary-card { padding: 8px 7px; }
+      .summary-label { font-size: 6px; }
+      .floating-card { right: -4px; bottom: -4px; }
+      .promise-row { grid-template-columns: 1fr; }
+      .promise-item, .promise-item:first-child { min-height: 67px; padding: 10px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .promise-item:last-child { border-bottom: 0; }
+      .section { padding: 70px 0; }
+      .section-heading, .team-heading { display: block; }
+      .section-heading p, .team-heading p { margin-top: 13px; }
+      .benefit-grid { grid-template-columns: 1fr; }
+      .benefit-card { min-height: 0; padding: 21px; }
+      .benefit-card h3 { margin-top: 14px; }
+      .adapt-section { padding: 69px 0; }
+      .adapt-layout { gap: 30px; }
+      .activity-panel { padding: 18px; }
+      .team-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .team-card { min-height: 160px; padding: 15px; }
+      .team-access { align-items: flex-start; line-height: 1.55; }
+      .flow-section { padding-bottom: 70px; }
+      .flow-panel { padding: 22px; }
+      .lead-layout { grid-template-columns: 1fr; gap: 26px; }
+      .lead-form { padding: 20px; }
+      .contact-row { align-items: flex-start; flex-direction: column; }
+      .flow-steps { align-items: flex-start; flex-direction: column; }
+      .flow-arrow { display: none; }
+      .cta-section { padding: 64px 0; }
+      .footer-row { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 390px) {
+      .hero-actions .button { width: 100%; }
+      .agenda-item { grid-template-columns: 31px 1fr; }
+      .agenda-tag { grid-column: 2; justify-self: start; }
+      .app-top-right { font-size: 8px; }
+      .team-grid { grid-template-columns: 1fr; }
+      .team-card { min-height: 0; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field-wide { grid-column: auto; }
+      .activity-tags span { padding: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body id="top">
+  <header class="site-header">
+    <div class="container nav-row">
+      <a class="brand" href="#top" aria-label="Sigma, accueil">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#17242D" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg>
+        </span>
+        <span class="brand-word">Sigma</span>
+      </a>
+      <nav class="nav-links" aria-label="Navigation principale">
+        <a href="#presentation">Présentation</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="button button-outline login-button" href="sigma-login.html" aria-label="Se connecter à Sigma">Se connecter</a>
+      <a class="button button-dark" href="#demande"><span class="cta-label-long">Demander un devis / une démo</span><span class="cta-label-short">Devis / démo</span><span class="arrow" aria-hidden="true">↘</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="presentation">
+      <div class="container hero-grid">
+        <div class="hero-copy-block">
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Sigma · Suivi d’équipe</div>
+          <h1>Un suivi clair.<br><em>Une équipe</em><br>alignée.</h1>
+          <p class="hero-copy"><strong>Sigma relie les échanges, les décisions et les prochaines étapes</strong> dans un espace adapté à votre activité — avec les bons repères pour chaque personne concernée.</p>
+          <div class="hero-actions">
+            <a class="button button-dark" href="#outil">Découvrir Sigma <span class="arrow" aria-hidden="true">↓</span></a>
+            <a class="button button-outline" href="#outil">Voir l’essentiel <span class="arrow" aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-signature"><span class="signature-mark" aria-hidden="true">Σ</span><span>Chaque acte, chaque suivi.</span></div>
+          <div class="hero-roles" aria-label="Pensé pour plusieurs rôles d’équipe"><span>Supervision</span><span>Qualité</span><span>Équipe</span></div>
+        </div>
+
+        <div class="visual-stage" aria-label="Aperçu visuel de Sigma">
+          <div class="visual-halo" aria-hidden="true"></div>
+          <div class="app-window">
+            <div class="app-topbar">
+              <div class="app-top-left"><span class="app-symbol" aria-hidden="true">Σ</span><strong>Sigma</strong><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+              <span class="app-top-right">Espace d’équipe</span>
+            </div>
+            <div class="app-body">
+              <aside class="app-rail" aria-hidden="true"><span class="rail-icon active">▦</span><span class="rail-icon">◷</span><span class="rail-icon">◎</span><span class="rail-icon">↗</span><span class="rail-spacer"></span><span class="rail-icon">◉</span></aside>
+              <div class="app-content">
+                <div class="app-heading"><div><span class="app-kicker">Vue d’ensemble</span><h2>Suivi d’activité</h2></div><span class="week-select">Cette semaine&nbsp;⌄</span></div>
+                <div class="app-summary">
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>ACTES</span><strong>Rencontres & suivis</strong></div>
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>QUALITÉ</span><strong>Évaluations suivies</strong></div>
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>ÉQUIPE</span><strong>Repères partagés</strong></div>
+                </div>
+                <div class="agenda-head"><strong>À suivre</strong><span>Voir le calendrier&nbsp; →</span></div>
+                <div class="agenda">
+                  <div class="agenda-item"><span class="agenda-time">09:00</span><span><span class="agenda-title">Rencontre d’évolution</span><span class="agenda-meta">Membre · Activité</span></span><span class="agenda-tag tag-act">Acte</span></div>
+                  <div class="agenda-item"><span class="agenda-time">11:30</span><span><span class="agenda-title">Évaluation de suivi</span><span class="agenda-meta">Échange · Repères qualité</span></span><span class="agenda-tag tag-quality">Qualité</span></div>
+                  <div class="agenda-item"><span class="agenda-time">15:00</span><span><span class="agenda-title">Point d’alignement</span><span class="agenda-meta">Prochaine étape · Partagée</span></span><span class="agenda-tag tag-shared">Équipe</span></div>
+                </div>
+                <div class="team-strip"><span class="avatar-stack" aria-label="Plusieurs rôles"><i class="avatar">S</i><i class="avatar">Q</i><i class="avatar">É</i></span><span>Les bons repères, aux bonnes personnes</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card"><span class="floating-icon" aria-hidden="true">✓</span><span><strong>Une suite visible</strong><small>Le suivi reste dans le fil.</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="promise-band" aria-label="Ce que Sigma relie">
+      <div class="container promise-row">
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">✳</span><span><strong>Actes & décisions</strong><small>Documentés dans un même fil.</small></span></div>
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">◉</span><span><strong>Évaluations & repères</strong><small>Reliés aux objectifs de l’équipe.</small></span></div>
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">↗</span><span><strong>Suivis & alignement</strong><small>Les prochaines étapes restent visibles.</small></span></div>
+      </div>
+    </div>
+
+    <section class="section section-white" id="outil">
+      <div class="container">
+        <div class="section-heading">
+          <div class="heading-copy"><div class="eyebrow"><span class="eyebrow-dot"></span>Sigma, en bref</div><h2>Tout le suivi.<br><em>Un même fil.</em></h2></div>
+          <p>Les échanges, les évaluations et les actions à venir se rejoignent dans une vue simple, partagée avec les personnes concernées.</p>
+        </div>
+        <div class="benefit-grid">
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">✳</span><h3>Documenter</h3><p>Gardez une trace claire des rencontres, décisions et actes — avec une structure cohérente.</p></article>
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">◉</span><h3>Aligner</h3><p>Donnez à chaque rôle les repères utiles pour comprendre les attentes et la suite.</p></article>
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">↗</span><h3>Faire avancer</h3><p>Reliez les suivis aux prochaines dates et gardez l’historique à portée de main.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="adapt-section" id="activite">
+      <div class="container adapt-layout">
+        <div class="adapt-copy">
+          <div class="eyebrow"><span class="eyebrow-dot"></span>À votre rythme</div>
+          <h2>Votre activité change.<br><em>Sigma s’adapte.</em></h2>
+          <p>Sigma s’adapte aux repères de votre activité. Les libellés évoluent avec le vocabulaire de vos équipes, sans changer le cœur du suivi.</p>
+        </div>
+        <div class="activity-panel">
+          <div class="activity-panel-head"><strong>Les repères de votre activité</strong><span>Vos équipes</span></div>
+          <div class="activity-tags"><span>Personne</span><span>Équipe</span><span>Échange</span><span>Évaluation</span><span>Objectif</span><span>Suivi</span></div>
+          <div class="panel-divider"></div>
+          <span class="same-core-label">Le cœur Sigma reste simple</span>
+          <div class="core-sequence"><span>Une personne</span><b>·</b><span>Une date</span><b>·</b><span>Un acte</span><b>·</b><span>Un texte FISS</span><b>·</b><span>Un suivi</span></div>
+          <p class="adapt-foot">Un vocabulaire qui suit vos équipes. Un fil de suivi qui reste cohérent.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="team-section" id="equipe">
+      <div class="container">
+        <div class="team-heading">
+          <div><div class="eyebrow"><span class="eyebrow-dot"></span>Des repères pour chacun</div><h2>Chaque rôle avance<br><em>dans le même sens.</em></h2></div>
+          <p>Supervision, qualité, équipe et direction retrouvent les repères utiles à leur rôle et les étapes partagées.</p>
+        </div>
+        <div class="team-grid">
+          <article class="team-card"><div class="team-top"><span class="team-avatar">S</span><span class="team-number">01</span></div><h3>Supervision</h3><p>Documenter les actes et organiser la suite.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">Q</span><span class="team-number">02</span></div><h3>Qualité</h3><p>Évaluer les pratiques et partager les repères utiles.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">É</span><span class="team-number">03</span></div><h3>Membres de l’équipe</h3><p>Voir les éléments partagés de suivi et d’alignement qui les concernent.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">D</span><span class="team-number">04</span></div><h3>Direction</h3><p>Lire le mois et ses repères sans reconstruire le tableau.</p></article>
+        </div>
+        <div class="team-access"><span aria-hidden="true">◈</span><span><strong>Une visibilité adaptée aux rôles.</strong> Les informations sont partagées avec les personnes concernées.</span></div>
+      </div>
+    </section>
+
+    <section class="flow-section">
+      <div class="container flow-panel">
+        <div class="flow-copy"><span>Un fil simple</span><h2>De l’échange à la prochaine étape.</h2></div>
+        <div class="flow-steps" aria-label="Étapes du suivi Sigma"><span class="flow-step"><b>1</b>Échanger</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>2</b>Documenter</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>3</b>S’aligner</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>4</b>Suivre</span></div>
+      </div>
+    </section>
+
+    <section class="cta-section" id="demande">
+      <div class="container lead-layout">
+        <div class="lead-copy">
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Demande de devis ou de démo</div>
+          <h2>Voyons comment Sigma<br>s’adapte à votre activité.</h2>
+          <p>Parlez-nous de votre besoin. Nous vous présenterons Sigma autour de votre activité et de votre équipe.</p>
+        </div>
+        <form class="lead-form" id="lead-form">
+          <h3>Votre demande</h3>
+          <div class="form-grid">
+            <div class="form-field"><label for="lead-name">Nom et prénom</label><input id="lead-name" name="name" autocomplete="name" required></div>
+            <div class="form-field"><label for="lead-company">Organisation</label><input id="lead-company" name="company" autocomplete="organization" required></div>
+            <div class="form-field"><label for="lead-contact">Email ou WhatsApp</label><input id="lead-contact" name="contact" autocomplete="email" required></div>
+            <div class="form-field"><label for="lead-request">Votre demande</label><select id="lead-request" name="request" required><option value="">Choisir</option><option>Demander une démo</option><option>Demander un devis</option><option>Démo et devis</option></select></div>
+            <div class="form-field form-field-wide"><label for="lead-message">Votre activité ou votre besoin <span>(facultatif)</span></label><textarea id="lead-message" name="message" rows="3"></textarea></div>
+          </div>
+          <button class="button button-copper" type="submit">Envoyer ma demande <span class="arrow" aria-hidden="true">↗</span></button>
+          <p class="form-note">L’envoi se poursuit sur WhatsApp.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="contact-section" id="contact">
+      <div class="container contact-row">
+        <div><div class="eyebrow"><span class="eyebrow-dot"></span>Contact</div><h2>Échangeons directement.</h2></div>
+        <div class="contact-links"><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+212 6 34 23 20 06</strong><span class="arrow" aria-hidden="true">↗</span></a><a href="/cdn-cgi/l/email-protection#4e2d21203a2f2d3a0e2f2d3660232f"><span>Email</span><strong><span class="__cf_email__" data-cfemail="c3a0acadb7a2a0b783a2a0bbedaea2">[email&#160;protected]</span></strong><span class="arrow" aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <a class="footer-brand" href="#top" aria-label="Sigma, retour en haut"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#FFFEFC" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg></span><span class="brand-word">Sigma</span></a>
+      <span class="footer-meta">Un produit ACX Maroc · sigma.acx.ma</span>
+      <div class="footer-links"><a href="/cdn-cgi/l/email-protection#284b47465c494b5c68494b50064549">Contact</a><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
+    </div>
+  </footer>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    document.getElementById("lead-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const values = new FormData(event.currentTarget);
+      const message = [
+        "Bonjour, je souhaite contacter Sigma.",
+        "Nom : " + values.get("name"),
+        "Organisation : " + values.get("company"),
+        "Contact : " + values.get("contact"),
+        "Demande : " + values.get("request"),
+        values.get("message") ? "Activité / besoin : " + values.get("message") : ""
+      ].filter(Boolean).join("\n");
+      window.location.href = "https://wa.me/212634232006?text=" + encodeURIComponent(message);
+    });
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
