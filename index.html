@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f5f1">
-  <meta name="description" content="Sigma relie les actes, les écoutes et les suivis pour faire avancer les équipes.">
-  <title>Sigma — Chaque acte, chaque suivi</title>
+  <meta name="description" content="Sigma aide les équipes à planifier, documenter et suivre leurs évaluations et prochaines étapes.">
+  <title>Sigma — Suivi d’équipe</title>
   <style>
     :root {
       --ink: #17242D;
@@ -48,7 +48,7 @@
     .button-outline:hover { border-color: var(--ink); background: white; }
     .button-copper { color: white; background: var(--copper); }
     .button-copper:hover { background: #A95025; }
-    .cta-label-short { display: none; }
+    .cta-label-short, .login-label-short { display: none; }
     .arrow { font-size: 16px; line-height: .8; }
 
     .hero { position: relative; isolation: isolate; padding: 78px 0 83px; overflow: hidden; }
@@ -259,6 +259,8 @@
       .nav-links { display: none; }
       .nav-row > .button { min-height: 38px; padding: 0 9px; font-size: 9px; }
       .login-button { flex: 0 0 auto; }
+      .login-label-long { display: none; }
+      .login-label-short { display: inline; }
       .cta-label-long { display: none; }
       .cta-label-short { display: inline; }
       .brand-word { font-size: 26px; }
@@ -326,10 +328,11 @@
         <span class="brand-word">Sigma</span>
       </a>
       <nav class="nav-links" aria-label="Navigation principale">
-        <a href="#presentation">Présentation</a>
+        <a href="#outil">Fonctionnalités</a>
+        <a href="#equipe">Pour qui</a>
         <a href="#contact">Contact</a>
       </nav>
-      <a class="button button-outline login-button" href="/login.html" aria-label="Se connecter à Sigma">Se connecter</a>
+      <a class="button button-outline login-button" href="login.html" aria-label="Accéder à votre espace client"><span class="login-label-long">Accès client</span><span class="login-label-short">Connexion</span></a>
       <a class="button button-dark" href="#demande"><span class="cta-label-long">Demander un devis / une démo</span><span class="cta-label-short">Devis / démo</span><span class="arrow" aria-hidden="true">↘</span></a>
     </div>
   </header>
@@ -340,13 +343,13 @@
         <div class="hero-copy-block">
           <div class="eyebrow"><span class="eyebrow-dot"></span>Sigma · Suivi d’équipe</div>
           <h1>Un suivi clair.<br><em>Une équipe</em><br>alignée.</h1>
-          <p class="hero-copy"><strong>Sigma relie les échanges, les décisions et les prochaines étapes</strong> dans un espace adapté à votre activité — avec les bons repères pour chaque personne concernée.</p>
+          <p class="hero-copy"><strong>Sigma réunit évaluations, rencontres et prochaines étapes</strong> dans un calendrier partagé. Chacun retrouve les repères utiles selon son rôle, et l’équipe suit l’évolution par période.</p>
           <div class="hero-actions">
             <a class="button button-dark" href="#outil">Découvrir Sigma <span class="arrow" aria-hidden="true">↓</span></a>
             <a class="button button-outline" href="#outil">Voir l’essentiel <span class="arrow" aria-hidden="true">↓</span></a>
           </div>
           <div class="hero-signature"><span class="signature-mark" aria-hidden="true">Σ</span><span>Chaque acte, chaque suivi.</span></div>
-          <div class="hero-roles" aria-label="Pensé pour plusieurs rôles d’équipe"><span>Supervision</span><span>Qualité</span><span>Équipe</span></div>
+          <div class="hero-roles" aria-label="Pensé pour plusieurs rôles d’équipe"><span>Supervision</span><span>Qualité</span><span>Équipe</span><span>Administration</span></div>
         </div>
 
         <div class="visual-stage" aria-label="Aperçu visuel de Sigma">
@@ -354,50 +357,50 @@
           <div class="app-window">
             <div class="app-topbar">
               <div class="app-top-left"><span class="app-symbol" aria-hidden="true">Σ</span><strong>Sigma</strong><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
-              <span class="app-top-right">Espace d’équipe</span>
+              <span class="app-top-right">Calendrier partagé</span>
             </div>
             <div class="app-body">
               <aside class="app-rail" aria-hidden="true"><span class="rail-icon active">▦</span><span class="rail-icon">◷</span><span class="rail-icon">◎</span><span class="rail-icon">↗</span><span class="rail-spacer"></span><span class="rail-icon">◉</span></aside>
               <div class="app-content">
-                <div class="app-heading"><div><span class="app-kicker">Vue d’ensemble</span><h2>Suivi d’activité</h2></div><span class="week-select">Cette semaine&nbsp;⌄</span></div>
+                <div class="app-heading"><div><span class="app-kicker">Vue d’ensemble</span><h2>Suivi d’activité</h2></div><span class="week-select">Cette période&nbsp;⌄</span></div>
                 <div class="app-summary">
-                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>ACTES</span><strong>Rencontres & suivis</strong></div>
-                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>QUALITÉ</span><strong>Évaluations suivies</strong></div>
-                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>ÉQUIPE</span><strong>Repères partagés</strong></div>
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>CALENDRIER</span><strong>Évaluations & suivis</strong></div>
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>OBJECTIFS</span><strong>Repères mesurables</strong></div>
+                  <div class="summary-card"><span class="summary-label"><i class="summary-dot"></i>ÉQUIPE</span><strong>Accès par rôle</strong></div>
                 </div>
-                <div class="agenda-head"><strong>À suivre</strong><span>Voir le calendrier&nbsp; →</span></div>
+                <div class="agenda-head"><strong>Prochaines étapes</strong><span>Dans le calendrier&nbsp; →</span></div>
                 <div class="agenda">
-                  <div class="agenda-item"><span class="agenda-time">09:00</span><span><span class="agenda-title">Rencontre d’évolution</span><span class="agenda-meta">Membre · Activité</span></span><span class="agenda-tag tag-act">Acte</span></div>
-                  <div class="agenda-item"><span class="agenda-time">11:30</span><span><span class="agenda-title">Évaluation de suivi</span><span class="agenda-meta">Échange · Repères qualité</span></span><span class="agenda-tag tag-quality">Qualité</span></div>
-                  <div class="agenda-item"><span class="agenda-time">15:00</span><span><span class="agenda-title">Point d’alignement</span><span class="agenda-meta">Prochaine étape · Partagée</span></span><span class="agenda-tag tag-shared">Équipe</span></div>
+                  <div class="agenda-item"><span class="agenda-time">09:00</span><span><span class="agenda-title">Rencontre de suivi</span><span class="agenda-meta">Membre · Planifié</span></span><span class="agenda-tag tag-act">Planifié</span></div>
+                  <div class="agenda-item"><span class="agenda-time">11:30</span><span><span class="agenda-title">Évaluation qualité</span><span class="agenda-meta">Membre · Terminé</span></span><span class="agenda-tag tag-quality">Terminé</span></div>
+                  <div class="agenda-item"><span class="agenda-time">15:00</span><span><span class="agenda-title">Point d’alignement</span><span class="agenda-meta">Membre · Suivi lié</span></span><span class="agenda-tag tag-shared">À suivre</span></div>
                 </div>
-                <div class="team-strip"><span class="avatar-stack" aria-label="Plusieurs rôles"><i class="avatar">S</i><i class="avatar">Q</i><i class="avatar">É</i></span><span>Les bons repères, aux bonnes personnes</span></div>
+                <div class="team-strip"><span class="avatar-stack" aria-label="Plusieurs rôles"><i class="avatar">S</i><i class="avatar">Q</i><i class="avatar">É</i></span><span>Une équipe · des accès adaptés</span></div>
               </div>
             </div>
           </div>
-          <div class="floating-card"><span class="floating-icon" aria-hidden="true">✓</span><span><strong>Une suite visible</strong><small>Le suivi reste dans le fil.</small></span></div>
+          <div class="floating-card"><span class="floating-icon" aria-hidden="true">✓</span><span><strong>Objectifs suivis</strong><small>Résultats par période.</small></span></div>
         </div>
       </div>
     </section>
 
     <div class="promise-band" aria-label="Ce que Sigma relie">
       <div class="container promise-row">
-        <div class="promise-item"><span class="promise-icon" aria-hidden="true">✳</span><span><strong>Actes & décisions</strong><small>Documentés dans un même fil.</small></span></div>
-        <div class="promise-item"><span class="promise-icon" aria-hidden="true">◉</span><span><strong>Évaluations & repères</strong><small>Reliés aux objectifs de l’équipe.</small></span></div>
-        <div class="promise-item"><span class="promise-icon" aria-hidden="true">↗</span><span><strong>Suivis & alignement</strong><small>Les prochaines étapes restent visibles.</small></span></div>
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">▦</span><span><strong>Un calendrier unique</strong><small>Évaluations et suivis réunis.</small></span></div>
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">◈</span><span><strong>Des accès par rôle</strong><small>Les repères utiles, partagés avec soin.</small></span></div>
+        <div class="promise-item"><span class="promise-icon" aria-hidden="true">↗</span><span><strong>Des résultats lisibles</strong><small>Rapports et objectifs par période.</small></span></div>
       </div>
     </div>
 
     <section class="section section-white" id="outil">
       <div class="container">
         <div class="section-heading">
-          <div class="heading-copy"><div class="eyebrow"><span class="eyebrow-dot"></span>Sigma, en bref</div><h2>Tout le suivi.<br><em>Un même fil.</em></h2></div>
-          <p>Les échanges, les évaluations et les actions à venir se rejoignent dans une vue simple, partagée avec les personnes concernées.</p>
+          <div class="heading-copy"><div class="eyebrow"><span class="eyebrow-dot"></span>Sigma, en bref</div><h2>Les bonnes étapes.<br><em>Au même endroit.</em></h2></div>
+          <p>Planifiez, documentez et suivez les actions de l’équipe avec une vue partagée et des repères adaptés à chaque rôle.</p>
         </div>
         <div class="benefit-grid">
-          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">✳</span><h3>Documenter</h3><p>Gardez une trace claire des rencontres, décisions et actes — avec une structure cohérente.</p></article>
-          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">◉</span><h3>Aligner</h3><p>Donnez à chaque rôle les repères utiles pour comprendre les attentes et la suite.</p></article>
-          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">↗</span><h3>Faire avancer</h3><p>Reliez les suivis aux prochaines dates et gardez l’historique à portée de main.</p></article>
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">▦</span><h3>Planifier</h3><p>Réunissez évaluations, rencontres et prochaines étapes dans un calendrier filtrable.</p></article>
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">✳</span><h3>Documenter</h3><p>Structurez les faits, impacts, solutions et prochaines étapes avec le cadre FISS.</p></article>
+          <article class="benefit-card"><span class="benefit-icon" aria-hidden="true">↗</span><h3>Suivre l’évolution</h3><p>Consultez les volumes saisis, les objectifs et les rapports par agent et par période.</p></article>
         </div>
       </div>
     </section>
@@ -407,15 +410,15 @@
         <div class="adapt-copy">
           <div class="eyebrow"><span class="eyebrow-dot"></span>À votre rythme</div>
           <h2>Votre activité change.<br><em>Sigma s’adapte.</em></h2>
-          <p>Sigma s’adapte aux repères de votre activité. Les libellés évoluent avec le vocabulaire de vos équipes, sans changer le cœur du suivi.</p>
+          <p>Organisez les informations de l’équipe, les objectifs et les périodes de suivi selon vos besoins — tout en gardant un fil de documentation cohérent.</p>
         </div>
         <div class="activity-panel">
-          <div class="activity-panel-head"><strong>Les repères de votre activité</strong><span>Vos équipes</span></div>
-          <div class="activity-tags"><span>Personne</span><span>Équipe</span><span>Échange</span><span>Évaluation</span><span>Objectif</span><span>Suivi</span></div>
+          <div class="activity-panel-head"><strong>Les repères de suivi</strong><span>Dans un seul espace</span></div>
+          <div class="activity-tags"><span>Évaluations</span><span>Rencontres</span><span>Observations</span><span>Objectifs</span><span>Calendrier</span><span>Rapports</span></div>
           <div class="panel-divider"></div>
           <span class="same-core-label">Le cœur Sigma reste simple</span>
           <div class="core-sequence"><span>Une personne</span><b>·</b><span>Une date</span><b>·</b><span>Un acte</span><b>·</b><span>Un texte FISS</span><b>·</b><span>Un suivi</span></div>
-          <p class="adapt-foot">Un vocabulaire qui suit vos équipes. Un fil de suivi qui reste cohérent.</p>
+          <p class="adapt-foot">Les dates, les documents et les prochaines étapes restent reliés.</p>
         </div>
       </div>
     </section>
@@ -423,23 +426,23 @@
     <section class="team-section" id="equipe">
       <div class="container">
         <div class="team-heading">
-          <div><div class="eyebrow"><span class="eyebrow-dot"></span>Des repères pour chacun</div><h2>Chaque rôle avance<br><em>dans le même sens.</em></h2></div>
-          <p>Supervision, qualité, équipe et direction retrouvent les repères utiles à leur rôle et les étapes partagées.</p>
+          <div><div class="eyebrow"><span class="eyebrow-dot"></span>Des repères pour chacun</div><h2>Chaque rôle retrouve<br><em>l’essentiel.</em></h2></div>
+          <p>Chacun accède à ses propres éléments, aux informations partagées et aux outils liés à son rôle.</p>
         </div>
         <div class="team-grid">
-          <article class="team-card"><div class="team-top"><span class="team-avatar">S</span><span class="team-number">01</span></div><h3>Supervision</h3><p>Documenter les actes et organiser la suite.</p></article>
-          <article class="team-card"><div class="team-top"><span class="team-avatar">Q</span><span class="team-number">02</span></div><h3>Qualité</h3><p>Évaluer les pratiques et partager les repères utiles.</p></article>
-          <article class="team-card"><div class="team-top"><span class="team-avatar">É</span><span class="team-number">03</span></div><h3>Membres de l’équipe</h3><p>Voir les éléments partagés de suivi et d’alignement qui les concernent.</p></article>
-          <article class="team-card"><div class="team-top"><span class="team-avatar">D</span><span class="team-number">04</span></div><h3>Direction</h3><p>Lire le mois et ses repères sans reconstruire le tableau.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">S</span><span class="team-number">01</span></div><h3>Supervision</h3><p>Créer les évaluations et organiser les suivis de l’équipe.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">Q</span><span class="team-number">02</span></div><h3>Qualité</h3><p>Accéder aux évaluations et consulter les suivis autorisés.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">É</span><span class="team-number">03</span></div><h3>Membres de l’équipe</h3><p>Retrouver leurs évaluations et les suivis partagés.</p></article>
+          <article class="team-card"><div class="team-top"><span class="team-avatar">A</span><span class="team-number">04</span></div><h3>Administration</h3><p>Gérer les objectifs, les volumes et les rapports.</p></article>
         </div>
-        <div class="team-access"><span aria-hidden="true">◈</span><span><strong>Une visibilité adaptée aux rôles.</strong> Les informations sont partagées avec les personnes concernées.</span></div>
+        <div class="team-access"><span aria-hidden="true">◈</span><span><strong>Une visibilité adaptée aux rôles.</strong> Les données et les documents suivent les règles de partage de l’équipe.</span></div>
       </div>
     </section>
 
     <section class="flow-section">
       <div class="container flow-panel">
-        <div class="flow-copy"><span>Un fil simple</span><h2>De l’échange à la prochaine étape.</h2></div>
-        <div class="flow-steps" aria-label="Étapes du suivi Sigma"><span class="flow-step"><b>1</b>Échanger</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>2</b>Documenter</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>3</b>S’aligner</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>4</b>Suivre</span></div>
+        <div class="flow-copy"><span>Un fil simple</span><h2>De l’évaluation à la prochaine étape.</h2></div>
+        <div class="flow-steps" aria-label="Étapes du suivi Sigma"><span class="flow-step"><b>1</b>Évaluer</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>2</b>Documenter</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>3</b>Partager</span><span class="flow-arrow" aria-hidden="true">→</span><span class="flow-step"><b>4</b>Suivre</span></div>
       </div>
     </section>
 
@@ -448,7 +451,7 @@
         <div class="lead-copy">
           <div class="eyebrow"><span class="eyebrow-dot"></span>Demande de devis ou de démo</div>
           <h2>Voyons comment Sigma<br>s’adapte à votre activité.</h2>
-          <p>Parlez-nous de votre besoin. Nous vous présenterons Sigma autour de votre activité et de votre équipe.</p>
+          <p>Parlez-nous de votre besoin. Nous vous présenterons le calendrier, les rôles et les repères de Sigma autour de votre activité.</p>
         </div>
         <form class="lead-form" id="lead-form">
           <h3>Votre demande</h3>
@@ -460,7 +463,7 @@
             <div class="form-field form-field-wide"><label for="lead-message">Votre activité ou votre besoin <span>(facultatif)</span></label><textarea id="lead-message" name="message" rows="3"></textarea></div>
           </div>
           <button class="button button-copper" type="submit">Envoyer ma demande <span class="arrow" aria-hidden="true">↗</span></button>
-          <p class="form-note">L’envoi se poursuit sur WhatsApp.</p>
+          <p class="form-note">Votre message s’ouvrira dans WhatsApp pour être envoyé.</p>
         </form>
       </div>
     </section>
@@ -468,7 +471,7 @@
     <section class="contact-section" id="contact">
       <div class="container contact-row">
         <div><div class="eyebrow"><span class="eyebrow-dot"></span>Contact</div><h2>Échangeons directement.</h2></div>
-        <div class="contact-links"><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+212 6 34 23 20 06</strong><span class="arrow" aria-hidden="true">↗</span></a><a href="/cdn-cgi/l/email-protection#04676b6a706567704465677c2a6965"><span>Email</span><strong><span class="__cf_email__" data-cfemail="93f0fcfde7f2f0e7d3f2f0ebbdfef2">[email&#160;protected]</span></strong><span class="arrow" aria-hidden="true">↗</span></a></div>
+        <div class="contact-links"><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+212 6 34 23 20 06</strong><span class="arrow" aria-hidden="true">↗</span></a><a href="/cdn-cgi/l/email-protection#94f7fbfae0f5f7e0d4f5f7ecbaf9f5"><span>Email</span><strong><span class="__cf_email__" data-cfemail="34575b5a405557407455574c1a5955">[email&#160;protected]</span></strong><span class="arrow" aria-hidden="true">↗</span></a></div>
       </div>
     </section>
   </main>
@@ -477,7 +480,7 @@
     <div class="container footer-row">
       <a class="footer-brand" href="#top" aria-label="Sigma, retour en haut"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#FFFEFC" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg></span><span class="brand-word">Sigma</span></a>
       <span class="footer-meta">Un produit ACX Maroc · sigma.acx.ma</span>
-      <div class="footer-links"><a href="/cdn-cgi/l/email-protection#5c3f3332283d3f281c3d3f2472313d">Contact</a><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
+      <div class="footer-links"><a href="/cdn-cgi/l/email-protection#22414d4c564341566243415a0c4f43">Contact</a><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
     </div>
   </footer>
 
@@ -496,6 +499,6 @@
       window.location.href = "https://wa.me/212634232006?text=" + encodeURIComponent(message);
     });
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46a0d51fc4fb770',t:'MTc5MTM0NjE4Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-</body>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46cb8208b9ccfb6',t:'MTc5MTM3NDE1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

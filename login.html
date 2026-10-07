@@ -4,293 +4,123 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17242D">
-  <meta name="description" content="Connectez-vous à Sigma ou explorez la démo.">
-  <title>Connexion Sigma</title>
+  <meta name="description" content="Accès à la démonstration Sigma et sélection de l’espace client.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sigma — Accès client</title>
   <style>
-    :root {
-      --ink: #17242D;
-      --ink-2: #243741;
-      --copper: #C0622D;
-      --copper-dark: #A95025;
-      --paper: #F7F5F1;
-      --white: #FFFEFC;
-      --line: #E7E2D9;
-      --muted: #6D7A7F;
-      --teal: #DCECE8;
-      --teal-ink: #376A64;
-      --blue: #E3EBF4;
-      --blue-ink: #46627B;
-      --peach: #F7E7DC;
-      --serif: Georgia, "Times New Roman", serif;
-      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
-    a { color: inherit; }
-    button, input { font: inherit; }
-    .login-shell { display: grid; grid-template-columns: minmax(320px,.86fr) minmax(560px,1.14fr); min-height: 100vh; }
-
-    .brand-panel { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; overflow: hidden; padding: 34px clamp(28px,5vw,72px) 26px; color: white; background: var(--ink); }
-    .brand-panel::before { position: absolute; z-index: -1; content: ""; width: 590px; height: 590px; top: 28%; left: 22%; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; box-shadow: 0 0 0 23px rgba(255,255,255,.025), 0 0 0 49px rgba(255,255,255,.02), 0 0 0 76px rgba(255,255,255,.015); }
-    .brand-panel::after { position: absolute; z-index: -1; content: ""; width: 520px; height: 520px; top: -310px; left: -235px; border-radius: 50%; background: radial-gradient(circle, rgba(192,98,45,.40), rgba(192,98,45,0) 69%); }
-    .brand { display: inline-flex; align-items: center; gap: 11px; width: fit-content; color: white; text-decoration: none; }
-    .brand-mark { display: grid; place-items: center; width: 37px; height: 37px; }
-    .brand-mark svg { width: 37px; height: 37px; }
-    .brand-word { font: 30px/1 var(--serif); letter-spacing: -.045em; }
-    .brand-main { max-width: 500px; margin: auto 0; padding: 56px 0 45px; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: #E5A57F; font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
-    .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: #E5A57F; box-shadow: 0 0 0 4px rgba(229,165,127,.13); }
-    .brand-main h1 { margin: 20px 0 18px; font-size: clamp(43px,5vw,64px); line-height: .99; letter-spacing: -.065em; font-weight: 630; }
-    .brand-main h1 em { color: #E5A57F; font: italic 400 1em/1 var(--serif); }
-    .brand-main p { max-width: 405px; margin: 0; color: #C0CACC; font-size: 13px; line-height: 1.8; }
-    .promise { display: flex; align-items: center; gap: 10px; margin-top: 25px; color: #EEF1EF; font-size: 10px; font-weight: 600; }
-    .promise-symbol { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid rgba(229,165,127,.5); border-radius: 50%; color: #E5A57F; font: 15px var(--serif); }
-    .mini-preview { max-width: 385px; margin-top: 40px; padding: 15px; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; background: rgba(255,255,255,.055); backdrop-filter: blur(7px); }
-    .mini-preview-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #C5CECF; font-size: 8px; }
-    .mini-preview-head strong { color: white; font-size: 9px; }
-    .mini-item { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.09); }
-    .mini-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #D78357; }
-    .mini-item:nth-child(3) .mini-dot { background: #8BB4A9; }
-    .mini-item:nth-child(4) .mini-dot { background: #A5B8CC; }
-    .mini-item span { color: #E5E9E7; font-size: 9px; }
-    .mini-item small { margin-left: auto; color: #9EAAAC; font-size: 8px; }
-    .brand-footer { display: flex; justify-content: space-between; gap: 12px; color: #AEB9BB; font-size: 9px; }
-    .brand-footer a { color: #DCE2E2; text-decoration: none; }
-    .brand-footer a:hover { color: #E5A57F; }
-
-    .access-panel { display: flex; flex-direction: column; justify-content: center; padding: 30px clamp(22px,5vw,76px); }
-    .access-top { display: flex; justify-content: space-between; align-items: center; gap: 15px; width: min(100%,660px); margin: 0 auto 19px; }
-    .access-top span { color: #7A878B; font-size: 9px; }
-    .access-top a { color: #59686D; font-size: 10px; font-weight: 650; text-decoration: none; }
-    .access-top a:hover { color: var(--copper); }
-    .access-card { width: min(100%,660px); margin: 0 auto; padding: clamp(20px,3vw,32px); border: 1px solid #EAE5DD; border-radius: 10px; background: var(--white); box-shadow: 0 20px 60px rgba(23,36,45,.075); }
-    .card-heading { margin-bottom: 19px; }
-    .card-heading .eyebrow { color: var(--copper); }
-    .card-heading .eyebrow i { background: var(--copper); box-shadow: 0 0 0 4px rgba(192,98,45,.11); }
-    .card-heading h2 { margin: 10px 0 6px; font: 30px/1.05 var(--serif); font-weight: 500; letter-spacing: -.035em; }
-    .card-heading p { margin: 0; color: #778387; font-size: 10px; line-height: 1.6; }
-
-    .demo-box { padding: 17px; border: 1px solid #E8D8CC; border-radius: 7px; background: linear-gradient(135deg,#FBF3ED 0%,#FFFEFC 70%); }
-    .demo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
-    .demo-label { display: flex; align-items: center; gap: 9px; }
-    .demo-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--copper-dark); background: var(--peach); font-size: 14px; }
-    .demo-label strong { display: block; font-size: 11px; }
-    .demo-label small { display: block; margin-top: 3px; color: #8A9293; font-size: 8px; }
-    .instant-pill { padding: 6px 8px; border-radius: 20px; color: #825031; background: #F2E2D5; font-size: 7px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-    .role-label { display: block; margin: 0 0 8px; color: #647177; font-size: 8px; font-weight: 750; }
-    .role-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
-    .role-option { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-height: 61px; padding: 9px; border: 1px solid #E8E2D9; border-radius: 5px; color: #5E6C71; background: rgba(255,255,255,.72); cursor: pointer; text-align: left; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
-    .role-option:hover { border-color: #D8AD92; transform: translateY(-1px); }
-    .role-option[aria-pressed="true"] { border-color: var(--copper); color: var(--ink); background: white; box-shadow: 0 0 0 2px rgba(192,98,45,.08); }
-    .role-symbol { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: var(--copper-dark); background: var(--peach); font: 11px var(--serif); }
-    .role-option:nth-child(2) .role-symbol { color: var(--teal-ink); background: var(--teal); }
-    .role-option:nth-child(3) .role-symbol { color: var(--blue-ink); background: var(--blue); }
-    .role-option:nth-child(4) .role-symbol { color: #75653F; background: #EEE7D8; }
-    .role-name { font-size: 8px; font-weight: 750; }
-    .demo-button { width: 100%; min-height: 39px; margin-top: 11px; border: 0; border-radius: 4px; color: white; background: var(--ink); font-size: 10px; font-weight: 720; cursor: pointer; transition: background .18s ease, transform .18s ease; }
-    .demo-button:hover { background: var(--ink-2); transform: translateY(-1px); }
-    .demo-status, .login-status { margin: 9px 0 0; padding: 9px 10px; border-radius: 4px; color: #4A6862; background: #E7F0EA; font-size: 9px; line-height: 1.5; }
-    [hidden] { display: none !important; }
-
-    .separator { display: flex; align-items: center; gap: 11px; margin: 16px 0; color: #9AA3A5; font-size: 8px; }
-    .separator::before, .separator::after { content: ""; height: 1px; flex: 1; background: #EBE7E0; }
-    .client-heading { display: flex; justify-content: space-between; align-items: end; gap: 10px; margin-bottom: 9px; }
-    .client-heading strong { font-size: 10px; }
-    .client-heading span { color: #8B9597; font-size: 8px; }
-    .client-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-    .client-option { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 54px; padding: 9px 10px; border: 1px solid #E7E3DC; border-radius: 5px; color: var(--ink); background: white; cursor: pointer; text-align: left; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
-    .client-option:hover { border-color: #C98A67; transform: translateY(-1px); }
-    .client-option[aria-pressed="true"] { border-color: var(--copper); box-shadow: 0 0 0 2px rgba(192,98,45,.08); }
-    .client-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 7px; color: var(--ink); background: #EDEAE3; font: 14px var(--serif); }
-    .client-option:nth-child(2) .client-mark { color: var(--teal-ink); background: var(--teal); }
-    .client-option:nth-child(3) .client-mark { color: var(--copper-dark); background: var(--peach); }
-    .client-option strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-    .client-arrow { margin-left: auto; color: #9AA3A5; font-size: 12px; }
-
-    .credentials { margin-top: 14px; padding: 15px; border: 1px solid #E7E2D9; border-radius: 6px; background: #FAF9F6; animation: reveal .22s ease-out; }
-    @keyframes reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    .credentials-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-    .credentials-head strong { font-size: 10px; }
-    .selected-client { padding: 5px 8px; border-radius: 20px; color: var(--copper-dark); background: var(--peach); font-size: 8px; font-weight: 750; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .form-field label { display: block; margin-bottom: 5px; color: #627076; font-size: 8px; font-weight: 730; }
-    .field-wrap { position: relative; }
-    .form-field input { display: block; width: 100%; min-height: 38px; padding: 9px 10px; border: 1px solid #E0DCD5; border-radius: 4px; outline: none; color: var(--ink); background: white; font-size: 10px; }
-    .form-field input:focus { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(192,98,45,.1); }
-    .form-field input::placeholder { color: #A7AFB0; }
-    .password-input { padding-right: 47px !important; }
-    .show-password { position: absolute; top: 0; right: 0; height: 38px; padding: 0 9px; border: 0; color: #788588; background: transparent; font-size: 8px; cursor: pointer; }
-    .credentials-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
-    .sign-in-button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 4px; color: white; background: var(--copper); font-size: 9px; font-weight: 750; cursor: pointer; transition: background .18s ease; }
-    .sign-in-button:hover { background: var(--copper-dark); }
-    .help-link { color: #7C898D; font-size: 8px; text-decoration: none; }
-    .help-link:hover { color: var(--copper); }
-    .access-foot { width: min(100%,660px); margin: 14px auto 0; color: #8A9497; text-align: center; font-size: 8px; line-height: 1.5; }
-    .access-foot a { color: #657278; text-decoration: none; }
-    .access-foot a:hover { color: var(--copper); }
-
-    @media (max-width: 1000px) {
-      .login-shell { grid-template-columns: minmax(285px,.72fr) minmax(500px,1.28fr); }
-      .brand-panel { padding-right: 32px; padding-left: 32px; }
-      .access-panel { padding-right: 28px; padding-left: 28px; }
-      .role-option { padding: 8px; }
-    }
-    @media (max-width: 780px) {
-      .login-shell { grid-template-columns: 1fr; }
-      .brand-panel { min-height: auto; padding: 23px 25px 20px; }
-      .brand-panel::before { width: 400px; height: 400px; top: -220px; left: 52%; }
-      .brand-main { padding: 38px 0 16px; }
-      .brand-main h1 { max-width: 530px; font-size: clamp(39px,8vw,55px); }
-      .brand-main p { max-width: 600px; }
-      .mini-preview { display: none; }
-      .brand-footer { margin-top: 30px; }
-      .access-panel { padding: 28px 20px 36px; }
-      .access-top, .access-card, .access-foot { width: min(100%,620px); }
-    }
-    @media (max-width: 520px) {
-      .brand-panel { padding: 19px 18px 16px; }
-      .brand-main { padding: 30px 0 8px; }
-      .brand-main h1 { margin: 15px 0 11px; font-size: 43px; }
-      .brand-main p { font-size: 11px; }
-      .brand-footer { font-size: 8px; }
-      .access-panel { padding: 21px 12px 30px; }
-      .access-card { padding: 17px 13px; }
-      .access-top { margin-bottom: 12px; }
-      .card-heading h2 { font-size: 27px; }
-      .demo-box { padding: 12px; }
-      .role-grid { grid-template-columns: repeat(2,1fr); }
-      .role-option { flex-direction: row; align-items: center; min-height: 41px; }
-      .client-grid { grid-template-columns: 1fr; }
-      .client-option { min-height: 46px; }
-      .form-grid { grid-template-columns: 1fr; }
-      .credentials { padding: 12px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-    }
+    :root{--ink:#17242D;--ink-2:#243741;--copper:#C0622D;--copper-dark:#A95025;--paper:#F7F5F1;--white:#FFFEFC;--line:#E7E2D9;--muted:#6D7A7F;--teal:#DCECE8;--teal-ink:#376A64;--blue:#E3EBF4;--blue-ink:#46627B;--peach:#F7E7DC;--serif:Georgia,"Times New Roman",serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}html{min-height:100%;background:var(--paper)}body{min-height:100vh;margin:0;color:var(--ink);background:var(--paper);font-family:var(--sans);-webkit-font-smoothing:antialiased}a{color:inherit}button,input{font:inherit}
+    .login-shell{display:grid;grid-template-columns:minmax(310px,.86fr) minmax(0,1.14fr);min-height:100vh}
+    .brand-panel{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh;overflow:hidden;padding:32px clamp(26px,5vw,70px) 25px;color:#fff;background:var(--ink)}.brand-panel:before{position:absolute;z-index:-1;content:"";width:570px;height:570px;top:27%;left:18%;border:1px solid rgba(255,255,255,.08);border-radius:50%;box-shadow:0 0 0 24px rgba(255,255,255,.025),0 0 0 50px rgba(255,255,255,.018)}.brand-panel:after{position:absolute;z-index:-1;content:"";width:450px;height:450px;top:-270px;left:-230px;border-radius:50%;background:radial-gradient(circle,rgba(192,98,45,.4),transparent 69%)}
+    .brand{display:inline-flex;align-items:center;gap:10px;width:fit-content;color:#fff;text-decoration:none}.brand-mark{display:grid;place-items:center;width:36px;height:36px}.brand-mark svg{width:36px;height:36px}.brand-word{font:30px/1 var(--serif);letter-spacing:-.045em}.brand-main{max-width:495px;margin:auto 0;padding:52px 0 40px}.eyebrow{display:inline-flex;align-items:center;gap:9px;color:#E5A57F;font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.eyebrow i{width:7px;height:7px;border-radius:50%;background:#E5A57F;box-shadow:0 0 0 4px rgba(229,165,127,.13)}.brand-main h1{margin:20px 0 17px;font-size:clamp(42px,5vw,62px);line-height:.99;letter-spacing:-.065em;font-weight:640}.brand-main h1 em{color:#E5A57F;font:italic 400 1em/1 var(--serif)}.brand-main p{max-width:405px;margin:0;color:#C0CACC;font-size:13px;line-height:1.8}.feature-list{display:grid;gap:9px;margin:23px 0 0;padding:0;list-style:none}.feature-list li{display:flex;align-items:center;gap:9px;color:#E2E8E7;font-size:10px}.feature-list li span{display:grid;place-items:center;width:20px;height:20px;border:1px solid rgba(229,165,127,.35);border-radius:50%;color:#E5A57F;font-size:10px}.brand-footer{display:flex;justify-content:space-between;gap:12px;color:#AEB9BB;font-size:9px}.brand-footer a{color:#DCE2E2;text-decoration:none}.brand-footer a:hover{color:#E5A57F}
+    .access-panel{display:flex;flex-direction:column;justify-content:center;padding:30px clamp(22px,5vw,72px)}.access-top{display:flex;align-items:center;justify-content:space-between;gap:14px;width:min(100%,690px);margin:0 auto 17px}.access-top span{color:#7A878B;font-size:9px}.access-top a{color:#59686D;font-size:10px;font-weight:650;text-decoration:none}.access-top a:hover{color:var(--copper)}.access-card{width:min(100%,690px);margin:0 auto;padding:clamp(21px,3vw,33px);border:1px solid #EAE5DD;border-radius:10px;background:var(--white);box-shadow:0 20px 60px rgba(23,36,45,.075)}.card-heading{margin-bottom:18px}.card-heading .eyebrow{color:var(--copper)}.card-heading .eyebrow i{background:var(--copper);box-shadow:0 0 0 4px rgba(192,98,45,.11)}.card-heading h2{margin:11px 0 6px;font:clamp(27px,3vw,34px)/1.05 var(--serif);font-weight:500;letter-spacing:-.035em}.card-heading p{margin:0;color:#778387;font-size:10px;line-height:1.65}
+    .client-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 0 9px}.client-heading strong{font-size:10px}.client-heading span{color:#8B9597;font-size:8px}.client-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.client-option{display:flex;align-items:center;gap:9px;min-width:0;min-height:58px;padding:9px 10px;border:1px solid #E7E3DC;border-radius:5px;color:var(--ink);background:#fff;cursor:pointer;text-align:left;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.client-option:hover{border-color:#C98A67;transform:translateY(-1px)}.client-option[aria-pressed="true"]{border-color:var(--copper);box-shadow:0 0 0 2px rgba(192,98,45,.09)}.client-mark{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:8px;color:var(--ink);background:#EDEAE3;font:15px var(--serif)}.client-option:nth-child(2) .client-mark{color:var(--teal-ink);background:var(--teal)}.client-option:nth-child(3) .client-mark{color:var(--blue-ink);background:var(--blue)}.client-option strong{overflow:hidden;font-size:9px;text-overflow:ellipsis;white-space:nowrap}.client-arrow{margin-left:auto;color:#9AA3A5;font-size:13px}
+    .credentials{margin-top:15px;padding:15px;border:1px solid #E7E2D9;border-radius:6px;background:#FAF9F6;animation:reveal .22s ease-out}.credentials[hidden]{display:none!important}@keyframes reveal{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.credentials-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.credentials-head strong{font-size:10px}.selected-client{padding:5px 8px;border-radius:20px;color:var(--copper-dark);background:var(--peach);font-size:8px;font-weight:750}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-field{min-width:0}.form-field label{display:block;margin-bottom:5px;color:#627076;font-size:8px;font-weight:730}.field-wrap{position:relative}.form-field input{display:block;width:100%;min-height:39px;padding:9px 10px;border:1px solid #E0DCD5;border-radius:4px;outline:none;color:var(--ink);background:#fff;font-size:10px}.form-field input:focus{border-color:var(--copper);box-shadow:0 0 0 3px rgba(192,98,45,.1)}.form-field input::placeholder{color:#A7AFB0}.password-input{padding-right:49px!important}.show-password{position:absolute;top:0;right:0;height:39px;padding:0 10px;border:0;color:#788588;background:transparent;font-size:8px;cursor:pointer}.credentials-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.sign-in-button{min-height:39px;padding:0 16px;border:0;border-radius:4px;color:#fff;background:var(--copper);font-size:9px;font-weight:750;cursor:pointer;transition:background .18s ease}.sign-in-button:hover{background:var(--copper-dark)}.help-link{color:#7C898D;font-size:8px;text-decoration:none}.help-link:hover{color:var(--copper)}.login-status{margin:11px 0 0;padding:9px 10px;border-radius:4px;color:#8B3934;background:#FBE9E7;font-size:9px;line-height:1.5}.login-status.success{color:#376A57;background:#E7F0EA}.client-status{margin:12px 0 0;padding:10px 11px;border:1px solid #E7E2D9;border-radius:5px;color:#6C787D;background:#F7F5F1;font-size:9px;line-height:1.5}.security-note{display:flex;gap:8px;margin:15px 0 0;color:#879194;font-size:8px;line-height:1.55}.security-note b{color:#657278}.security-note span{color:var(--copper);font-weight:900}.access-foot{width:min(100%,690px);margin:13px auto 0;color:#879194;text-align:center;font-size:8px;line-height:1.6}.access-foot a{color:#657278;text-decoration:none}.access-foot a:hover{color:var(--copper)}.client-option:focus-visible,.sign-in-button:focus-visible,.show-password:focus-visible,.access-top a:focus-visible{outline:3px solid rgba(192,98,45,.4);outline-offset:3px}
+    @media(max-width:900px){.login-shell{grid-template-columns:minmax(280px,.78fr) minmax(0,1.22fr)}.brand-panel{padding-right:30px;padding-left:30px}.access-panel{padding-right:25px;padding-left:25px}}
+    @media(max-width:700px){.login-shell{grid-template-columns:1fr}.brand-panel{min-height:auto;padding:21px 22px 18px}.brand-panel:before{width:390px;height:390px;top:-230px;left:52%}.brand-main{max-width:570px;padding:34px 0 15px}.brand-main h1{font-size:clamp(40px,9vw,54px)}.brand-main p{max-width:560px}.feature-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.feature-list li{align-items:flex-start;font-size:8px;line-height:1.35}.feature-list li span{flex:0 0 20px}.brand-footer{margin-top:19px}.access-panel{padding:24px 16px 32px}.access-top,.access-card,.access-foot{width:min(100%,620px)}}
+    @media(max-width:460px){.brand-panel{padding:18px 17px 15px}.brand-main{padding:28px 0 10px}.brand-main h1{margin:15px 0 11px;font-size:42px}.brand-main p{font-size:11px}.feature-list{grid-template-columns:1fr;gap:7px}.brand-footer{font-size:8px}.access-panel{padding:19px 11px 27px}.access-card{padding:17px 13px}.access-top{margin-bottom:12px}.client-grid{grid-template-columns:1fr}.client-option{min-height:48px}.form-grid{grid-template-columns:1fr}.credentials{padding:12px}.credentials-actions{align-items:flex-start;flex-direction:column}.credentials-actions .sign-in-button{width:100%}.client-heading{align-items:flex-start;flex-direction:column;gap:3px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;scroll-behavior:auto!important}}
   </style>
 </head>
 <body>
   <main class="login-shell">
     <aside class="brand-panel">
-      <a class="brand" href="/" aria-label="Sigma, retour à la présentation">
+      <a class="brand" href="index.html" aria-label="Sigma, retour à la présentation">
         <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#FFFEFC" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg></span>
         <span class="brand-word">Sigma</span>
       </a>
       <div class="brand-main">
-        <div class="eyebrow"><i></i>Votre espace d’équipe</div>
+        <div class="eyebrow"><i></i>Sigma · Suivi d’équipe</div>
         <h1>Chaque acte.<br><em>Chaque suivi.</em></h1>
-        <p>Retrouvez les échanges, les décisions et les prochaines étapes dans un espace clair, adapté à votre activité.</p>
-        <div class="promise"><span class="promise-symbol" aria-hidden="true">Σ</span><span>Un même fil pour avancer ensemble.</span></div>
-        <div class="mini-preview" aria-hidden="true">
-          <div class="mini-preview-head"><strong>Votre semaine</strong><span>Suivi partagé</span></div>
-          <div class="mini-item"><i class="mini-dot"></i><span>Rencontre de suivi</span><small>09:00</small></div>
-          <div class="mini-item"><i class="mini-dot"></i><span>Évaluation</span><small>11:30</small></div>
-          <div class="mini-item"><i class="mini-dot"></i><span>Prochaine étape</span><small>15:00</small></div>
-        </div>
+        <p>Retrouvez les évaluations, les décisions et les prochaines étapes dans un espace clair, adapté à votre équipe.</p>
+        <ul class="feature-list" aria-label="Fonctionnalités Sigma">
+          <li><span aria-hidden="true">✓</span>Calendrier partagé</li>
+          <li><span aria-hidden="true">✓</span>Rapports par période</li>
+          <li><span aria-hidden="true">✓</span>Accès par rôle</li>
+        </ul>
       </div>
-      <div class="brand-footer"><span>Un produit ACX Maroc</span><a href="/cdn-cgi/l/email-protection#24474b4a504547506445475c0a4945">Besoin d’aide ?</a></div>
+      <div class="brand-footer"><span>Un produit ACX Maroc</span><a href="/cdn-cgi/l/email-protection#99faf6f7edf8faedd9f8fae1b7f4f8">Besoin d’aide ?</a></div>
     </aside>
 
     <section class="access-panel" aria-label="Connexion à Sigma">
-      <div class="access-top"><span>sigma.acx.ma</span><a href="/">← Retour à la présentation</a></div>
+      <div class="access-top"><span>sigma.acx.ma</span><a href="index.html">← Retour à la présentation</a></div>
       <div class="access-card">
         <div class="card-heading">
-          <div class="eyebrow"><i></i>Accès à Sigma</div>
+          <div class="eyebrow"><i></i>Accès client · démonstration</div>
           <h2>Bienvenue.</h2>
-          <p>Choisissez une vue de démo ou connectez-vous à votre espace.</p>
+          <p>Choisissez votre espace client pour accéder à la maquette disponible.</p>
         </div>
 
-        <section class="demo-box" aria-labelledby="demo-heading">
-          <div class="demo-head">
-            <div class="demo-label"><span class="demo-icon" aria-hidden="true">✦</span><span><strong id="demo-heading">Compte démo</strong><small>Explorez Sigma selon votre rôle.</small></span></div>
-            <span class="instant-pill">Accès démo</span>
-          </div>
-          <span class="role-label">Choisissez une vue</span>
-          <div class="role-grid" role="group" aria-label="Choisir une vue de démonstration">
-            <button class="role-option" type="button" data-role="Superviseur" aria-pressed="true"><span class="role-symbol">S</span><span class="role-name">Superviseur</span></button>
-            <button class="role-option" type="button" data-role="Agent" aria-pressed="false"><span class="role-symbol">A</span><span class="role-name">Agent</span></button>
-            <button class="role-option" type="button" data-role="Qualité" aria-pressed="false"><span class="role-symbol">Q</span><span class="role-name">Qualité</span></button>
-            <button class="role-option" type="button" data-role="Admin" aria-pressed="false"><span class="role-symbol">Σ</span><span class="role-name">Admin</span></button>
-          </div>
-          <button class="demo-button" id="demo-button" type="button">Continuer en démo · Superviseur</button>
-          <p class="demo-status" id="demo-status" role="status" hidden></p>
-        </section>
+        <div class="client-heading"><strong>Votre espace client</strong><span>Sélectionnez un client</span></div>
+        <div class="client-grid" role="group" aria-label="Choisir un espace client">
+          <button class="client-option" type="button" data-client="Americana" aria-pressed="false"><span class="client-mark" aria-hidden="true">A</span><strong>Americana</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+          <button class="client-option" type="button" data-client="PGV" aria-pressed="false"><span class="client-mark" aria-hidden="true">P</span><strong>PGV</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+          <button class="client-option" type="button" data-client="VD" aria-pressed="false"><span class="client-mark" aria-hidden="true">V</span><strong>VD</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+        </div>
 
-        <div class="separator">ou connectez-vous avec votre compte</div>
-
-        <section aria-labelledby="clients-heading">
-          <div class="client-heading"><strong id="clients-heading">Votre espace client</strong><span>Choisissez votre organisation</span></div>
-          <div class="client-grid" role="group" aria-label="Choisir un espace client">
-            <button class="client-option" type="button" data-client="VD Project" aria-pressed="false"><span class="client-mark">V</span><strong>VD Project</strong><span class="client-arrow" aria-hidden="true">›</span></button>
-            <button class="client-option" type="button" data-client="PGV" aria-pressed="false"><span class="client-mark">P</span><strong>PGV</strong><span class="client-arrow" aria-hidden="true">›</span></button>
-            <button class="client-option" type="button" data-client="Americana" aria-pressed="false"><span class="client-mark">A</span><strong>Americana</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+        <p class="client-status" id="client-status" role="status" hidden></p>
+        <form class="credentials" id="credentials-form" hidden>
+          <div class="credentials-head"><strong>Connexion de démonstration</strong><span class="selected-client" id="selected-client">Americana</span></div>
+          <div class="form-grid">
+            <div class="form-field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="username" placeholder="nom@entreprise.ma" required></div>
+            <div class="form-field"><label for="password">Mot de passe</label><div class="field-wrap"><input class="password-input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required><button class="show-password" id="show-password" type="button" aria-label="Afficher le mot de passe">Voir</button></div></div>
           </div>
+          <div class="credentials-actions"><button class="sign-in-button" type="submit">Se connecter <span aria-hidden="true">↗</span></button><a class="help-link" href="/cdn-cgi/l/email-protection#086b67667c696b7c48696b70266569377b7d6a626d6b7c3549616c6d2d3a386b6766666d706167662d3a385b616f6569">Besoin d’aide ?</a></div>
+          <p class="login-status" id="login-status" role="alert" hidden></p>
+        </form>
 
-          <form class="credentials" id="credentials-form" hidden>
-            <div class="credentials-head"><strong>Connectez-vous à votre espace</strong><span class="selected-client" id="selected-client">Client</span></div>
-            <div class="form-grid">
-              <div class="form-field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="username" placeholder="nom@entreprise.ma" required></div>
-              <div class="form-field"><label for="password">Mot de passe</label><div class="field-wrap"><input class="password-input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required><button class="show-password" id="show-password" type="button" aria-label="Afficher le mot de passe">Voir</button></div></div>
-            </div>
-            <div class="credentials-actions"><button class="sign-in-button" type="submit">Se connecter <span aria-hidden="true">↗</span></button><a class="help-link" href="/cdn-cgi/l/email-protection#d5b6babba1b4b6a195b4b6adfbb8b4eaa6a0b7bfb0b6a1e894bcb1b0f0e7e5b6babbbbb0adbcbabbf0e7e586bcb2b8b4">Besoin d’aide ?</a></div>
-            <p class="login-status" id="login-status" role="status" hidden></p>
-          </form>
-        </section>
+        <p class="security-note"><span aria-hidden="true">!</span><span><b>Mode maquette :</b> les identifiants de test sont vérifiés dans cette page statique. Ce contrôle n’est pas une authentification sécurisée; n’utilisez pas de mot de passe réel.</span></p>
       </div>
-      <div class="access-foot">En vous connectant, vous accédez uniquement aux éléments partagés avec votre rôle. · <a href="/cdn-cgi/l/email-protection#6c0f0302180d0f182c0d0f1442010d"><span class="__cf_email__" data-cfemail="44272b2a302527300425273c6a2925">[email&#160;protected]</span></a></div>
+      <div class="access-foot">Un produit ACX Maroc · <a href="/cdn-cgi/l/email-protection#45262a2b312426310524263d6b2824"><span class="__cf_email__" data-cfemail="02616d6c766361764263617a2c6f63">[email&#160;protected]</span></a></div>
     </section>
   </main>
 
   <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-    const roleButtons = Array.from(document.querySelectorAll('.role-option'));
-    const demoButton = document.getElementById('demo-button');
-    const demoStatus = document.getElementById('demo-status');
-    let selectedRole = 'Superviseur';
+    (() => {
+      const clientButtons = Array.from(document.querySelectorAll('.client-option'));
+      const credentialsForm = document.getElementById('credentials-form');
+      const selectedClient = document.getElementById('selected-client');
+      const clientStatus = document.getElementById('client-status');
+      const loginStatus = document.getElementById('login-status');
+      let activeClient = '';
 
-    roleButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        selectedRole = button.dataset.role;
-        roleButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-        demoButton.textContent = `Continuer en démo · ${selectedRole}`;
-        demoStatus.hidden = true;
-      });
-    });
-
-    demoButton.addEventListener('click', () => {
-      demoStatus.textContent = `Vue ${selectedRole} sélectionnée. L’accès démo sera relié aux écrans Sigma lors de l’intégration.`;
-      demoStatus.hidden = false;
-    });
-
-    const clientButtons = Array.from(document.querySelectorAll('.client-option'));
-    const credentialsForm = document.getElementById('credentials-form');
-    const selectedClient = document.getElementById('selected-client');
-    const loginStatus = document.getElementById('login-status');
-
-    clientButtons.forEach((button) => {
-      button.addEventListener('click', () => {
+      clientButtons.forEach((button) => button.addEventListener('click', () => {
+        activeClient = button.dataset.client;
         clientButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-        selectedClient.textContent = button.dataset.client;
-        credentialsForm.hidden = false;
+        clientStatus.hidden = true;
         loginStatus.hidden = true;
-        document.getElementById('email').focus();
+        if (activeClient === 'Americana') {
+          credentialsForm.hidden = false;
+          selectedClient.textContent = activeClient;
+          document.getElementById('email').focus();
+        } else {
+          credentialsForm.hidden = true;
+          clientStatus.textContent = `L’accès de démonstration ${activeClient} n’est pas encore configuré. Choisissez Americana pour ouvrir la maquette disponible.`;
+          clientStatus.hidden = false;
+        }
+      }));
+
+      document.getElementById('show-password').addEventListener('click', (event) => {
+        const password = document.getElementById('password');
+        const showing = password.type === 'text';
+        password.type = showing ? 'password' : 'text';
+        event.currentTarget.textContent = showing ? 'Voir' : 'Masquer';
+        event.currentTarget.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
       });
-    });
 
-    document.getElementById('show-password').addEventListener('click', (event) => {
-      const password = document.getElementById('password');
-      const showing = password.type === 'text';
-      password.type = showing ? 'password' : 'text';
-      event.currentTarget.textContent = showing ? 'Voir' : 'Masquer';
-      event.currentTarget.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
-    });
-
-    credentialsForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      loginStatus.textContent = 'La maquette de connexion est prête. L’authentification sera reliée lors de l’intégration.';
-      loginStatus.hidden = false;
-    });
+      credentialsForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const email = document.getElementById('email').value.trim().toLowerCase();
+        const password = document.getElementById('password').value;
+        if (activeClient === 'Americana' && email === 'omar@americana.com' && password === 'omar123') {
+          window.location.href = 'americana-demo.html?role=superviseur';
+          return;
+        }
+        loginStatus.textContent = 'Identifiants de démonstration incorrects. Vérifiez l’adresse email et le mot de passe puis réessayez.';
+        loginStatus.hidden = false;
+      });
+    })();
   </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46a0d2d5fadb770',t:'MTc5MTM0NjE3OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46cb8324cc6cfb6',t:'MTc5MTM3NDE1NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
