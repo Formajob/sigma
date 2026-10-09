@@ -1,0 +1,2 @@
+window.SIGMA_SUPABASE_URL = "https://kxmddtxtjumjmqadcdyu.supabase.co";
+window.SIGMA_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4bWRkdHh0anVtam1xYWRjZHl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMTM2MDUsImV4cCI6MjEwNjg4OTYwNX0.rzqk7tTQ9rhwQEwG4n87fUj4vsxX8Ur7_Qck9YzioT4";
