@@ -15,6 +15,9 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 
+# Clés Supabase locales — NE JAMAIS COMMITTER
+js/supabase-config.js
+
 # Build / cache
 dist/
 build/

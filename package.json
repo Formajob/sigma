@@ -1,0 +1,11 @@
+{
+  "name": "sigma-americana",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sigma — suivi d'équipe Americana. Site statique + Supabase via CDN.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes serve@14.2.4 . -l 5500 --no-clipboard",
+    "check": "node scripts/check.mjs"
+  }
+}

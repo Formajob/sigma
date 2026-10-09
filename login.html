@@ -73,32 +73,37 @@
     </section>
   </main>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script>
     (() => {
-      const clients = {
-        Americana: { email:'omar@americana.com', password:'omar123', target:'americana-demo.html?role=superviseur' }
-      };
       const clientButtons = Array.from(document.querySelectorAll('.client-option'));
       const credentialsForm = document.getElementById('credentials-form');
       const selectedClient = document.getElementById('selected-client');
       const clientStatus = document.getElementById('client-status');
       const loginStatus = document.getElementById('login-status');
+      const submitBtn = credentialsForm.querySelector('.sign-in-button');
       let activeClient = '';
+
+      // Focus Americana : seul espace branché pour l'instant.
+      const targets = { Americana: 'americana-dashboard.html' };
 
       clientButtons.forEach((button) => button.addEventListener('click', () => {
         activeClient = button.dataset.client;
         clientButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
         clientStatus.hidden = true;
-        loginStatus.hidden = true;
+        loginStatus.hidden = false;
         credentialsForm.reset();
-        if (clients[activeClient]) {
+        if (targets[activeClient]) {
           credentialsForm.hidden = false;
           selectedClient.textContent = activeClient;
+          loginStatus.textContent = 'Connectez-vous avec votre compte Sigma (Supabase).';
           document.getElementById('email').focus();
         } else {
           credentialsForm.hidden = true;
-          clientStatus.textContent = `L\u2019acc\u00e8s de d\u00e9monstration ${activeClient} n\u2019est pas encore configur\u00e9. Choisissez un autre espace pour ouvrir une maquette disponible.`;
+          clientStatus.textContent = `L\u2019acc\u00e8s ${activeClient} n\u2019est pas encore branch\u00e9.`;
           clientStatus.hidden = false;
+          loginStatus.hidden = true;
         }
       }));
 
@@ -110,17 +115,30 @@
         event.currentTarget.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
       });
 
-      credentialsForm.addEventListener('submit', (event) => {
+      credentialsForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const config = clients[activeClient];
-        const email = document.getElementById('email').value.trim().toLowerCase();
-        const password = document.getElementById('password').value;
-        if (config && email === config.email && password === config.password) {
-          window.location.href = config.target;
-          return;
+        loginStatus.hidden = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Connexion…';
+        try {
+          const email = document.getElementById('email').value.trim().toLowerCase();
+          const password = document.getElementById('password').value;
+          await window.sigmaSupabase.signIn(email, password);
+          const profile = await window.sigmaSupabase.getProfile();
+          if (!profile) {
+            await window.sigmaSupabase.signOut();
+            loginStatus.textContent = 'Compte sans profil Sigma. Demandez à un superviseur de créer votre accès.';
+            loginStatus.hidden = false;
+            return;
+          }
+          window.location.href = targets[activeClient] || 'americana-dashboard.html';
+        } catch (err) {
+          loginStatus.textContent = 'Identifiants incorrects ou compte inactif. Réessayez.';
+          loginStatus.hidden = false;
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Se connecter <span aria-hidden="true">↗</span>';
         }
-        loginStatus.textContent = 'Identifiants de d\u00e9monstration incorrects. V\u00e9rifiez l\u2019adresse email et le mot de passe puis r\u00e9essayez.';
-        loginStatus.hidden = false;
       });
     })();
   </script>
