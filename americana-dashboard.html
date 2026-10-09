@@ -519,17 +519,37 @@
 
         async function chargerUtilisateurs() {
           adminHint.textContent = 'Chargement…';
+          const db = await window.sigmaSupabase.getClient();
+          let derniereErreur = null;
+
+          // 1) Fonction admin_users() : methode preferee.
           try {
-            const db = await window.sigmaSupabase.getClient();
+            const rpc = await db.rpc('admin_users');
+            if (!rpc.error) {
+              adminUsers = rpc.data || [];
+              dessinerUtilisateurs();
+              adminHint.textContent = `${adminUsers.length} compte(s). Un compte suspendu conserve son rôle mais n'accède plus à aucune donnée.`;
+              return;
+            }
+            derniereErreur = rpc.error;
+          } catch (err) { derniereErreur = err; }
+
+          // 2) Repli sur la vue v_admin_users.
+          try {
             const res = await db.from('v_admin_users').select('*').order('full_name');
-            if (res.error) throw res.error;
-            adminUsers = res.data || [];
-            dessinerUtilisateurs();
-            adminHint.textContent = `${adminUsers.length} compte(s). Un compte suspendu conserve son rôle mais n'accède plus à aucune donnée.`;
-          } catch (err) {
-            adminRows.innerHTML = '';
-            adminHint.textContent = 'Lecture impossible : ' + (err.message || err) + ". Vérifiez que admin-suspension.sql a bien été exécuté.";
-          }
+            if (!res.error) {
+              adminUsers = res.data || [];
+              dessinerUtilisateurs();
+              adminHint.textContent = `${adminUsers.length} compte(s). Un compte suspendu conserve son rôle mais n'accède plus à aucune donnée.`;
+              return;
+            }
+            derniereErreur = res.error;
+          } catch (err) { derniereErreur = err; }
+
+          adminRows.innerHTML = '';
+          const msg = (derniereErreur && (derniereErreur.message || derniereErreur.hint)) || 'cause inconnue';
+          adminHint.innerHTML = 'Lecture impossible : <b>' + escapeHTML(String(msg)) + '</b><br>'
+            + "Exécutez <code>fix-admin-fonction.sql</code> dans Supabase → SQL Editor, puis cliquez sur Actualiser.";
         }
 
         function dessinerUtilisateurs() {
@@ -833,6 +853,5 @@
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46f48d25d9ab275',t:'MTc5MTQwMTA0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47c08ae0f79fa95',t:'MTc5MTUzNDczNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47c29c21c69cbee',t:'MTc5MTUzNjA5Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
