@@ -65,6 +65,7 @@
         <a href="#reports" data-nav="reports"><span class="nav-icon">▥</span>Rapports</a>
         <a href="#team" data-nav="team" class="manager-nav"><span class="nav-icon">♙</span>Équipe</a>
         <a href="#configuration" data-nav="configuration" class="manager-nav"><span class="nav-icon">⚙</span>Configuration</a>
+        <a href="#administration" data-nav="administration" class="admin-nav"><span class="nav-icon">◆</span>Administration</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-user"><span class="avatar" id="sidebar-avatar">OM</span><span class="user-meta"><strong id="sidebar-name">Omar</strong><small id="sidebar-role">Superviseur · Americana</small></span><span class="user-menu">···</span></div>
@@ -175,6 +176,32 @@
           </div>
         </section>
       </div>
+        <section id="administration" class="admin-section">
+          <div class="section-title">
+            <div><h2>Administration</h2><p>Gérez les accès à Sigma : rôle, rattachement à une fiche agent, suspension et réinitialisation du mot de passe.</p></div>
+            <button class="button button-muted" type="button" id="admin-refresh">Actualiser</button>
+          </div>
+          <div class="panel team-panel">
+            <div class="table-scroll">
+              <table class="data-table" id="admin-table">
+                <thead><tr>
+                  <th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Fiche agent</th>
+                  <th>Dernière connexion</th><th>État</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="admin-rows"></tbody>
+              </table>
+            </div>
+            <p class="grid-hint" id="admin-hint" style="padding:12px 16px"></p>
+          </div>
+          <div class="panel" style="margin-top:12px;padding:14px">
+            <div class="form-section-title">Ajouter un utilisateur</div>
+            <p class="goal-note">La création d\u2019un compte se fait dans <b>Supabase → Authentication → Users → Add user</b>, en cochant <b>Auto Confirm User</b>.
+            Renseignez le champ <b>User Metadata</b> pour attribuer directement le rôle :<br>
+            <code>{ "full_name": "Prénom Nom", "role": "agent" }</code><br>
+            Le profil est ensuite créé automatiquement et apparaît dans ce tableau. Revenez ici pour le rattacher à une fiche agent.</p>
+          </div>
+        </section>
+
     </main>
   </div>
 
@@ -278,6 +305,7 @@
       const roleKey = (canSwitchRole && requestedRole) ? requestedRole : realRole;
       const roleNames = { superviseur:'Superviseur', agent:'Agent', qualite:'Qualité', admin:'Admin', super_admin:'Super admin' };
       const role = roleNames[roleKey] ? roleKey : 'superviseur';
+      window.__SIGMA_VIEW_ROLE = role;   // vue reellement affichee (debug / tests)
       const profileByRole = { superviseur:{name:'Omar',initials:'OM',agentId:null}, agent:{name:'Youssef',initials:'Y',agentId:'ag-01'}, qualite:{name:'Équipe Qualité',initials:'Q',agentId:null}, admin:{name:'Admin Americana',initials:'AM',agentId:null}, super_admin:{name:'Jawad (ACX)',initials:'J',agentId:null} };
       const profile = Object.assign({}, profileByRole[role]);
       // Si connecté : affiche le vrai nom (full_name profil > agent lié > email).
@@ -465,6 +493,117 @@
       if (!canManageVolumes) $$('.manage-volume').forEach(b=>b.hidden=true);
       if (!canManageTeam) { $$('.manager-nav[data-nav="team"]').forEach(b=>b.hidden=true); $('#team').hidden=true; }
       if (!canManageConfig) { $$('.manager-nav[data-nav="configuration"]').forEach(b=>b.hidden=true); $('#configuration').hidden=true; $$('a[href="#configuration"]').forEach(a=>a.hidden=true); }
+
+      /* ======================= ADMINISTRATION =======================
+         Reserve a admin / super_admin. Gere : role, rattachement a une
+         fiche agent, suspension, email de reinitialisation.
+         La creation de compte reste dans Supabase (cle service_role
+         interdite dans un navigateur).                               */
+      const canAdminister = ['admin','super_admin'].includes(role);
+      const adminSection = $('#administration');
+      if (!canAdminister) {
+        $$('.admin-nav').forEach(b=>b.hidden=true);
+        if (adminSection) adminSection.hidden = true;
+      } else if (adminSection) {
+        const ROLES = ['super_admin','admin','superviseur','qualite','agent'];
+        const ROLE_LABEL = {super_admin:'Super admin',admin:'Admin',superviseur:'Superviseur',qualite:'Qualité',agent:'Agent'};
+        const adminRows = $('#admin-rows');
+        const adminHint = $('#admin-hint');
+        let adminUsers = [];
+
+        const dateCourte = (iso) => {
+          if (!iso) return 'Jamais';
+          const d = new Date(iso);
+          return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+        };
+
+        async function chargerUtilisateurs() {
+          adminHint.textContent = 'Chargement…';
+          try {
+            const db = await window.sigmaSupabase.getClient();
+            const res = await db.from('v_admin_users').select('*').order('full_name');
+            if (res.error) throw res.error;
+            adminUsers = res.data || [];
+            dessinerUtilisateurs();
+            adminHint.textContent = `${adminUsers.length} compte(s). Un compte suspendu conserve son rôle mais n'accède plus à aucune donnée.`;
+          } catch (err) {
+            adminRows.innerHTML = '';
+            adminHint.textContent = 'Lecture impossible : ' + (err.message || err) + ". Vérifiez que admin-suspension.sql a bien été exécuté.";
+          }
+        }
+
+        function dessinerUtilisateurs() {
+          const options = (sel) => ROLES.map(r=>`<option value="${r}"${r===sel?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
+          const agentOptions = (sel) => '<option value="">— Aucune —</option>' +
+            agents.map(a=>`<option value="${escapeHTML(a.id)}"${a.id===sel?' selected':''}>${escapeHTML(a.name)}</option>`).join('');
+          adminRows.innerHTML = adminUsers.map(u=>`
+            <tr data-id="${escapeHTML(u.id)}">
+              <td><b>${escapeHTML(u.full_name||'—')}</b>${u.email_confirme?'':'<br><small style="color:#A94D47">Email non confirmé</small>'}</td>
+              <td>${escapeHTML(u.email||'—')}</td>
+              <td><select class="admin-role" aria-label="Rôle">${options(u.role)}</select></td>
+              <td><select class="admin-agent" aria-label="Fiche agent">${agentOptions(u.agent_id)}</select></td>
+              <td>${dateCourte(u.last_sign_in_at)}</td>
+              <td><span class="agent-state ${u.active?'active':'inactive'}">${u.active?'Actif':'Suspendu'}</span></td>
+              <td><div class="agent-action-wrap">
+                <button class="agent-action admin-toggle" type="button">${u.active?'Suspendre':'Réactiver'}</button>
+                <button class="agent-action admin-reset" type="button">Mot de passe</button>
+              </div></td>
+            </tr>`).join('');
+        }
+
+        async function majProfil(id, champs, message) {
+          try {
+            const db = await window.sigmaSupabase.getClient();
+            const res = await db.from('profiles').update(champs).eq('id', id).select().single();
+            if (res.error) throw res.error;
+            const i = adminUsers.findIndex(u=>u.id===id);
+            if (i >= 0) Object.assign(adminUsers[i], champs);
+            dessinerUtilisateurs();
+            toast(message);
+          } catch (err) {
+            toast('Refusé : ' + (err.message || err));
+            chargerUtilisateurs();
+          }
+        }
+
+        adminRows.addEventListener('change', (e) => {
+          const tr = e.target.closest('tr'); if (!tr) return;
+          const id = tr.dataset.id;
+          if (e.target.classList.contains('admin-role')) {
+            majProfil(id, {role: e.target.value}, 'Rôle mis à jour.');
+          } else if (e.target.classList.contains('admin-agent')) {
+            majProfil(id, {agent_id: e.target.value || null}, 'Rattachement mis à jour.');
+          }
+        });
+
+        adminRows.addEventListener('click', async (e) => {
+          const tr = e.target.closest('tr'); if (!tr) return;
+          const id = tr.dataset.id;
+          const u = adminUsers.find(x=>x.id===id); if (!u) return;
+
+          if (e.target.classList.contains('admin-toggle')) {
+            if (u.active && !confirm(`Suspendre l'accès de ${u.full_name} ?\n\nLe compte existe toujours mais ne verra plus aucune donnée.`)) return;
+            majProfil(id, {active: !u.active}, u.active ? 'Accès suspendu.' : 'Accès réactivé.');
+          }
+
+          if (e.target.classList.contains('admin-reset')) {
+            if (!u.email) { toast('Aucune adresse email sur ce compte.'); return; }
+            if (!confirm(`Envoyer un email de réinitialisation à ${u.email} ?`)) return;
+            try {
+              const db = await window.sigmaSupabase.getClient();
+              const res = await db.auth.resetPasswordForEmail(u.email, {redirectTo: location.origin + '/login.html'});
+              if (res.error) throw res.error;
+              toast('Email de réinitialisation envoyé à ' + u.email);
+            } catch (err) {
+              toast('Envoi impossible : ' + (err.message || err));
+            }
+          }
+        });
+
+        $('#admin-refresh').addEventListener('click', chargerUtilisateurs);
+        chargerUtilisateurs();
+      }
+      /* ===================== FIN ADMINISTRATION ===================== */
 
       const populateAgentSelect = (select, allowAll=false, includeInactive=false) => {
         const list=includeInactive?agents:agents.filter(a=>a.active!==false);
@@ -694,5 +833,5 @@
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46f48d25d9ab275',t:'MTc5MTQwMTA0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47bac4e2a229bd7',t:'MTc5MTUzMDk1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47be8915fe9ecab',t:'MTc5MTUzMzQyMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
