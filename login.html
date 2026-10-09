@@ -73,6 +73,7 @@
     </section>
   </main>
 
+  <script src="js/i18n.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/supabase-client.js"></script>
   <script>
@@ -115,6 +116,12 @@
         event.currentTarget.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
       });
 
+      // Arrivée avec motif (?msg=suspended) : compte bloqué par requireAuth.
+      if (new URLSearchParams(window.location.search).get('msg') === 'suspended') {
+        clientStatus.textContent = 'Accès suspendu. Contactez votre superviseur pour réactiver votre compte.';
+        clientStatus.hidden = false;
+      }
+
       credentialsForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         loginStatus.hidden = true;
@@ -128,6 +135,12 @@
           if (!profile) {
             await window.sigmaSupabase.signOut();
             loginStatus.textContent = 'Compte sans profil Sigma. Demandez à un superviseur de créer votre accès.';
+            loginStatus.hidden = false;
+            return;
+          }
+          if (profile.suspended) {
+            await window.sigmaSupabase.signOut();
+            loginStatus.textContent = 'Accès suspendu. Contactez votre superviseur pour réactiver votre compte.';
             loginStatus.hidden = false;
             return;
           }

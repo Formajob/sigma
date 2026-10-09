@@ -44,6 +44,36 @@
     @media(max-width:1180px){.app-shell{grid-template-columns:205px minmax(0,1fr)}.content{padding:23px 20px 45px}.topbar{padding:0 20px}.dashboard-grid{grid-template-columns:1fr}.agent-table th,.agent-table td{font-size:10px}.report-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.report-filters .button{align-self:end}}
     @media(max-width:760px){.app-shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto;padding:12px 15px}.brand{padding:0 3px 12px}.workspace{margin-bottom:12px}.nav-label{display:none}.side-nav{display:flex;overflow-x:auto;gap:4px}.side-nav a{flex:0 0 auto;min-height:33px;padding:0 9px;font-size:10px}.sidebar-bottom{display:none}.main{min-width:0}.topbar{position:relative;min-height:54px;padding:0 15px}.crumbs{display:none}.mobile-brand{display:flex;align-items:center;gap:6px;font:19px var(--serif)}.mobile-brand .brand-mark{width:23px;height:23px;border:0;font-size:19px}.top-actions{gap:5px}.role-preview{display:none}.top-link{padding:7px 8px;font-size:10px}.content{padding:20px 14px 38px}.welcome-row{align-items:flex-start;flex-direction:column}.welcome-row h1{font-size:23px}.period-bar{align-items:flex-start;flex-direction:column}.period-inputs{width:100%;flex-wrap:wrap}.period-inputs input{width:106px}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{min-height:99px;padding:12px}.kpi-value{font-size:23px}.dashboard-grid{grid-template-columns:1fr}.objective-list{grid-template-columns:1fr}.configuration-grid{grid-template-columns:1fr}.report-filters{grid-template-columns:1fr 1fr}.report-result-head{align-items:flex-start;flex-direction:column}.report-result-head>div{flex-wrap:wrap}.configuration-grid{grid-template-columns:1fr}.section-title{align-items:flex-start;flex-direction:column}.section-actions{width:100%}.calendar-toolbar{align-items:flex-start;flex-direction:column}.calendar-filters{width:100%;flex-wrap:wrap}.calendar-filters input{flex:1;max-width:none}.calendar-filters select{flex:1;max-width:none}.day-cell{min-height:78px;padding:4px}.event-pill{font-size:8px;padding:4px 3px}.weekday{font-size:8px;padding:8px 2px}.calendar-wrap{padding:0 6px 8px}.record-row{grid-template-columns:76px 1fr 88px;gap:6px;padding:9px 8px}.record-row .record-agent,.record-row .visibility-mini,.record-row .status-mini{display:none}.determinant-grid{grid-template-columns:1fr}.det-card{display:grid;grid-template-columns:1fr 1fr;gap:8px}.det-card>strong{grid-column:1/-1;margin:0}.det-card .field+.field{margin-top:0}}
     @media(max-width:450px){.demo-badge{display:none}.top-link{font-size:9px;padding:6px}.kpi-grid{gap:7px}.kpi-foot{font-size:9px}.chart-row{grid-template-columns:93px 1fr 32px;gap:6px}.chart-name{font-size:10px}.chart-legend{gap:7px}.calendar-nav strong{min-width:98px;font-size:17px}.day-cell{min-height:69px}.day-number{width:18px;height:18px;font-size:9px}.event-pill{font-size:5.5px}.more-events{font-size:8px}.form-grid-2,.detail-grid,.detail-fiss{grid-template-columns:1fr}.field.full{grid-column:auto}.dialog-body{padding:14px}.dialog-head{padding:14px}.role-preview{display:none}}
+    /* ---- Rapports : bandeau KPI, ligne de totaux, en-tête/pied PDF ---- */
+    .report-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0 4px}
+    .report-kpi{padding:11px 13px;border:1px solid var(--line);border-radius:6px;background:#FFFEFC}
+    .report-kpi .rk-label{display:block;color:#899396;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+    .report-kpi .rk-value{display:block;margin-top:6px;color:var(--ink);font-size:20px;font-weight:750;letter-spacing:-.03em}
+    .report-kpi .rk-value em{font-style:normal;color:var(--copper);font-size:11px;font-weight:700}
+    tr.totals-row td{border-top:2px solid var(--copper);background:#FBF7F3;font-weight:800;color:var(--ink)}
+    tr.totals-row td:first-child{color:var(--copper)}
+    .print-header,.print-footer{display:none}
+    @media(max-width:1180px){.report-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:760px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media print{
+      .print-header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px;padding:16px 18px;border-radius:6px;color:#EAF0EF;background:#17242D;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      .ph-brand{display:flex;align-items:center;gap:11px}
+      .ph-mark{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.06)}
+      .ph-mark svg{width:25px;height:25px}
+      .ph-word{font:25px/1 Georgia,serif;letter-spacing:-.03em;color:#FFFEFC}
+      .ph-word small{display:block;margin-top:5px;color:#9BA9AA;font:9px Inter,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+      .ph-meta{display:grid;justify-items:end;gap:3px;text-align:right;font-size:10px;color:#B9C5C5}
+      .ph-meta strong{color:#FFFEFC;font-size:13px}
+      .ph-client{margin-top:3px;padding:4px 8px;border-radius:20px;color:#F0C9AC;background:rgba(192,98,45,.3);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+      .print-footer{display:block;margin-top:14px;padding-top:9px;border-top:1px solid #E7E4DD;color:#8B9598;font-size:9px;letter-spacing:.05em;text-align:center}
+      .report-kpis{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;break-inside:avoid}
+      .report-kpi{border-color:#E7E4DD;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      .report-table thead th{color:#FFFEFC;background:#17242D;border-color:#17242D;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      .report-table tbody tr:nth-child(even){background:#F7F5F1;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      tr.totals-row td{background:#FBF7F3;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      .report-table tr{break-inside:avoid}
+      .report-result-head,.report-summary{break-after:avoid}
+    }
   </style>
 <style id="sigma-guard">body{visibility:hidden}</style>
 </head>
@@ -138,6 +168,19 @@
         <section id="reports">
           <div class="section-title"><div><h2>Rapports</h2><p>Générez une synthèse selon la période, l’agent et le type de suivi.</p></div></div>
           <div class="panel report-builder">
+            <div id="print-header" class="print-header">
+              <div class="ph-brand">
+                <span class="ph-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#FFFEFC" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg></span>
+                <span class="ph-word">Sigma<small>Suivi d’équipe & qualité</small></span>
+              </div>
+              <div class="ph-meta">
+                <strong id="ph-title">Rapport</strong>
+                <span id="ph-period"></span>
+                <span id="ph-generated"></span>
+                <span id="ph-author"></span>
+                <span class="ph-client">Espace client · Americana</span>
+              </div>
+            </div>
             <form id="report-form" class="report-filters">
               <label>Rapport<select id="report-type"><option value="calls">Appels & calibrages</option><option value="followups">Suivis par agent</option><option value="objects">Suivis par objet</option><option value="objectives">Respect & objectifs</option></select></label>
               <label>Agent<select id="report-agent"><option value="all">Tous les agents</option></select></label>
@@ -147,7 +190,9 @@
             </form>
             <div class="report-result-head"><strong id="report-title">Rapport · Appels & calibrages</strong><div><button class="button button-muted" id="export-report" type="button">Exporter CSV</button><button class="button button-muted" id="print-report" type="button">Imprimer / PDF</button></div></div>
             <p class="report-summary" id="report-summary"></p>
+            <div class="report-kpis" id="report-kpis" hidden></div>
             <div class="table-wrap"><table class="agent-table report-table"><thead id="report-thead"></thead><tbody id="report-tbody"></tbody></table></div>
+            <div class="print-footer" id="print-footer">Sigma · Document généré automatiquement · Diffusion restreinte · sigma.acx.ma</div>
           </div>
         </section>
 
@@ -195,10 +240,17 @@
           </div>
           <div class="panel" style="margin-top:12px;padding:14px">
             <div class="form-section-title">Ajouter un utilisateur</div>
-            <p class="goal-note">La création d'un compte se fait dans <b>Supabase → Authentication → Users → Add user</b>, en cochant <b>Auto Confirm User</b>.
-            Renseignez le champ <b>User Metadata</b> pour attribuer directement le rôle :<br>
-            <code>{ "full_name": "Prénom Nom", "role": "agent" }</code><br>
-            Le profil est ensuite créé automatiquement et apparaît dans ce tableau. Revenez ici pour le rattacher à une fiche agent.</p>
+            <div class="form-grid-2">
+              <div class="field"><label for="admin-new-name">Nom complet</label><input id="admin-new-name" placeholder="Prénom Nom"></div>
+              <div class="field"><label for="admin-new-email">Email</label><input id="admin-new-email" type="email" placeholder="prenom.nom@americana.com"></div>
+              <div class="field"><label for="admin-new-role">Rôle</label><select id="admin-new-role"></select></div>
+              <div class="field"><label for="admin-new-json">Métadonnées à coller dans Supabase</label><input id="admin-new-json" readonly spellcheck="false"></div>
+            </div>
+            <div class="dialog-actions" style="margin-top:12px">
+              <button class="button button-muted" id="admin-copy-json" type="button">Copier le JSON</button>
+              <a class="button button-accent" href="https://supabase.com/dashboard/project/kxmddtxtjumjmqadcdyu/auth/users" target="_blank" rel="noopener noreferrer">Ouvrir Supabase → Add user</a>
+            </div>
+            <p class="goal-note" style="margin-top:10px">Étapes : 1) copiez le JSON ci-dessus · 2) dans Supabase, Add user, cochez <b>Auto Confirm User</b> et collez le JSON dans <b>User Metadata</b> · 3) le profil apparaît automatiquement dans ce tableau — rattachez-lui une fiche agent.</p>
           </div>
         </section>
 
@@ -212,11 +264,11 @@
         <div class="field"><label for="cal-call-date">Date de l’appel</label><input id="cal-call-date" name="callDate" type="date" required></div>
         <div class="field"><label for="cal-date">Date du calibrage</label><input id="cal-date" name="date" type="date" required></div>
         <div class="field"><label for="cal-agent">Agent concerné</label><select id="cal-agent" name="agentId"></select></div>
-        <div class="field"><label for="cal-status">Statut du calibrage</label><select id="cal-status" name="status" required><option>Planifié</option><option selected>Terminé</option><option>Annulé</option></select></div>
+        <div class="field"><label for="cal-status">Statut du calibrage</label><select id="cal-status" name="status" required><option value="Planifié">Planifié</option><option value="Terminé" selected>Terminé</option><option value="Annulé">Annulé</option></select></div>
         <div class="field full"><div class="agent-profile" id="cal-agent-profile">Sélectionnez un agent pour afficher sa fiche.</div></div>
         <div class="field"><label for="call-id">Identifiant de l’appel</label><input id="call-id" name="callId" placeholder="Ex. KFC-MA-104281" required></div>
-        <div class="field"><label for="cal-evaluator">Évaluateur</label><select id="cal-evaluator" name="evaluator" required><option value="">Choisir</option><option>Omar idoulahian (superviseur)</option><option>Qualiticien</option><option>Autre</option></select></div>
-        <div class="field"><label for="cal-language">Langue de l’appel</label><select id="cal-language" name="language" required><option value="">Choisir</option><option>Arabe classique</option><option>Arabe local</option><option>Français</option><option>Anglais</option><option>Autre</option></select></div>
+        <div class="field"><label for="cal-evaluator">Évaluateur</label><select id="cal-evaluator" name="evaluator" required><option value="">Choisir</option><option value="Omar idoulahian (superviseur)">Omar idoulahian (superviseur)</option><option value="Qualiticien">Qualiticien</option><option value="Autre">Autre</option></select></div>
+        <div class="field"><label for="cal-language">Langue de l’appel</label><select id="cal-language" name="language" required><option value="">Choisir</option><option value="Arabe classique">Arabe classique</option><option value="Arabe local">Arabe local</option><option value="Français">Français</option><option value="Anglais">Anglais</option><option value="Autre">Autre</option></select></div>
       </div>
       <div class="form-section-title">Éléments déterminants <span class="grid-score" id="grid-score">—</span></div>
       <div class="grid-score-bar" id="grid-score-bar"></div>
@@ -234,7 +286,7 @@
         <div class="field"><label for="doc-object">Objet</label><select id="doc-object" name="object" required></select></div>
         <div class="field"><label for="meeting-date">Date de rencontre</label><input id="meeting-date" name="meetingDate" type="date" required></div>
         <div class="field"><label for="followup-date">Date de suivi <span>(facultatif)</span></label><input id="followup-date" name="followUpDate" type="date"></div>
-        <div class="field"><label for="doc-status">Statut</label><select id="doc-status" name="status" required><option selected>Planifié</option><option>Terminé</option><option>Annulé</option></select></div>
+        <div class="field"><label for="doc-status">Statut</label><select id="doc-status" name="status" required><option value="Planifié" selected>Planifié</option><option value="Terminé">Terminé</option><option value="Annulé">Annulé</option></select></div>
         <div class="field"><label for="doc-agent">Agent concerné</label><select id="doc-agent" name="agentId" required></select></div>
         <div class="field"><label for="doc-call-id">ID d’appel <span>(si lié à un calibrage)</span></label><input id="doc-call-id" name="callId" placeholder="Ex. KFC-MA-104281"></div>
         <div class="field full"><div class="agent-profile" id="doc-agent-profile">Sélectionnez un agent pour afficher sa fiche.</div></div>
@@ -260,6 +312,7 @@
   <dialog id="fill-dialog"><div class="dialog-shell"><div class="dialog-head"><div><h2 id="fill-title">Questions non notées</h2><p>Certaines questions n’ont pas été notées. Choisissez la valeur par défaut à leur appliquer avant l’enregistrement.</p></div><button class="close-dialog" type="button" data-close="fill-dialog" aria-label="Fermer">×</button></div><div class="dialog-body"><p><b id="fill-count">0</b> question(s) sans réponse :</p><p class="grid-hint" id="fill-list"></p><div class="dialog-actions"><button class="button button-muted" type="button" id="fill-cancel">Retour au formulaire</button><button class="button button-accent" type="button" id="fill-oui">Noter en Oui</button><button class="button" type="button" id="fill-na">Noter en N/A</button></div></div></div></dialog>
   <div class="toast" id="toast" role="status"></div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/supabase-client.js"></script>
   <script>
@@ -330,7 +383,7 @@
       $('#sidebar-avatar').textContent = profile.initials;
       $('#sidebar-role').textContent = `${roleNames[role]} · Americana`;
       $('#welcome-title').textContent = `Bonjour ${profile.name}`;
-      $('#today-label').textContent = new Intl.DateTimeFormat('fr-MA',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
+      $('#today-label').textContent = new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
       const roleMessage = $('#role-message');
       if (role === 'agent') { roleMessage.hidden=false; roleMessage.innerHTML='<strong>Vue agent :</strong> vos propres calibrages et les documents partagés avec vous.'; }
       if (role === 'qualite') { roleMessage.hidden=false; roleMessage.innerHTML='<strong>Vue qualité :</strong> calibrages et documents de suivi visibles, sans documents disciplinaires.'; }
@@ -514,7 +567,7 @@
         const dateCourte = (iso) => {
           if (!iso) return 'Jamais';
           const d = new Date(iso);
-          return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+          return isNaN(d) ? '—' : d.toLocaleDateString((window.sigmaLocale||'fr-FR'),{day:'2-digit',month:'short',year:'2-digit'});
         };
 
         async function chargerUtilisateurs() {
@@ -602,13 +655,13 @@
           const u = adminUsers.find(x=>x.id===id); if (!u) return;
 
           if (e.target.classList.contains('admin-toggle')) {
-            if (u.active && !confirm(`Suspendre l'accès de ${u.full_name} ?\n\nLe compte existe toujours mais ne verra plus aucune donnée.`)) return;
+            if (u.active && !confirm(t('Suspendre l’accès de {name} ?',{name:u.full_name})+'\n\n'+t('Le compte existe toujours mais ne verra plus aucune donnée.'))) return;
             majProfil(id, {active: !u.active}, u.active ? 'Accès suspendu.' : 'Accès réactivé.');
           }
 
           if (e.target.classList.contains('admin-reset')) {
             if (!u.email) { toast('Aucune adresse email sur ce compte.'); return; }
-            if (!confirm(`Envoyer un email de réinitialisation à ${u.email} ?`)) return;
+            if (!confirm(t('Envoyer un email de réinitialisation à ' + u.email + ' ?'))) return;
             try {
               const db = await window.sigmaSupabase.getClient();
               const res = await db.auth.resetPasswordForEmail(u.email, {redirectTo: location.origin + '/login.html'});
@@ -619,6 +672,19 @@
             }
           }
         });
+
+        // ---------- Assistant « Ajouter un utilisateur » : génère le JSON User Metadata ----------
+        const newRole=$('#admin-new-role'),newName=$('#admin-new-name'),newEmail=$('#admin-new-email'),newJson=$('#admin-new-json');
+        if(newRole){
+          newRole.innerHTML=ROLES.map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(ROLE_LABEL[r]||r)}</option>`).join('');
+          const majJson=()=>{newJson.value=JSON.stringify({full_name:(newName.value||'').trim(),role:newRole.value});};
+          newName.addEventListener('input',majJson);newEmail.addEventListener('input',majJson);newRole.addEventListener('change',majJson);
+          majJson();
+          $('#admin-copy-json').addEventListener('click',async()=>{
+            try{await navigator.clipboard.writeText(newJson.value);toast('Métadonnées copiées.');}
+            catch{newJson.select();try{document.execCommand('copy');toast('Métadonnées copiées.');}catch{toast('Copie impossible : sélectionnez le champ et Ctrl+C.');}}
+          });
+        }
 
         $('#admin-refresh').addEventListener('click', chargerUtilisateurs);
         chargerUtilisateurs();
@@ -659,8 +725,8 @@
       function getMetrics(list){let ok=0,ko=0,na=0;const elements=QA_GRID.map(()=>({ok:0,ko:0,na:0}));for(const c of list){(c.elements||[]).forEach((v,i)=>{if(!elements[i])return;if(v==='Oui'){ok++;elements[i].ok++;}else if(v==='Non'){ko++;elements[i].ko++;}else if(v==='N/A'){na++;elements[i].na++;}});}const denom=ok+ko;const cats={};Object.keys(QA_CATS).forEach(k=>cats[k]={ok:0,ko:0,na:0});QA_GRID.forEach((g,i)=>{cats[g.cat].ok+=elements[i].ok;cats[g.cat].ko+=elements[i].ko;cats[g.cat].na+=elements[i].na;});Object.values(cats).forEach(c=>{c.pct=(c.ok+c.ko)?Math.round(c.ok/(c.ok+c.ko)*100):0;});return {fait:ok,worked:ko,na,ok,ko,pct:denom?Math.round(ok/denom*100):0,cats,elements:elements.map(e=>({...e,fait:e.ok,worked:e.ko,pct:(e.ok+e.ko)?Math.round(e.ok/(e.ok+e.ko)*100):0}))};}
       function selectedVolumes(){const {from,to}=periodValues();return volumes.filter(v=>v.from>=from&&v.to<=to&&(role!=='agent'||v.agentId===profile.agentId));}
       function callsForAgent(agentId){return selectedVolumes().filter(v=>v.agentId===agentId).reduce((n,v)=>n+Number(v.count||0),0);}
-      function fmtNum(n){return new Intl.NumberFormat('fr-MA').format(n);}
-      function fmtDate(s){if(!s)return '—';const d=new Date(s+'T12:00:00');return new Intl.DateTimeFormat('fr-MA',{day:'2-digit',month:'short'}).format(d);}
+      function fmtNum(n){return new Intl.NumberFormat((window.sigmaLocale||'fr-MA')).format(n);}
+      function fmtDate(s){if(!s)return '—';const d=new Date(s+'T12:00:00');return new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{day:'2-digit',month:'short'}).format(d);}
       function renderDashboard(){
         const cals=periodCalibrations(),docsInPeriod=periodDocs(),metrics=getMetrics(cals),volumeTotal=selectedVolumes().reduce((n,v)=>n+Number(v.count||0),0);
         $('#kpi-compliance').textContent=cals.length?`${metrics.pct}%`:'—';$('#kpi-calibrations').textContent=fmtNum(cals.length);$('#kpi-volume').textContent=fmtNum(volumeTotal);
@@ -680,7 +746,7 @@
       function buildEvents(){const items=[];for(const c of visibleCalibrations())items.push({id:c.id,category:'calibrage',type:'Calibrage',status:c.status||'Terminé',date:c.date,title:`Calibrage · ${c.callId}`,agentId:c.agentId,callId:c.callId,data:c,kind:'cal'});for(const d of visibleDocs()){items.push({id:d.id,category:'suivi',type:d.type,status:d.status||'Planifié',date:d.meetingDate,title:`${d.type} · ${d.object}`,agentId:d.agentId,callId:d.callId,data:d,kind:'doc'});if(d.followUpDate)items.push({id:d.id+'-follow',category:'suivi',type:d.type,status:d.status||'Planifié',date:d.followUpDate,title:`Suivi · ${d.object}`,agentId:d.agentId,callId:d.callId,data:d,kind:'follow'});}return items;}
       function matchesFilters(e){const category=categoryFilter.value,type=typeFilter.value,agent=filterAgent.value,q=searchInput.value.trim().toLowerCase();if(category!=='all'&&e.category!==category)return false;if(type!=='all'&&e.type!==type)return false;if(agent!=='all'&&e.agentId!==agent)return false;if(q){const a=agentById(e.agentId);const text=`${e.title} ${e.callId||''} ${a.name} ${e.type}`.toLowerCase();if(!text.includes(q))return false;}return true;}
       function renderCalendar(){
-        const grid=$('#calendar-grid'),m=viewMonth.getMonth(),y=viewMonth.getFullYear();$('#calendar-month').textContent=new Intl.DateTimeFormat('fr-MA',{month:'long',year:'numeric'}).format(viewMonth);
+        const grid=$('#calendar-grid'),m=viewMonth.getMonth(),y=viewMonth.getFullYear();$('#calendar-month').textContent=new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{month:'long',year:'numeric'}).format(viewMonth);
         let first=new Date(y,m,1).getDay();first=(first+6)%7;const days=new Date(y,m+1,0).getDate();const prevDays=new Date(y,m,0).getDate();const total=Math.ceil((first+days)/7)*7;const events=buildEvents().filter(matchesFilters);const byDate={};events.forEach(e=>(byDate[e.date]??=[]).push(e));
         grid.innerHTML='';for(let i=0;i<total;i++){let d,cellMonth=m,cellYear=y,out=false;if(i<first){d=prevDays-first+i+1;cellMonth=m-1;out=true;}else if(i>=first+days){d=i-(first+days)+1;cellMonth=m+1;out=true;}else d=i-first+1;if(cellMonth<0){cellMonth=11;cellYear--;}if(cellMonth>11){cellMonth=0;cellYear++;}const dateKey=`${cellYear}-${pad(cellMonth+1)}-${pad(d)}`;const cell=document.createElement('div');cell.className=`day-cell${out?' outside':''}${dateKey===toISO(new Date())?' today':''}`;cell.dataset.date=dateKey;const dateEvents=(byDate[dateKey]||[]).sort((a,b)=>a.title.localeCompare(b.title));const shown=dateEvents.slice(0,3);cell.innerHTML=`<span class="day-number">${d}</span><button class="day-add" type="button" aria-label="Ajouter une entrée le ${dateKey}" title="Ajouter à cette date">＋</button><div class="event-list">${shown.map(e=>{const st=statusMeta[e.status]||statusMeta['Planifié'];return `<button class="event-pill ${typeClass[e.type]} ${e.kind==='follow'?'followup':''} ${st.className}" type="button" data-event="${escapeHTML(e.id)}" title="${escapeHTML(e.title)} · ${escapeHTML(agentById(e.agentId).name)} · ${escapeHTML(e.status||'Planifié')}"><span class="event-type-icon" aria-hidden="true">${eventTypeIcons[e.type]||'•'}</span><span class="event-text">${escapeHTML(e.title)}</span><span class="event-status-icon ${st.className}" aria-label="${escapeHTML(e.status||'Planifié')}">${st.symbol}</span></button>`;}).join('')}${dateEvents.length>3?`<span class="more-events">+${dateEvents.length-3} autre(s)</span>`:''}</div>`;grid.appendChild(cell);}
         grid.querySelectorAll('.day-add').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openEntry('calibration',b.closest('.day-cell').dataset.date);}));
@@ -723,9 +789,9 @@
       function refreshAgentSelects(){[['#cal-agent',false,false],['#doc-agent',false,false],['#volume-agent',false,false],['#filter-agent',true,true],['#report-agent',true,true]].forEach(([sel,all,inactive])=>{const node=$(sel);if(!node)return;const old=node.value;populateAgentSelect(node,all,inactive);if([...agents.map(a=>a.id),'all'].includes(old))node.value=old;});if(role==='agent'){if($('#filter-agent')){$('#filter-agent').value=profile.agentId;$('#filter-agent').disabled=true;}if($('#report-agent')){$('#report-agent').value=profile.agentId;$('#report-agent').disabled=true;}}}
       function openAgentEditor(id=''){if(!canManageTeam){toast('La gestion de l’équipe est réservée à la supervision et à l’admin.');return;}const form=$('#agent-form');form.reset();const a=id?agentById(id):null;$('#agent-id').value=a?.id||'';$('#agent-name').value=a?.name||'';$('#agent-matricule').value=a?.staffId==='—'?'':(a?.staffId||'');$('#agent-role').value=a?.role||'Agent support';$('#agent-team').value=a?.team||'Support KFC Maroc';$('#agent-service').value=a?.service||'Support application';$('#agent-email').value=a?.email||'';$('#agent-phone').value=a?.phone||'';$('#agent-position-num').value=a?.positionNum||'';$('#agent-hire-date').value=a?.hireDate||'';$('#agent-active').checked=a?a.active!==false:true;$('#agent-delete').hidden=!a;$('#agent-dialog-title').textContent=a?'Modifier un agent':'Ajouter un agent';$('#agent-dialog').showModal();}
       function initialsFor(name){return String(name).trim().split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();}
-      async function toggleAgent(id){if(!canManageTeam)return;const a=agentById(id);if(!a||a.name==='Agent inconnu')return;const next=a.active===false;try{if(agentsSource==='supabase'){const db=await window.sigmaSupabase.getClient();const up=await db.from('agents').update({active:next}).eq('id',id).select().single();if(up.error)throw up.error;a.active=up.data.active!==false;}else{a.active=next;saveAll();}}catch(err){toast('Écriture Supabase refusée : '+(err.message||err));return;}refreshAgentSelects();refresh();toast(`${a.name} ${a.active?'activé':'désactivé'}.`);}
+      async function toggleAgent(id){if(!canManageTeam)return;const a=agentById(id);if(!a||a.name==='Agent inconnu')return;const next=a.active===false;try{if(agentsSource==='supabase'){const db=await window.sigmaSupabase.getClient();const up=await db.from('agents').update({active:next}).eq('id',id).select().single();if(up.error)throw up.error;a.active=up.data.active!==false;}else{a.active=next;saveAll();}}catch(err){toast('Écriture Supabase refusée : '+(err.message||err));return;}refreshAgentSelects();refresh();toast(t('{name} {state}.',{name:a.name,state:a.active?t('activé'):t('désactivé')}));}
       function reportAgents(){let list=role==='agent'?agents.filter(a=>a.id===profile.agentId):agents;if($('#report-agent').value!=='all')list=list.filter(a=>a.id===$('#report-agent').value);return list;}
-      function renderReport(){const from=$('#report-from').value||monthStart,to=$('#report-to').value||monthEnd,type=$('#report-type').value;if(from>to){lastReport={title:'',headers:[],rows:[]};$('#report-summary').textContent='La date de début doit précéder la date de fin.';$('#report-thead').innerHTML='';$('#report-tbody').innerHTML='';return;}const reportList=reportAgents();let headers=[],rows=[],title='';
+      function renderReport(){const from=$('#report-from').value||monthStart,to=$('#report-to').value||monthEnd,type=$('#report-type').value;if(from>to){lastReport={title:'',headers:[],rows:[]};$('#report-summary').textContent='La date de début doit précéder la date de fin.';$('#report-thead').innerHTML='';$('#report-tbody').innerHTML='';$('#report-kpis').hidden=true;return;}const reportList=reportAgents();let headers=[],rows=[],title='';
         const doneFor=id=>visibleCalibrations().filter(c=>c.agentId===id&&c.status==='Terminé'&&inPeriod(c.date,from,to));
         const callsFor=id=>volumes.filter(v=>v.agentId===id&&v.from>=from&&v.to<=to).reduce((n,v)=>n+Number(v.count||0),0);
         const docsFor=id=>visibleDocs().filter(d=>d.agentId===id&&inPeriod(d.meetingDate,from,to));
@@ -733,11 +799,42 @@
         else if(type==='followups'){title='Suivis par agent';headers=['Agent','Rencontres','Disciplinaire','Observations','Planifiés','Terminés','Annulés'];rows=reportList.map(a=>{const list=docsFor(a.id);return [a.name,...['Rencontre','Disciplinaire','Observation'].map(t=>list.filter(d=>d.type===t).length),list.filter(d=>d.status==='Planifié').length,list.filter(d=>d.status==='Terminé').length,list.filter(d=>d.status==='Annulé').length];});}
         else if(type==='objects'){title='Suivis par objet';headers=['Type','Objet','Nombre','Part des suivis','Planifiés','Terminés','Annulés'];const grouped={};reportList.flatMap(a=>docsFor(a.id)).forEach(d=>{const key=`${d.type}||${d.object}`;(grouped[key]??={type:d.type,object:d.object,docs:[]}).docs.push(d);});const allDocs=Object.values(grouped).reduce((n,g)=>n+g.docs.length,0);rows=Object.values(grouped).map(g=>[g.type,g.object,g.docs.length,allDocs?`${Math.round(g.docs.length/allDocs*100)}%`:'0%',g.docs.filter(d=>d.status==='Planifié').length,g.docs.filter(d=>d.status==='Terminé').length,g.docs.filter(d=>d.status==='Annulé').length]);}
         else{title='Respect & objectifs';headers=['Agent','Appels pris / objectif','Calibrages / objectif','Respect / cible'];rows=reportList.map(a=>{const c=doneFor(a.id),v=callsFor(a.id),m=getMetrics(c);return [a.name,`${fmtNum(v)} / ${fmtNum(goals.callsPerAgent)}`,`${fmtNum(c.length)} / ${fmtNum(goals.calibrationsPerAgent)}`,c.length?`${m.pct}% / ${goals.compliancePct}%`:`— / ${goals.compliancePct}%`];});}
-        $('#report-title').textContent=`Rapport · ${title}`;$('#report-summary').textContent=`${reportList.length} agent(s) · ${fmtDate(from)} – ${fmtDate(to)} · Volumes manuels dont la période est incluse dans le filtre.`;$('#report-thead').innerHTML=`<tr>${headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('')}</tr>`;$('#report-tbody').innerHTML=rows.length?rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i===0&&type!=='objects'?`<span class="agent-cell">${escapeHTML(v)}</span>`:escapeHTML(v)}</td>`).join('')}</tr>`).join(''):'<tr><td colspan="8" class="empty-note">Aucun résultat pour ces critères.</td></tr>';lastReport={title,headers,rows};}
+        // ---- Synthèse KPI + ligne de totaux + méta d'en-tête PDF ----
+        const allDone=reportList.flatMap(a=>doneFor(a.id));
+        const km=getMetrics(allDone);
+        const n=x=>Number(String(x).replace(/[^\d]/g,''))||0;
+        const totalCalls=reportList.reduce((s,a)=>s+callsFor(a.id),0);
+        const kpis=[
+          ['Agents',fmtNum(reportList.length),''],
+          ['Appels pris',fmtNum(totalCalls),`/ ${fmtNum(goals.callsPerAgent*reportList.length)}`],
+          ['Calibrages terminés',fmtNum(allDone.length),`/ ${fmtNum(goals.calibrationsPerAgent*reportList.length)}`],
+          ['Score moyen',allDone.length?`${km.pct} %`:'—',allDone.length?`${km.ok}/${km.ok+km.ko}`:''],
+          ['Conformité vs cible',allDone.length?`${km.pct} %`:'—',`cible ${goals.compliancePct} %`]
+        ];
+        $('#report-kpis').innerHTML=kpis.map(k=>`<div class="report-kpi"><span class="rk-label">${escapeHTML(k[0])}</span><span class="rk-value">${escapeHTML(k[1])}${k[2]?` <em>${escapeHTML(k[2])}</em>`:''}</span></div>`).join('');
+        $('#report-kpis').hidden=false;
+        let totals=null;
+        if(type==='calls'){const tc=rows.reduce((s,r)=>s+n(r[1]),0),tk=rows.reduce((s,r)=>s+n(r[2]),0);totals=['Total',fmtNum(tc),fmtNum(tk),tc?`${Math.round(tk/tc*1000)/10}%`:'—',allDone.length?`${km.pct}%`:'—'];}
+        else if(type==='followups'){totals=['Total',...headers.slice(1).map((_,i)=>fmtNum(rows.reduce((s,r)=>s+n(r[i+1]),0)))];}
+        else if(type==='objects'){const t=rows.reduce((s,r)=>s+n(r[2]),0);totals=['Total','',fmtNum(t),'100%',fmtNum(rows.reduce((s,r)=>s+n(r[4]),0)),fmtNum(rows.reduce((s,r)=>s+n(r[5]),0)),fmtNum(rows.reduce((s,r)=>s+n(r[6]),0))];}
+        else if(rows.length){const avg=v=>Math.round(rows.reduce((s,r)=>s+v(r),0)/rows.length);totals=['Moyenne',`${fmtNum(avg(r=>n(String(r[1]).split('/')[0])))} / ${fmtNum(goals.callsPerAgent)}`,`${fmtNum(avg(r=>n(String(r[2]).split('/')[0])))} / ${fmtNum(goals.calibrationsPerAgent)}`,`${avg(r=>n(String(r[3]).split('/')[0]))} % / ${goals.compliancePct} %`];}
+        $('#report-title').textContent=`Rapport · ${title}`;
+        $('#report-summary').textContent=`${reportList.length} agent(s) · ${fmtDate(from)} – ${fmtDate(to)} · Volumes manuels dont la période est incluse dans le filtre.`;
+        $('#report-thead').innerHTML=`<tr>${headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('')}</tr>`;
+        const rowsHtml=rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i===0&&type!=='objects'?`<span class="agent-cell">${escapeHTML(v)}</span>`:escapeHTML(v)}</td>`).join('')}</tr>`).join('');
+        const totalsHtml=totals?`<tr class="totals-row">${totals.map(v=>`<td>${escapeHTML(v)}</td>`).join('')}</tr>`:'';
+        $('#report-tbody').innerHTML=rows.length?rowsHtml+totalsHtml:'<tr><td colspan="8" class="empty-note">Aucun résultat pour les critères sélectionnés.</td></tr>';
+        // ---- Méta de l'en-tête PDF (logo + contexte) ----
+        $('#ph-title').textContent=`Rapport · ${title}`;
+        $('#ph-period').textContent=`Période : ${fmtDate(from)} – ${fmtDate(to)}`;
+        $('#ph-generated').textContent=`Généré le ${new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{dateStyle:'long',timeStyle:'short'}).format(new Date())}`;
+        $('#ph-author').textContent=`Édité par : ${profile.name}`;
+        lastReport={title,headers,rows};}
       let lastReport={title:'',headers:[],rows:[]};
       function refresh(){renderDashboard();renderCalendar();renderTeam();renderConfig();renderReport();}
       function setPeriod(){if(fromInput.value&&toInput.value&&fromInput.value>toInput.value){toast('La date de début doit précéder la date de fin.');return;}renderDashboard();}
       $('#apply-period').addEventListener('click',setPeriod);
+      window.addEventListener('sigma:langchange',()=>{try{refresh();}catch{}});
       $('#prev-month').addEventListener('click',()=>{viewMonth.setMonth(viewMonth.getMonth()-1);renderCalendar();});
       $('#next-month').addEventListener('click',()=>{viewMonth.setMonth(viewMonth.getMonth()+1);renderCalendar();});
       $('#today-month').addEventListener('click',()=>{viewMonth.setFullYear(today.getFullYear(),today.getMonth(),1);renderCalendar();});
@@ -780,7 +877,7 @@
         try{
           const saved=await window.sigmaSupabase.saveCalibration(row,QA_ELEMENTS);
           calibrations.push({id:saved.id,type:'Calibrage',date:row.date,callDate:row.callDate,agentId:row.agentId,callId:row.callId,status:row.status,evaluator:row.evaluator,language:row.language,notes:row.notes,elements:row.elements,reasons:row.reasons});
-          toast(`Calibrage enregistré · score ${sc.pct}% (${sc.ok}/${sc.total}).`);
+          toast(t('Calibrage enregistré · score {pct}% ({ok}/{total}).',{pct:sc.pct,ok:sc.ok,total:sc.total}));
           entryDialog.close();refresh();
         }catch(err){
           console.error('ERREUR INSERT CALIBRAGE :',err);
@@ -822,7 +919,7 @@
 
       $('#add-agent').addEventListener('click',()=>openAgentEditor());
       $('#agent-form').addEventListener('submit',async e=>{e.preventDefault();if(!canManageTeam){toast('Accès non autorisé.');return;}const id=$('#agent-id').value,name=$('#agent-name').value.trim();if(!name){toast("Le nom de l'agent est requis.");return;}const row={id:id||null,name,initials:initialsFor(name),staffId:$('#agent-matricule').value.trim(),role:$('#agent-role').value.trim(),team:$('#agent-team').value.trim(),service:$('#agent-service').value.trim(),active:$('#agent-active').checked,email:$('#agent-email').value.trim(),phone:$('#agent-phone').value.trim(),positionNum:$('#agent-position-num').value.trim(),hireDate:$('#agent-hire-date').value||null};try{const db=await window.sigmaSupabase.getClient();if(agentsSource==='supabase'){if(id){const up=await db.from('agents').update(fromAgent(row)).eq('id',id).select().single();if(up.error)throw up.error;agents=agents.map(a=>a.id===id?toAgent(up.data):a);}else{const ins=await db.from('agents').insert(fromAgent(row)).select().single();if(ins.error)throw ins.error;agents.push(toAgent(ins.data));}try{localStorage.setItem('sigma-americana-agents-cache-v1',JSON.stringify(agents));}catch{}}else{if(id){agents=agents.map(a=>a.id===id?row:a);}else{agents.push({...row,id:`ag-${Date.now()}`});}}$('#agent-dialog').close();refreshAgentSelects();refresh();toast(id?'Fiche agent mise à jour.':'Agent ajouté à l’équipe.');}catch(err){toast('Écriture Supabase refusée : '+(err.message||err));}});
-      $('#agent-delete').addEventListener('click',async()=>{if(!canManageTeam)return;const id=$('#agent-id').value;if(!id)return;const a=agentById(id);if(!confirm(`Supprimer définitivement ${a.name} de l’équipe ?\n\nSes calibrages, documents et volumes déjà enregistrés resteront en base mais ne seront plus rattachés à un agent actif.`))return;try{if(agentsSource==='supabase'){await window.sigmaSupabase.deleteAgent(id);agents=agents.filter(x=>x.id!==id);try{localStorage.setItem('sigma-americana-agents-cache-v1',JSON.stringify(agents));}catch{}}else{agents=agents.filter(x=>x.id!==id);}$('#agent-dialog').close();refreshAgentSelects();refresh();toast(`${a.name} supprimé de l’équipe.`);}catch(err){toast('Suppression refusée : '+(err.message||err));}});
+      $('#agent-delete').addEventListener('click',async()=>{if(!canManageTeam)return;const id=$('#agent-id').value;if(!id)return;const a=agentById(id);if(!confirm(t('Supprimer définitivement {name} de l’équipe ?',{name:a.name})+'\n\n'+t('Ses calibrages, documents et volumes déjà enregistrés resteront en base mais ne seront plus rattachés à un agent actif.')))return;try{if(agentsSource==='supabase'){await window.sigmaSupabase.deleteAgent(id);agents=agents.filter(x=>x.id!==id);try{localStorage.setItem('sigma-americana-agents-cache-v1',JSON.stringify(agents));}catch{}}else{agents=agents.filter(x=>x.id!==id);}$('#agent-dialog').close();refreshAgentSelects();refresh();toast(t('{name} supprimé de l’équipe.',{name:a.name}));}catch(err){toast('Suppression refusée : '+(err.message||err));}});
       $('#goals-form').addEventListener('submit',e=>{e.preventDefault();if(!canManageConfig){toast('Accès non autorisé.');return;}goals={callsPerAgent:Number($('#goal-calls').value),calibrationsPerAgent:Number($('#goal-calibrations').value),compliancePct:Number($('#goal-compliance').value)};saveAll();refresh();toast('Objectifs enregistrés.');});
       $('#report-form').addEventListener('submit',e=>{e.preventDefault();renderReport();});
       $('#report-type').addEventListener('change',renderReport);$('#report-agent').addEventListener('change',renderReport);
@@ -843,7 +940,7 @@
       function renderImportPreview(rows){const m=byMatricule();const matched=[],unmatched=[];rows.forEach(r=>{if(m[r.matricule])matched.push({...r,agent:m[r.matricule]});else unmatched.push(r.matricule);});const wrap=$('#import-preview-table');const total=matched.reduce((s,r)=>s+r.count,0);let html='<table class="agent-table"><thead><tr><th>Matricule</th><th>Agent</th><th>Appels pris</th></tr></thead><tbody>';matched.forEach(r=>{html+=`<tr><td>${escapeHTML(r.matricule)}</td><td>${escapeHTML(r.agent.name)}</td><td>${r.count}</td></tr>`;});html+=`</tbody><tfoot><tr><th colspan="2">Total</th><th>${total}</th></tr></tfoot></table>`;if(unmatched.length){html+=`<p class="grid-hint">⚠️ Matricules introuvables dans Équipe (ignorés) : ${escapeHTML(unmatched.join(', '))}</p>`;}wrap.innerHTML=html;wrap.hidden=false;return matched;}
       $('#open-import-volume')?.addEventListener('click',()=>{if(!canManageVolumes)return;importForm.reset();importParsed=[];const t=$('#import-preview-table');if(t){t.hidden=true;t.innerHTML='';}$('#import-from').value=monthStart;$('#import-to').value=monthEnd;importDialog.showModal();});
       $('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();importParsed=parseCsv(text);if(!importParsed.length){toast('Aucune ligne reconnue dans le fichier.');return;}renderImportPreview(importParsed);});
-      importForm.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(importForm);const from=f.get('from'),to=f.get('to');if(from>to){toast('La date de début doit précéder la date de fin.');return;}if(!importParsed.length){toast('Sélectionne d’abord un fichier valide.');return;}const matched=renderImportPreview(importParsed).filter(r=>r.agent);if(!matched.length){toast('Aucun matricule ne correspond à un agent de l’équipe.');return;}const rows=matched.map(r=>({agentId:r.agent.id,count:r.count}));try{if(agentsSource==='supabase'){await window.sigmaSupabase.importVolumes(rows,from,to);volumes=await window.sigmaSupabase.loadVolumes();}else{volumes=volumes.filter(v=>!(v.from===from&&v.to===to));rows.forEach(r=>volumes.push({id:'vol-'+Date.now()+Math.random(),agentId:r.agentId,from,to,count:r.count}));saveAll();}}catch(err){toast('Écriture Supabase refusée : '+(err.message||err));return;}importDialog.close();refresh();toast(`Import terminé · ${rows.length} agents · ${rows.reduce((s,r)=>s+r.count,0)} appels (période remplacée).`);});
+      importForm.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(importForm);const from=f.get('from'),to=f.get('to');if(from>to){toast('La date de début doit précéder la date de fin.');return;}if(!importParsed.length){toast('Sélectionne d’abord un fichier valide.');return;}const matched=renderImportPreview(importParsed).filter(r=>r.agent);if(!matched.length){toast('Aucun matricule ne correspond à un agent de l’équipe.');return;}const rows=matched.map(r=>({agentId:r.agent.id,count:r.count}));try{if(agentsSource==='supabase'){await window.sigmaSupabase.importVolumes(rows,from,to);volumes=await window.sigmaSupabase.loadVolumes();}else{volumes=volumes.filter(v=>!(v.from===from&&v.to===to));rows.forEach(r=>volumes.push({id:'vol-'+Date.now()+Math.random(),agentId:r.agentId,from,to,count:r.count}));saveAll();}}catch(err){toast('Écriture Supabase refusée : '+(err.message||err));return;}importDialog.close();refresh();toast(t('Import terminé · {n} agents · {c} appels (période remplacée).',{n:rows.length,c:rows.reduce((s,r)=>s+r.count,0)}));});
 
 
       function showDocTypeFilters(){if(role==='qualite'){const option=Array.from(typeFilter.options).find(o=>o.value==='Disciplinaire');if(option)option.disabled=true;}}

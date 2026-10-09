@@ -61,14 +61,14 @@
   }
 
   // Profil applicatif : rôle + agent lié (null si pas de ligne = pas d'accès)
-  // Schéma réel : profiles(id, full_name, role app_role, agent_id)
+  // Schéma réel : profiles(id, full_name, role app_role, agent_id, active)
   // — id = auth.users.id (pas de user_id), pas de colonne client.
   async function getProfile() {
     var db = await getClient();
     var authRes = await db.auth.getUser();
     if (authRes.error || !authRes.data.user) return null;
     var p = await db.from("profiles")
-      .select("id, role, full_name, agent_id, agents(id, full_name)")
+      .select("id, role, full_name, agent_id, active, agents(id, full_name)")
       .eq("id", authRes.data.user.id)
       .maybeSingle();
     if (p.error || !p.data) return null;
@@ -78,15 +78,22 @@
       client: "americana",
       displayName: p.data.full_name || null,
       agentId: p.data.agent_id,
-      agentName: p.data.agents ? p.data.agents.full_name : null
+      agentName: p.data.agents ? p.data.agents.full_name : null,
+      suspended: p.data.active === false
     };
   }
 
-  // Garde de page : sans session ni profil -> retour login
+  // Garde de page : sans session, sans profil OU suspendu -> retour login
   async function requireAuth(loginUrl) {
     var profile = await getProfile();
     if (!profile) {
       window.location.href = loginUrl || "login.html";
+      return null;
+    }
+    if (profile.suspended) {
+      // Compte suspendu : on ferme la session et on renvoie au login avec motif.
+      try { await signOut(); } catch (e) {}
+      window.location.href = (loginUrl || "login.html") + "?msg=suspended";
       return null;
     }
     return profile;
