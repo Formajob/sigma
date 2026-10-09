@@ -45,7 +45,7 @@
     @media(max-width:760px){.app-shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto;padding:12px 15px}.brand{padding:0 3px 12px}.workspace{margin-bottom:12px}.nav-label{display:none}.side-nav{display:flex;overflow-x:auto;gap:4px}.side-nav a{flex:0 0 auto;min-height:33px;padding:0 9px;font-size:10px}.sidebar-bottom{display:none}.main{min-width:0}.topbar{position:relative;min-height:54px;padding:0 15px}.crumbs{display:none}.mobile-brand{display:flex;align-items:center;gap:6px;font:19px var(--serif)}.mobile-brand .brand-mark{width:23px;height:23px;border:0;font-size:19px}.top-actions{gap:5px}.role-preview{display:none}.top-link{padding:7px 8px;font-size:10px}.content{padding:20px 14px 38px}.welcome-row{align-items:flex-start;flex-direction:column}.welcome-row h1{font-size:23px}.period-bar{align-items:flex-start;flex-direction:column}.period-inputs{width:100%;flex-wrap:wrap}.period-inputs input{width:106px}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{min-height:99px;padding:12px}.kpi-value{font-size:23px}.dashboard-grid{grid-template-columns:1fr}.objective-list{grid-template-columns:1fr}.configuration-grid{grid-template-columns:1fr}.report-filters{grid-template-columns:1fr 1fr}.report-result-head{align-items:flex-start;flex-direction:column}.report-result-head>div{flex-wrap:wrap}.configuration-grid{grid-template-columns:1fr}.section-title{align-items:flex-start;flex-direction:column}.section-actions{width:100%}.calendar-toolbar{align-items:flex-start;flex-direction:column}.calendar-filters{width:100%;flex-wrap:wrap}.calendar-filters input{flex:1;max-width:none}.calendar-filters select{flex:1;max-width:none}.day-cell{min-height:78px;padding:4px}.event-pill{font-size:8px;padding:4px 3px}.weekday{font-size:8px;padding:8px 2px}.calendar-wrap{padding:0 6px 8px}.record-row{grid-template-columns:76px 1fr 88px;gap:6px;padding:9px 8px}.record-row .record-agent,.record-row .visibility-mini,.record-row .status-mini{display:none}.determinant-grid{grid-template-columns:1fr}.det-card{display:grid;grid-template-columns:1fr 1fr;gap:8px}.det-card>strong{grid-column:1/-1;margin:0}.det-card .field+.field{margin-top:0}}
     @media(max-width:450px){.demo-badge{display:none}.top-link{font-size:9px;padding:6px}.kpi-grid{gap:7px}.kpi-foot{font-size:9px}.chart-row{grid-template-columns:93px 1fr 32px;gap:6px}.chart-name{font-size:10px}.chart-legend{gap:7px}.calendar-nav strong{min-width:98px;font-size:17px}.day-cell{min-height:69px}.day-number{width:18px;height:18px;font-size:9px}.event-pill{font-size:5.5px}.more-events{font-size:8px}.form-grid-2,.detail-grid,.detail-fiss{grid-template-columns:1fr}.field.full{grid-column:auto}.dialog-body{padding:14px}.dialog-head{padding:14px}.role-preview{display:none}}
   </style>
-
+<style id="sigma-guard">body{visibility:hidden}</style>
 </head>
 <body>
   <div class="app-shell">
@@ -239,11 +239,20 @@
     // Garde prod : expose une promesse résolue avec le profil AVANT le script app.
     // Le script suivant fait await window.__SIGMA_READY : fini le "Bonjour Omar".
     window.__SIGMA_READY = (async () => {
+      const unlock = () => { const g = document.getElementById("sigma-guard"); if (g) g.remove(); };
+      // Filet anti page blanche : si Supabase ne repond pas, on sort.
+      const bailout = setTimeout(() => {
+        if (!window.__SIGMA_PROFILE) window.location.href = "login.html";
+      }, 8000);
       try {
         const profile = await window.sigmaSupabase.requireAuth("login.html");
-        if (profile) window.__SIGMA_PROFILE = profile;
+        if (!profile) return null;          // redirection en cours : on reste masque
+        window.__SIGMA_PROFILE = profile;
+        clearTimeout(bailout);
+        unlock();                            // autorise : on affiche
         return profile;
       } catch (e) {
+        clearTimeout(bailout);
         window.location.href = "login.html";
         return null;
       }
@@ -258,7 +267,15 @@
       const url = new URLSearchParams(location.search);
       // Rôle réel = profil Supabase (window.__SIGMA_PROFILE) ; ?role= = fallback démo locale.
       const serverProfile = window.__SIGMA_PROFILE || null;
-      const roleKey = (serverProfile ? serverProfile.role : (url.get('role') || 'superviseur')).toLowerCase();
+      // Role reel porte par le profil Supabase (ou ?role= en demo locale).
+      const realRole = (serverProfile ? serverProfile.role : (url.get('role') || 'superviseur')).toLowerCase();
+      // admin et super_admin peuvent inspecter n'importe quelle vue via ?role=.
+      const FULL_ACCESS = ['admin', 'super_admin'];
+      const canSwitchRole = FULL_ACCESS.includes(realRole);
+      const requestedRole = (url.get('role') || '').toLowerCase();
+      window.__SIGMA_REAL_ROLE = realRole;
+      window.__SIGMA_IMPERSONATING = canSwitchRole && requestedRole && requestedRole !== realRole;
+      const roleKey = (canSwitchRole && requestedRole) ? requestedRole : realRole;
       const roleNames = { superviseur:'Superviseur', agent:'Agent', qualite:'Qualité', admin:'Admin', super_admin:'Super admin' };
       const role = roleNames[roleKey] ? roleKey : 'superviseur';
       const profileByRole = { superviseur:{name:'Omar',initials:'OM',agentId:null}, agent:{name:'Youssef',initials:'Y',agentId:'ag-01'}, qualite:{name:'Équipe Qualité',initials:'Q',agentId:null}, admin:{name:'Admin Americana',initials:'AM',agentId:null}, super_admin:{name:'Jawad (ACX)',initials:'J',agentId:null} };
@@ -677,5 +694,5 @@
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46f48d25d9ab275',t:'MTc5MTQwMTA0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47bac4e2a229bd7',t:'MTc5MTUzMDk1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
