@@ -7,5 +7,8 @@
   "scripts": {
     "dev": "npx --yes serve@14.2.4 . -l 5500 --no-clipboard",
     "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
