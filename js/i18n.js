@@ -16,10 +16,13 @@
 
     /* ---------- index.html ---------- */
     'Sigma, accueil': 'Sigma, home',
+    'ACX Sigma, accueil': 'ACX Sigma, home',
     'Navigation principale': 'Main navigation',
     'Fonctionnalités': 'Features',
     'Pour qui': 'Who it’s for',
     'Contact': 'Contact',
+    'Contact ACX': 'ACX Contact',
+    'Contacter la startup ACX : contact@acx.ma': 'Contact ACX startup: contact@acx.ma',
     'Accéder à votre espace client': 'Access your client area',
     'Accès client': 'Client access',
     'Connexion': 'Sign in',
@@ -137,9 +140,11 @@
     'Un produit ACX Maroc ·': 'An ACX Maroc product ·',
     'Un produit ACX Maroc': 'An ACX Maroc product',
     'Sigma, retour en haut': 'Sigma, back to top',
+    'ACX Sigma, retour en haut': 'ACX Sigma, back to top',
 
     /* ---------- login.html ---------- */
     'Sigma, retour à la présentation': 'Sigma, back to the homepage',
+    'ACX Sigma, retour à la présentation': 'ACX Sigma, back to the homepage',
     'Connexion à Sigma': 'Sign in to Sigma',
     'Chaque acte.': 'Every action.',
     'Chaque suivi.': 'Every follow-up.',

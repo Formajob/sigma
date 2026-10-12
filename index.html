@@ -34,8 +34,8 @@
     .site-header { position: relative; z-index: 5; padding: 19px 0; background: rgba(247,245,241,.88); border-bottom: 1px solid rgba(23,36,45,.07); backdrop-filter: blur(12px); }
     .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 26px; }
     .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; flex: 0 0 auto; }
-    .brand-mark { display: grid; place-items: center; width: 35px; height: 35px; }
-    .brand-mark svg { width: 35px; height: 35px; }
+    .brand-logo { display: block; width: 210px; max-width: 100%; height: auto; }
+    .brand-logo--compact { width: 150px; }
     .brand-word { font: 29px/1 var(--serif); letter-spacing: -.045em; }
     .nav-links { display: flex; align-items: center; gap: 30px; margin-left: auto; }
     .nav-links a { color: #5D696E; font-size: 12px; font-weight: 620; text-decoration: none; transition: color .2s ease; }
@@ -263,7 +263,8 @@
       .login-label-short { display: inline; }
       .cta-label-long { display: none; }
       .cta-label-short { display: inline; }
-      .brand-word { font-size: 26px; }
+      .brand-logo { width: 165px; }
+      .brand-logo--compact { width: 130px; }
       .hero { padding: 56px 0 64px; }
       .hero-grid, .adapt-layout { grid-template-columns: 1fr; }
       .hero-grid { gap: 38px; }
@@ -321,11 +322,8 @@
 <body id="top">
   <header class="site-header">
     <div class="container nav-row">
-      <a class="brand" href="#top" aria-label="Sigma, accueil">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#17242D" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg>
-        </span>
-        <span class="brand-word">Sigma</span>
+      <a class="brand" href="#top" aria-label="ACX Sigma, accueil">
+        <img class="brand-logo" src="assets/acx-sigma-logo.svg" alt="ACX Sigma">
       </a>
       <nav class="nav-links" aria-label="Navigation principale">
         <a href="#outil">Fonctionnalités</a>
@@ -471,16 +469,16 @@
     <section class="contact-section" id="contact">
       <div class="container contact-row">
         <div><div class="eyebrow"><span class="eyebrow-dot"></span>Contact</div><h2>Échangeons directement.</h2></div>
-        <div class="contact-links"><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+212 6 34 23 20 06</strong><span class="arrow" aria-hidden="true">↗</span></a><a href="/cdn-cgi/l/email-protection#94f7fbfae0f5f7e0d4f5f7ecbaf9f5"><span>Email</span><strong><span class="__cf_email__" data-cfemail="34575b5a405557407455574c1a5955">[email&#160;protected]</span></strong><span class="arrow" aria-hidden="true">↗</span></a></div>
+        <div class="contact-links"><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+212 6 34 23 20 06</strong><span class="arrow" aria-hidden="true">↗</span></a><a href="mailto:sigma@acx.ma"><span>Email</span><strong>sigma@acx.ma</strong><span class="arrow" aria-hidden="true">↗</span></a></div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="container footer-row">
-      <a class="footer-brand" href="#top" aria-label="Sigma, retour en haut"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M31 7H10L21.5 20L10 33H31" stroke="#FFFEFC" stroke-width="2.2" stroke-linecap="square"/><path d="M27.5 7H34" stroke="#C0622D" stroke-width="3" stroke-linecap="square"/></svg></span><span class="brand-word">Sigma</span></a>
+      <a class="footer-brand" href="#top" aria-label="ACX Sigma, retour en haut"><img class="brand-logo brand-logo--compact" src="assets/acx-sigma-logo-light.svg" alt="ACX Sigma"></a>
       <span class="footer-meta">Un produit ACX Maroc · sigma.acx.ma</span>
-      <div class="footer-links"><a href="/cdn-cgi/l/email-protection#22414d4c564341566243415a0c4f43">Contact</a><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
+      <div class="footer-links"><a href="mailto:contact@acx.ma" aria-label="Contacter la startup ACX : contact@acx.ma">Contact ACX</a><a href="https://wa.me/212634232006" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
     </div>
   </footer>
 
