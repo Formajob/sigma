@@ -86,8 +86,20 @@
       const submitBtn = credentialsForm.querySelector('.sign-in-button');
       let activeClient = '';
 
-      // Focus Americana : seul espace branché pour l'instant.
-      const targets = { Americana: 'americana-dashboard.html' };
+      // Définition des cibles de redirection après connexion (pages générées).
+      // - ?page=dashboard|calendrier|rapports|equipe|configuration|administration
+      // - sinon page par défaut : dashboard.html
+      const PAGE_MAP = {
+        dashboard: 'dashboard.html',
+        calendrier: 'calendrier.html',
+        rapports: 'rapports.html',
+        equipe: 'equipe.html',
+        configuration: 'configuration.html',
+        administration: 'administration.html',
+      };
+      const params = new URLSearchParams(window.location.search);
+      const requestedPage = params.get('page') || 'dashboard';
+      const targetPage = PAGE_MAP[requestedPage] || 'dashboard.html';
 
       clientButtons.forEach((button) => button.addEventListener('click', () => {
         activeClient = button.dataset.client;
@@ -95,7 +107,7 @@
         clientStatus.hidden = true;
         loginStatus.hidden = false;
         credentialsForm.reset();
-        if (targets[activeClient]) {
+        if (activeClient === 'Americana') {
           credentialsForm.hidden = false;
           selectedClient.textContent = activeClient;
           loginStatus.textContent = 'Connectez-vous avec votre compte Sigma (Supabase).';
@@ -144,7 +156,7 @@
             loginStatus.hidden = false;
             return;
           }
-          window.location.href = targets[activeClient] || 'americana-dashboard.html';
+          window.location.href = targetPage;
         } catch (err) {
           loginStatus.textContent = 'Identifiants incorrects ou compte inactif. Réessayez.';
           loginStatus.hidden = false;

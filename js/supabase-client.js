@@ -267,6 +267,92 @@
     return { deleted: true, inserted: (ins.data || []).length };
   }
 
+  // ---------- Modification / suppression — calibrages & documents ----------
+  // Schémas réels :
+  //  calibrations(agent_id, call_id, call_date, calibration_date, status, language,
+  //               evaluator, evaluator_name, notes)
+  //  calibration_results(calibration_id, element_id, result, reason)
+  //  documents(doc_type, object, meeting_date, follow_up_date, agent_id, call_id,
+  //            visibility, status, facts, impacts, solutions, followup)
+  function toCalDb(row) {
+    return {
+      agent_id: row.agentId,
+      call_id: row.callId,
+      call_date: row.callDate,
+      calibration_date: row.date,
+      status: row.status,
+      language: row.language,
+      evaluator: row.evaluator,
+      evaluator_name: row.evaluator,
+      notes: row.notes || null
+    };
+  }
+
+  // Résultats QA : remplace l'intégralité des 19 lignes du calibrage.
+  async function writeCalibrationResults(db, calId, calibration, qaElements) {
+    var del = await db.from("calibration_results").delete().eq("calibration_id", calId);
+    if (del.error) throw del.error;
+    var values = calibration.elements || [];
+    var reasons = calibration.reasons || [];
+    var rows = (qaElements || []).map(function (e, i) {
+      var v = values[i] || 'N/A';
+      return {
+        calibration_id: calId,
+        element_id: e.elementId,
+        result: v,
+        reason: (v === 'Non' && reasons[i] ? reasons[i] : null)
+      };
+    });
+    if (!rows.length) return;
+    var ins = await db.from("calibration_results").insert(rows).select();
+    if (ins.error) throw ins.error;
+  }
+
+  async function updateCalibration(id, calibration, qaElements) {
+    var db = await getClient();
+    var up = await db.from("calibrations").update(toCalDb(calibration)).eq("id", id);
+    if (up.error) throw up.error;
+    await writeCalibrationResults(db, id, calibration, qaElements);
+    return true;
+  }
+
+  async function deleteCalibration(id) {
+    var db = await getClient();
+    // Résultats d'abord (FK), puis le calibrage parent.
+    var delRes = await db.from("calibration_results").delete().eq("calibration_id", id);
+    if (delRes.error) throw delRes.error;
+    var del = await db.from("calibrations").delete().eq("id", id);
+    if (del.error) throw del.error;
+    return true;
+  }
+
+  async function updateDocument(id, row) {
+    var db = await getClient();
+    var up = await db.from("documents").update({
+      doc_type: row.type,
+      object: row.object || null,
+      meeting_date: row.meetingDate,
+      follow_up_date: row.followUpDate || null,
+      agent_id: row.agentId,
+      call_id: row.callId || null,
+      visibility: row.visibility,
+      status: row.status,
+      facts: row.fiss.facts,
+      impacts: row.fiss.impacts,
+      solutions: row.fiss.solutions,
+      followup: row.fiss.followup
+    }).eq("id", id);
+    if (up.error) throw up.error;
+    return true;
+  }
+
+  async function deleteDocument(id) {
+    var db = await getClient();
+    var del = await db.from("documents").delete().eq("id", id);
+    if (del.error) throw del.error;
+    return true;
+  }
+
   // Suppression d'un agent (fiche Équipe).
   async function deleteAgent(id) {
     var db = await getClient();
@@ -286,6 +372,10 @@
     loadCalibrations: loadCalibrations,
     saveCalibration: insertCalibration,
     loadDocuments: loadDocuments,
+    updateCalibration: updateCalibration,
+    deleteCalibration: deleteCalibration,
+    updateDocument: updateDocument,
+    deleteDocument: deleteDocument,
     saveDocument: insertDocument,
     loadVolumes: loadVolumes,
     importVolumes: importVolumes,
