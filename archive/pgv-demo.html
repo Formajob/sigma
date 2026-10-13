@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#17242D">
   <meta name="description" content="Démo PGV dans Sigma — suivi et calibrage des appels de l’équipe PGV.">
   <title>PGV · Sigma</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
   <style>
     :root {
       --ink:#17242D; --ink-2:#233640; --copper:#C0622D; --copper-dark:#A95025;
@@ -44,6 +45,32 @@
     @media(max-width:1180px){.app-shell{grid-template-columns:205px minmax(0,1fr)}.content{padding:23px 20px 45px}.topbar{padding:0 20px}.dashboard-grid{grid-template-columns:1fr}.agent-table th,.agent-table td{font-size:8px}.report-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.report-filters .button{align-self:end}}
     @media(max-width:760px){.app-shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto;padding:12px 15px}.brand{padding:0 3px 12px}.workspace{margin-bottom:12px}.nav-label{display:none}.side-nav{display:flex;overflow-x:auto;gap:4px}.side-nav a{flex:0 0 auto;min-height:33px;padding:0 9px;font-size:8px}.sidebar-bottom{display:none}.main{min-width:0}.topbar{position:relative;min-height:54px;padding:0 15px}.crumbs{display:none}.mobile-brand{display:flex;align-items:center;gap:6px;font:19px var(--serif)}.mobile-brand .brand-mark{width:23px;height:23px;border:0;font-size:17px}.top-actions{gap:5px}.role-preview{display:none}.top-link{padding:7px 8px;font-size:8px}.content{padding:20px 14px 38px}.welcome-row{align-items:flex-start;flex-direction:column}.welcome-row h1{font-size:23px}.period-bar{align-items:flex-start;flex-direction:column}.period-inputs{width:100%;flex-wrap:wrap}.period-inputs input{width:106px}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{min-height:99px;padding:12px}.kpi-value{font-size:23px}.dashboard-grid{grid-template-columns:1fr}.objective-list{grid-template-columns:1fr}.configuration-grid{grid-template-columns:1fr}.report-filters{grid-template-columns:1fr 1fr}.report-result-head{align-items:flex-start;flex-direction:column}.report-result-head>div{flex-wrap:wrap}.configuration-grid{grid-template-columns:1fr}.section-title{align-items:flex-start;flex-direction:column}.section-actions{width:100%}.calendar-toolbar{align-items:flex-start;flex-direction:column}.calendar-filters{width:100%;flex-wrap:wrap}.calendar-filters input{flex:1;max-width:none}.calendar-filters select{flex:1;max-width:none}.day-cell{min-height:78px;padding:4px}.event-pill{font-size:6px;padding:4px 3px}.weekday{font-size:6px;padding:8px 2px}.calendar-wrap{padding:0 6px 8px}.record-row{grid-template-columns:76px 1fr 88px;gap:6px;padding:9px 8px}.record-row .record-agent,.record-row .visibility-mini,.record-row .status-mini{display:none}.determinant-grid{grid-template-columns:1fr}.det-card{display:grid;grid-template-columns:1fr 1fr;gap:8px}.det-card>strong{grid-column:1/-1;margin:0}.det-card .field+.field{margin-top:0}}
     @media(max-width:450px){.demo-badge{display:none}.top-link{font-size:7px;padding:6px}.kpi-grid{gap:7px}.kpi-foot{font-size:7px}.chart-row{grid-template-columns:93px 1fr 32px;gap:6px}.chart-name{font-size:8px}.chart-legend{gap:7px}.calendar-nav strong{min-width:98px;font-size:15px}.day-cell{min-height:69px}.day-number{width:18px;height:18px;font-size:7px}.event-pill{font-size:5.5px}.more-events{font-size:6px}.form-grid-2,.detail-grid,.detail-fiss{grid-template-columns:1fr}.field.full{grid-column:auto}.dialog-body{padding:14px}.dialog-head{padding:14px}.role-preview{display:none}}
+
+
+.visibility-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 16px;
+	align-items: center;
+}
+.visibility-option {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 14px;
+	cursor: pointer;
+}
+.visibility-option input[type="radio"] {
+	width: 16px;
+	height: 16px;
+	min-height: 0;
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: none;
+	accent-color: var(--copper);
+}
+
   </style>
 </head>
 <body>

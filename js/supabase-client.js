@@ -220,10 +220,10 @@
       call_id: row.callId || null,
       visibility: row.visibility,
       status: row.status,
-      facts: row.fiss.facts,
-      impacts: row.fiss.impacts,
-      solutions: row.fiss.solutions,
-      followup: row.fiss.followup,
+      facts: (String((row.fiss||{}).facts||'').trim()||null),
+      impacts: (String((row.fiss||{}).impacts||'').trim()||null),
+      solutions: (String((row.fiss||{}).solutions||'').trim()||null),
+      followup: (String((row.fiss||{}).followup||'').trim()||null),
       created_by: authRes.data.user.id
     }).select().single();
     if (res.error) throw res.error;
@@ -337,10 +337,10 @@
       call_id: row.callId || null,
       visibility: row.visibility,
       status: row.status,
-      facts: row.fiss.facts,
-      impacts: row.fiss.impacts,
-      solutions: row.fiss.solutions,
-      followup: row.fiss.followup
+      facts: (String((row.fiss||{}).facts||'').trim()||null),
+      impacts: (String((row.fiss||{}).impacts||'').trim()||null),
+      solutions: (String((row.fiss||{}).solutions||'').trim()||null),
+      followup: (String((row.fiss||{}).followup||'').trim()||null)
     }).eq("id", id);
     if (up.error) throw up.error;
     return true;

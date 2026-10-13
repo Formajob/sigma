@@ -7,6 +7,7 @@
   <meta name="description" content="Accès à la démonstration Sigma et sélection de l’espace client.">
   <meta name="robots" content="noindex, nofollow">
   <title>Sigma — Accès client</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
   <style>
     :root{--ink:#17242D;--ink-2:#243741;--copper:#C0622D;--copper-dark:#A95025;--paper:#F7F5F1;--white:#FFFEFC;--line:#E7E2D9;--muted:#6D7A7F;--teal:#DCECE8;--teal-ink:#376A64;--blue:#E3EBF4;--blue-ink:#46627B;--peach:#F7E7DC;--serif:Georgia,"Times New Roman",serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}html{min-height:100%;background:var(--paper)}body{min-height:100vh;margin:0;color:var(--ink);background:var(--paper);font-family:var(--sans);-webkit-font-smoothing:antialiased}a{color:inherit}button,input{font:inherit}
@@ -98,7 +99,8 @@
       };
       const params = new URLSearchParams(window.location.search);
       const requestedPage = params.get('page') || 'dashboard';
-      const targetPage = PAGE_MAP[requestedPage] || 'dashboard.html';
+      const requestedDoc = params.get('doc') || '';
+      const targetPage = (PAGE_MAP[requestedPage] || 'dashboard.html') + (requestedDoc ? ('?doc=' + encodeURIComponent(requestedDoc)) : '');
 
       clientButtons.forEach((button) => button.addEventListener('click', () => {
         activeClient = button.dataset.client;

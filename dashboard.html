@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#17242D">
   <meta name="description" content="Démo Americana dans Sigma — suivi et calibrage des appels de support KFC Maroc.">
   <title>Americana · Sigma</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
   <style>
     :root {
       --ink:#17242D; --ink-2:#233640; --copper:#C0622D; --copper-dark:#A95025;
@@ -79,6 +80,31 @@
       .report-table tr{break-inside:avoid}
       .report-result-head,.report-summary{break-after:avoid}
     }
+
+.visibility-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 16px;
+	align-items: center;
+}
+.visibility-option {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 14px;
+	cursor: pointer;
+}
+.visibility-option input[type="radio"] {
+	width: 16px;
+	height: 16px;
+	min-height: 0;
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: none;
+	accent-color: var(--copper);
+}
+
   </style>
 <style id="sigma-guard">body{visibility:hidden}</style>
 </head>
@@ -255,13 +281,13 @@
         <div class="field full"><label>Visibilité</label><div class="visibility-options"><label class="visibility-option"><input type="radio" name="visibility" value="supervisor" checked> Superviseur seulement</label><label class="visibility-option"><input type="radio" name="visibility" value="agent"> Superviseur + agent concerné</label></div></div>
       </div>
       <div class="form-section-title">Corps de la documentation · FISS</div>
-      <div class="form-grid-2">
-        <div class="field"><label for="fiss-facts">Faits</label><textarea id="fiss-facts" name="facts" placeholder="Faits observés…" required></textarea></div>
-        <div class="field"><label for="fiss-impacts">Impacts</label><textarea id="fiss-impacts" name="impacts" placeholder="Impacts constatés…" required></textarea></div>
-        <div class="field"><label for="fiss-solutions">Solutions</label><textarea id="fiss-solutions" name="solutions" placeholder="Solutions ou actions convenues…" required></textarea></div>
-        <div class="field"><label for="fiss-followup">Suivi</label><textarea id="fiss-followup" name="followup" placeholder="Prochaine étape…" required></textarea></div>
+      <div class="fiss-grid">
+        <div class="field"><label for="fiss-facts">Faits <span>(facultatif)</span></label><textarea id="fiss-facts" name="facts" rows="4" placeholder="Décrivez les faits observés, avec dates et contexte…"></textarea></div>
+        <div class="field"><label for="fiss-impacts">Impacts <span>(facultatif)</span></label><textarea id="fiss-impacts" name="impacts" rows="4" placeholder="Impacts sur l’activité, l’équipe ou le client…"></textarea></div>
+        <div class="field"><label for="fiss-solutions">Solutions <span>(facultatif)</span></label><textarea id="fiss-solutions" name="solutions" rows="4" placeholder="Solutions ou actions convenues avec l’agent…"></textarea></div>
+        <div class="field"><label for="fiss-followup">Suivi <span>(facultatif)</span></label><textarea id="fiss-followup" name="followup" rows="4" placeholder="Prochaine étape, échéance, responsable…"></textarea></div>
       </div>
-      <div class="dialog-actions"><button class="button button-muted" type="button" data-close="entry-dialog">Annuler</button><button class="button button-accent" type="submit">Enregistrer le document</button></div>
+      <div class="dialog-actions"><button class="button button-muted" type="button" data-close="entry-dialog">Annuler</button><button class="button button-muted" type="button" id="send-to-agent" hidden>Envoyer à l’agent</button><button class="button button-accent" type="submit">Enregistrer le document</button></div>
     </form>
   </div></div></dialog>
 
@@ -400,9 +426,9 @@
       function scoreOf(elements){const list=elements||[];let ok=0,total=0;list.forEach(v=>{if(v==='Oui'){ok++;total++;}else if(v==='Non'){total++;}});return {ok,total,pct:total?Math.round(ok/total*100):0};}
 
       const sampleAgents = [
-        {id:'ag-01',name:'Youssef',initials:'Y',staffId:'AM-017',role:'Agent support',team:'Support KFC Maroc',service:'Support application',active:true},
-        {id:'ag-02',name:'Nawfal',initials:'N',staffId:'AM-024',role:'Agent support',team:'Support KFC Maroc',service:'Support application',active:true},
-        {id:'ag-03',name:'Ibtissam',initials:'I',staffId:'AM-031',role:'Agent support',team:'Support KFC Maroc',service:'Support application',active:true}
+        {id:'ag-01',name:'Youssef',initials:'Y',staffId:'AM-017',role:'Agent support',team:'Support KFC Maroc',service:'Support application',email:'youssef@americana.com',active:true},
+        {id:'ag-02',name:'Nawfal',initials:'N',staffId:'AM-024',role:'Agent support',team:'Support KFC Maroc',service:'Support application',email:'nawfal@americana.com',active:true},
+        {id:'ag-03',name:'Ibtissam',initials:'I',staffId:'AM-031',role:'Agent support',team:'Support KFC Maroc',service:'Support application',email:'ibtissam@americana.com',active:true}
       ];
       const sampleCalibrations = [
         {id:'cal-001',type:'Calibrage',date:atDay(2),callDate:atDay(1),agentId:'ag-01',callId:'KFC-MA-104281',evaluator:'Omar idoulahian (superviseur)',language:'Arabe local',elements:seedGrid([3,15],[1]),reasons:seedReasons({3:'Notes trop longues et peu lisibles.',15:'Le nom du client n’a pas été utilisé.'}),notes:'Bon accueil. La confirmation de l’adresse est à retravailler.'},
@@ -808,6 +834,11 @@
       $$('.side-nav a').forEach(a=>a.addEventListener('click',()=>{$$('.side-nav a').forEach(x=>x.classList.remove('active'));a.classList.add('active');$('#crumb-page').textContent=a.textContent.trim();}));
 
       const entryDialog=$('#entry-dialog'),calForm=$('#calibration-form'),docForm=$('#document-form');
+function docLoginLink(d){try{const b=new URL('login.html',location.href);b.searchParams.set('page','calendrier');if(d)b.searchParams.set('doc',d);return b.href;}catch{return 'login.html?page=calendrier'+(d?('&doc='+encodeURIComponent(d)): '');}}
+      function curSnap(){const F=i=>String($(i)?.value||'').trim();const ag=agentById($('#doc-agent')?.value);return {t:$('#doc-type')?.value||'Document',o:$('#doc-object')?.value||'',s:$('#doc-status')?.value||'',m:$('#meeting-date')?.value||'',f:$('#followup-date')?.value||'',cid:F('#doc-call-id'),vis:document.querySelector('input[name="visibility"]:checked')?.value||'supervisor',ag,facts:F('#fiss-facts'),imp:F('#fiss-impacts'),sol:F('#fiss-solutions'),suiv:F('#fiss-followup')};}
+      function sendDocToAgent(){const s=curSnap();const to=String(s.ag?.email||'').trim();if(!to){toast("Aucun email sur la fiche de cet agent (page Équipe).");return;}const id=(entryEdit&&entryEdit.kind==='doc')?entryEdit.id:'';const link=docLoginLink(id);const df=v=>{try{return v?fmtDate(v):'—';}catch{return v||'—';}};const visLabel=s.vis==='agent'?'Superviseur + agent concerné':'Superviseur seulement';const subj='Sigma Americana — '+s.t+(s.o?(' · '+s.o):'')+' · '+s.ag.name;const L=['Bonjour '+s.ag.name+',','','Voici le résumé du document de suivi qui vous concerne.','','— RÉSUMÉ DU DOCUMENT —','Type : '+s.t,'Sujet : '+(s.o||'—'),'ID d’appel : '+(s.cid||'—'),'Statut : '+(s.s||'—'),'Date de rencontre : '+df(s.m),'Date de suivi : '+df(s.f),'Agent concerné : '+s.ag.name+(s.ag.staffId?(' · '+s.ag.staffId):'')+(s.ag.team?(' · '+s.ag.team):''),'Visibilité : '+visLabel,''];if(s.facts||s.imp||s.sol||s.suiv){L.push('— DÉTAIL FISS —','');if(s.facts)L.push('FAITS :',s.facts,'');if(s.imp)L.push('IMPACTS :',s.imp,'');if(s.sol)L.push('SOLUTIONS :',s.sol,'');if(s.suiv)L.push('SUIVI :',s.suiv,'');}L.push('Consulter le document (connexion requise) :',link,'',(!id?'Astuce : enregistrez d’abord le document pour lier ce mail au dossier exact.':''),'Cordialement,','Sigma Americana');location.href='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(L.join('\n'));}
+      function updateSendBtn(){const b=$('#send-to-agent');if(!b)return;const v=document.querySelector('input[name="visibility"]:checked')?.value||'supervisor';b.hidden=(v!=='agent');}
+      function openDocFromLink(){try{const id=new URLSearchParams(location.search).get('doc');if(!id)return;const it=buildEvents().find(x=>x.id===id||x.id===id+'-follow');if(!it)return;showEvent(it);history.replaceState(null,'',location.pathname);}catch{}}
       function buildGridForm(){const host=$('#determinant-grid');if(!host)return;const groups={};QA_GRID.forEach((g,i)=>{(groups[g.cat]??=[]).push({...g,index:i});});
         host.innerHTML=Object.entries(QA_CATS).map(([key,meta])=>`<div class="det-group"><div class="det-group-head"><strong><span class="det-cat ${meta.css}">${key}</span>${escapeHTML(meta.name.split('· ')[1]||meta.name)}</strong><span class="cat-chip" data-cat-chip="${key}">${groups[key].length} éléments</span></div>${groups[key].map(item=>`<div class="det-line"><label id="label-${item.index}">${escapeHTML(item.label)}</label><div class="radio-set" role="radiogroup" aria-labelledby="label-${item.index}">${['Oui','Non','N/A'].map(v=>`<label class="radio-opt" data-opt="${v}"><input type="radio" name="el-${item.index}" value="${v}" data-element="${item.index}">${v}</label>`).join('')}</div><div class="reason-line" data-reason-wrap="${item.index}" hidden><input data-reason="${item.index}" placeholder="Raison du non-respect"></div></div>`).join('')}</div>`).join('');
         $$('[data-element]',host).forEach(input=>input.addEventListener('change',()=>{paintRadios(input.dataset.element);toggleReason(input.dataset.element);updateGridScore();}));}
@@ -817,7 +848,7 @@
       function currentGridValues(){return QA_GRID.map((_,i)=>valueOf(i));}
       function updateGridScore(){const vals=currentGridValues();const sc=scoreOf(vals);const cats=catScores(vals);const node=$('#grid-score');if(node)node.textContent=sc.total?`Score global ${sc.pct}% · ${sc.ok}/${sc.total}`:'Score global —';const bar=$('#grid-score-bar');if(bar)bar.innerHTML=Object.entries(QA_CATS).map(([k,meta])=>{const c=cats[k];const warn=c.pct!==null&&c.pct<goals.compliancePct;return `<span class="cat-chip ${warn?'warn':''}"><span class="det-cat ${meta.css}">${k}</span> <b>${c.pct===null?'—':c.pct+'%'}</b> · ${c.ok}/${c.total||0}${c.na?` · ${c.na} N/A`:''}</span>`;}).join('');$$('[data-cat-chip]').forEach(chip=>{const c=cats[chip.dataset.catChip];chip.textContent=c.total?`${c.pct}% · ${c.ok}/${c.total}`:`${QA_GRID.filter(g=>g.cat===chip.dataset.catChip).length} éléments`;});}
       function resetGridForm(){QA_GRID.forEach((_,i)=>{$$(`input[name="el-${i}"]`).forEach(r=>{r.checked=false;});paintRadios(i);toggleReason(i);});updateGridScore();}
-      function openEntry(kind,date=''){entryEdit=null;if(role==='agent'){toast('La vue agent est en consultation.');return;}if(kind==='calibration'&&!canCalibrate){toast('Cette vue ne peut pas créer de calibrage.');return;}if(kind==='doc'&&!canManageDocs){toast('Cette vue ne peut pas créer de document.');return;}calForm.hidden=kind!=='calibration';docForm.hidden=kind!=='doc';entryDialog.classList.toggle('entry-narrow',kind==='doc');$('#entry-title').textContent=kind==='calibration'?'Nouveau calibrage':'Nouveau document de suivi';$('#entry-subtitle').textContent=kind==='calibration'?'Documentez l’appel puis notez chaque élément déterminant.':'Créez une rencontre, une observation ou un document disciplinaire.';if(kind==='calibration'){calForm.reset();$('#cal-date').value=date||toISO(today);$('#cal-call-date').value=date||toISO(today);$('#cal-agent').value=role==='agent'?profile.agentId:(agents.find(a=>a.active!==false)?.id||agents[0]?.id||'');updateAgentProfile($('#cal-agent'),$('#cal-agent-profile'));resetGridForm();syncCalibrationStatus();}else{docForm.reset();$('#meeting-date').value=date||toISO(today);$('#doc-agent').value=agents.find(a=>a.active!==false)?.id||agents[0]?.id||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));populateDocTypes();populateDocObjects();}entryDialog.showModal();}
+      function openEntry(kind,date=''){entryEdit=null;if(role==='agent'){toast('La vue agent est en consultation.');return;}if(kind==='calibration'&&!canCalibrate){toast('Cette vue ne peut pas créer de calibrage.');return;}if(kind==='doc'&&!canManageDocs){toast('Cette vue ne peut pas créer de document.');return;}calForm.hidden=kind!=='calibration';docForm.hidden=kind!=='doc';entryDialog.classList.toggle('entry-narrow',kind==='doc');$('#entry-title').textContent=kind==='calibration'?'Nouveau calibrage':'Nouveau document de suivi';$('#entry-subtitle').textContent=kind==='calibration'?'Documentez l’appel puis notez chaque élément déterminant.':'Créez une rencontre, une observation ou un document disciplinaire.';if(kind==='calibration'){calForm.reset();$('#cal-date').value=date||toISO(today);$('#cal-call-date').value=date||toISO(today);$('#cal-agent').value=role==='agent'?profile.agentId:(agents.find(a=>a.active!==false)?.id||agents[0]?.id||'');updateAgentProfile($('#cal-agent'),$('#cal-agent-profile'));resetGridForm();syncCalibrationStatus();}else{docForm.reset();$('#meeting-date').value=date||toISO(today);$('#doc-agent').value=agents.find(a=>a.active!==false)?.id||agents[0]?.id||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));populateDocTypes();populateDocObjects();updateSendBtn();}entryDialog.showModal();}
       $$('[data-open]').forEach(b=>b.addEventListener('click',()=>openEntry(b.dataset.open)));
       $$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
       $$('.dialog-shell').forEach(s=>s.addEventListener('click',e=>e.stopPropagation()));
@@ -828,6 +859,9 @@
       function populateDocTypes(){const select=$('#doc-type');const allowed=role==='qualite'?['Rencontre','Observation']:['Rencontre','Disciplinaire','Observation'];select.innerHTML=allowed.map(x=>`<option value="${x}">${x}</option>`).join('');}
       function populateDocObjects(){const type=$('#doc-type').value;$('#doc-object').innerHTML=(objectOptions[type]||[]).map(x=>`<option value="${escapeHTML(x)}">${escapeHTML(x)}</option>`).join('');}
       $('#doc-type').addEventListener('change',populateDocObjects);
+      document.querySelectorAll('input[name="visibility"]').forEach(x=>x.addEventListener('change',updateSendBtn));
+      $('#doc-agent')?.addEventListener('change',updateSendBtn);
+      $('#send-to-agent')?.addEventListener('click',sendDocToAgent);
       function currentRoleCanCreateDoc(type){return canManageDocs&&(role!=='qualite'||type!=='Disciplinaire');}
       function showEvent(e){const d=e.data,a=agentById(e.agentId);$('#detail-title').textContent=e.title;$('#detail-subtitle').textContent=`${a.name} · ${fmtDate(e.date)}${e.callId?' · ID '+e.callId:''}`;const body=$('#detail-body');body.innerHTML='';const pairs=[];if(e.kind==='cal'){pairs.push(['Agent',`${a.name} · ${a.role} · ${a.team}`],['Statut',d.status||'Terminé'],['ID d’appel',d.callId],['Date de l’appel',fmtDate(d.callDate||d.date)],['Date du calibrage',fmtDate(d.date)],['Évaluateur',d.evaluator||'—'],['Langue',d.language||'—']);const grid=document.createElement('div');grid.className='detail-grid';pairs.forEach(([k,v])=>{const div=document.createElement('div');div.className='detail-item';div.innerHTML=`<small>${escapeHTML(k)}</small><strong>${escapeHTML(v)}</strong>`;grid.append(div);});body.append(grid);const fiss=document.createElement('div');fiss.className='detail-fiss';const sc=scoreOf(d.elements);const cs=catScores(d.elements);const head=document.createElement('p');head.className='detail-item';head.innerHTML=`<small>Score du calibrage</small><strong>${sc.total?sc.pct+'% · '+sc.ok+'/'+sc.total+' éléments respectés':'—'}</strong>`;fiss.append(head);const chips=document.createElement('p');chips.className='grid-score-bar';chips.innerHTML=Object.entries(QA_CATS).map(([k,meta])=>{const c=cs[k];const warn=c.pct!==null&&c.pct<goals.compliancePct;return `<span class="cat-chip ${warn?'warn':''}"><span class="det-cat ${meta.css}">${k}</span> <b>${c.pct===null?'—':c.pct+'%'}</b> · ${c.ok}/${c.total||0}</span>`;}).join('');fiss.append(chips);QA_GRID.forEach((g,i)=>{const v=(d.elements||[])[i];if(!v)return;const div=document.createElement('div');div.innerHTML=`<small><span class="det-cat ${QA_CATS[g.cat].css}">${g.cat}</span>${escapeHTML(g.label)} · ${escapeHTML(v)}</small><p>${escapeHTML(d.reasons?.[i]||'')}</p>`;fiss.append(div);});body.append(fiss);if(d.notes){const n=document.createElement('p');n.className='detail-item';n.textContent='Notes : '+d.notes;body.append(n);}}else{pairs.push(['Type / objet',`${d.type} · ${d.object}`],['Statut',d.status||'Planifié'],['Agent',`${a.name} · ${a.role}`],['Date de rencontre',fmtDate(d.meetingDate)],['Date de suivi',fmtDate(d.followUpDate)],['ID d’appel',d.callId||'—'],['Visibilité',d.visibility==='agent'?'Superviseur + agent concerné':'Superviseur seulement']);const grid=document.createElement('div');grid.className='detail-grid';pairs.forEach(([k,v])=>{const div=document.createElement('div');div.className='detail-item';div.innerHTML=`<small>${escapeHTML(k)}</small><strong>${escapeHTML(v)}</strong>`;grid.append(div);});body.append(grid);const fiss=document.createElement('div');fiss.className='detail-fiss';[['Faits',d.fiss?.facts],['Impacts',d.fiss?.impacts],['Solutions',d.fiss?.solutions],['Suivi',d.fiss?.followup]].forEach(([k,v])=>{const div=document.createElement('div');div.innerHTML=`<small>${k}</small><p>${escapeHTML(v||'')}</p>`;fiss.append(div);});body.append(fiss);}const actionsHost=$('#detail-actions');actionsHost.innerHTML='';
         if(role!=='agent'&&((e.kind==='cal'&&canCalibrate)||(e.kind!=='cal'&&canManageDocs))){
@@ -862,7 +896,7 @@
           $('#doc-status').value=d.status||'Planifié';
           $('#doc-agent').value=d.agentId||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));
           $('#doc-call-id').value=d.callId||'';
-          const vis=$(`input[name="visibility"][value="${d.visibility||'supervisor'}"]`);if(vis)vis.checked=true;
+          const vis=$(`input[name="visibility"][value="${d.visibility||'supervisor'}"]`);if(vis)vis.checked=true;updateSendBtn();
           $('#fiss-facts').value=(d.fiss&&d.fiss.facts)||'';
           $('#fiss-impacts').value=(d.fiss&&d.fiss.impacts)||'';
           $('#fiss-solutions').value=(d.fiss&&d.fiss.solutions)||'';
@@ -972,6 +1006,7 @@
       showDocTypeFilters();
       buildGridForm();updateGridScore();
       refresh();
+      openDocFromLink();
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46f48d25d9ab275',t:'MTc5MTQwMTA0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
