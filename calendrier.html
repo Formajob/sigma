@@ -203,7 +203,7 @@
       <div hidden data-sigma-ph><button id="open-volume"></button></div>
       <div hidden data-sigma-ph><button id="open-import-volume"></button></div>
 <section id="calendar">
-          <div class="section-title"><div><h2>Calendrier de suivi</h2><p>Calibrages et documents placés à la date concernée.</p></div><div class="section-actions"><button class="button button-muted create-doc" data-open="doc">＋ Document de suivi</button><button class="button button-accent create-main" data-open="calibration">＋ Nouveau calibrage</button></div></div>
+          <div class="section-title"><div><h2>Calendrier de suivi</h2><p>Calibrages et documents placés à la date concernée.</p></div><div class="section-actions"><button class="button button-muted" id="export-calendar" type="button">⤓ Extraire (CSV)</button><button class="button button-muted create-doc" data-open="doc">＋ Document de suivi</button><button class="button button-accent create-main" data-open="calibration">＋ Nouveau calibrage</button></div></div>
           <div class="panel calendar-panel">
             <div class="calendar-toolbar"><div class="calendar-nav"><button class="icon-button" id="prev-month" aria-label="Mois précédent">‹</button><strong id="calendar-month"></strong><button class="icon-button" id="next-month" aria-label="Mois suivant">›</button><button class="small-button" id="today-month">Aujourd’hui</button></div><div class="calendar-filters"><select id="filter-category" aria-label="Afficher calibrages et suivis"><option value="all">Calibrages + suivis</option><option value="calibrage">Calibrages seulement</option><option value="suivi">Documents de suivi seulement</option></select><select id="filter-type" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="Calibrage">Calibrage</option><option value="Rencontre">Rencontre</option><option value="Disciplinaire">Disciplinaire</option><option value="Observation">Observation</option></select><select id="filter-agent" aria-label="Filtrer par agent"><option value="all">Tous les agents</option></select><input type="search" id="search-events" placeholder="Agent, objet, ID d’appel…" aria-label="Rechercher dans le calendrier"></div></div>
             <div class="calendar-wrap"><div class="weekday-row"><span class="weekday">Lun</span><span class="weekday">Mar</span><span class="weekday">Mer</span><span class="weekday">Jeu</span><span class="weekday">Ven</span><span class="weekday">Sam</span><span class="weekday">Dim</span></div><div class="calendar-grid" id="calendar-grid"></div></div>
@@ -723,6 +723,31 @@
         grid.querySelectorAll('.day-add').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openEntry('calibration',b.closest('.day-cell').dataset.date);}));
         grid.querySelectorAll('[data-event]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const item=events.find(x=>x.id===b.dataset.event);if(item)showEvent(item);}));
       }
+      // ---- Extraction CSV du calendrier (calibrages + suivis) filtrés par période et filtres actifs ----
+      function exportCalendarCsv(){
+        const from=fromInput.value||monthStart,to=toInput.value||monthEnd;
+        if(from>to){toast('La date de début doit précéder la date de fin.');return;}
+        const q=v=>{const s=String(v==null?'':v).replace(/"/g,'""');return /[";\n]/.test(s)?'"'+s+'"':s;};
+        const headers=['Catégorie','Date','ID d’appel','Agent','Statut','Évaluateur','Langue','Score','CTB','CTC','NC','Objet','Date de suivi','Faits (FISS)','Impacts (FISS)','Solutions (FISS)'];
+        const L=[];
+        // Calibrages : 16 colonnes (Objet/Date suivi/FISS laissés vides).
+        visibleCalibrations().filter(c=>inPeriod(c.date,from,to)).forEach(c=>{
+          const a=agentById(c.agentId);const m=getMetrics([c]);
+          L.push(['Calibrage',c.date,c.callId||'',a?a.name:'',c.status||'Terminé',c.evaluator||'',c.language||'',(m.ok+m.ko)?m.pct+'%':'—',m.cats.CTB.pct+'%',m.cats.CTC.pct+'%',m.cats.NC.pct+'%','','','','','',''].map(q));
+        });
+        // Documents de suivi : 16 colonnes (Évaluateur/Langue/Score/Cat laissés vides).
+        visibleDocs().filter(d=>inPeriod(d.meetingDate,from,to)).forEach(d=>{
+          const a=agentById(d.agentId);const f=d.fiss||{};
+          L.push([d.type||'Suivi',d.meetingDate,d.callId||'',a?a.name:'',d.status||'Planifié','','','','','','',d.object||'',d.followUpDate||'',f.facts||'',f.impacts||'',f.solutions||''].map(q));
+        });
+        if(!L.length){toast('Aucune donnée à extraire sur cette période.');return;}
+        const csv=String.fromCharCode(0xFEFF)+[headers.map(q),...L].map(r=>r.join(';')).join(String.fromCharCode(13,10));
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);link.download=`sigma-calendrier-${from}_${to}.csv`;document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+        toast(`${L.length} entrée(s) exportée(s) en CSV.`);
+      }
+      $('#export-calendar')?.addEventListener('click',exportCalendarCsv);
 
       function typeCss(type){return typeClass[type]||'calibrage';}
       function statusCss(status){return status==='Terminé'?'status-done':status==='Annulé'?'status-cancelled':'status-planned';}
@@ -879,20 +904,47 @@ function docLoginLink(d){try{const b=new URL('login.html',location.href);b.searc
           $('#entry-title').textContent='Modifier le calibrage';
         }else{
           openEntry('doc');
-          entryEdit={kind:'doc',id:d.id};
-          $('#doc-type').value=d.type||'Rencontre';populateDocObjects();
-          $('#doc-object').value=d.object||'';
-          $('#meeting-date').value=d.meetingDate||'';
-          $('#followup-date').value=d.followUpDate||'';
-          $('#doc-status').value=d.status||'Planifié';
-          $('#doc-agent').value=d.agentId||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));
-          $('#doc-call-id').value=d.callId||'';
-          const vis=$(`input[name="visibility"][value="${d.visibility||'supervisor'}"]`);if(vis)vis.checked=true;updateSendBtn();
-          $('#fiss-facts').value=(d.fiss&&d.fiss.facts)||'';
-          $('#fiss-impacts').value=(d.fiss&&d.fiss.impacts)||'';
-          $('#fiss-solutions').value=(d.fiss&&d.fiss.solutions)||'';
-          $('#fiss-followup').value=(d.fiss&&d.fiss.followup)||'';
-          $('#entry-title').textContent='Modifier le document de suivi';
+          populateDocTypes();
+          if(e.kind==='follow'){
+            // Occurrence "suivi" (date de suivi) : on crée un NOUVEAU document en le pré-remplissant
+            // avec un résumé du premier suivi, collé dans le champ FAITS du FISS.
+            entryEdit=null;
+            const a=agentById(d.agentId);
+            const summary=[
+              `Suivi de ${d.type||'document'} — objet : ${d.object||'—'}.`,
+              `Date du premier suivi : ${fmtDate(d.meetingDate)}.`,
+              (d.fiss&&d.fiss.facts)?`Faits du premier suivi : ${d.fiss.facts}`:''
+            ].filter(Boolean).join('\n');
+            $('#doc-type').value=d.type||'Rencontre';populateDocObjects();
+            $('#doc-object').value=d.object||'';
+            $('#meeting-date').value=d.followUpDate||toISO(today);
+            $('#followup-date').value='';
+            $('#doc-status').value='Planifié';
+            $('#doc-agent').value=d.agentId||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));
+            $('#doc-call-id').value=d.callId||'';
+            const vis=$(`input[name="visibility"][value="${d.visibility||'supervisor'}"]`);if(vis)vis.checked=true;updateSendBtn();
+            $('#fiss-facts').value=summary;
+            $('#fiss-impacts').value='';
+            $('#fiss-solutions').value='';
+            $('#fiss-followup').value='';
+            $('#entry-title').textContent='Nouveau suivi';
+            toast('Nouveau suivi pré-rempli avec le résumé du premier document.');
+          }else{
+            entryEdit={kind:'doc',id:d.id};
+            $('#doc-type').value=d.type||'Rencontre';populateDocObjects();
+            $('#doc-object').value=d.object||'';
+            $('#meeting-date').value=d.meetingDate||'';
+            $('#followup-date').value=d.followUpDate||'';
+            $('#doc-status').value=d.status||'Planifié';
+            $('#doc-agent').value=d.agentId||'';updateAgentProfile($('#doc-agent'),$('#doc-agent-profile'));
+            $('#doc-call-id').value=d.callId||'';
+            const vis=$(`input[name="visibility"][value="${d.visibility||'supervisor'}"]`);if(vis)vis.checked=true;updateSendBtn();
+            $('#fiss-facts').value=(d.fiss&&d.fiss.facts)||'';
+            $('#fiss-impacts').value=(d.fiss&&d.fiss.impacts)||'';
+            $('#fiss-solutions').value=(d.fiss&&d.fiss.solutions)||'';
+            $('#fiss-followup').value=(d.fiss&&d.fiss.followup)||'';
+            $('#entry-title').textContent='Modifier le document de suivi';
+          }
         }
       }
       async function deleteEntryFromDetail(e){
@@ -1002,5 +1054,6 @@ function docLoginLink(d){try{const b=new URL('login.html',location.href);b.searc
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46f48d25d9ab275',t:'MTc5MTQwMTA0OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47c29c21c69cbee',t:'MTc5MTUzNjA5Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47c29c21c69cbee',t:'MTc5MTUzNjA5Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>  <script src="js/support-widget.js" defer></script>
+</body>
 </html>
