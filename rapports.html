@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#17242D">
   <meta name="description" content="Démo Americana dans Sigma — suivi et calibrage des appels de support KFC Maroc.">
   <title>Americana · Sigma</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
   <style>
     :root {
@@ -58,7 +59,15 @@
     .report-kpi .rk-value em{font-style:normal;color:var(--copper);font-size:11px;font-weight:700}
     tr.totals-row td{border-top:2px solid var(--copper);background:#FBF7F3;font-weight:800;color:var(--ink)}
     tr.totals-row td:first-child{color:var(--copper)}
-    .print-header,.print-footer{display:none}
+    .print-footer{display:none}
+    .print-header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px;padding:16px 18px;border-radius:6px;color:#EAF0EF;background:#17242D;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    .ph-brand{display:flex;align-items:center;gap:11px}
+    .ph-logo{display:block;width:170px;height:auto}
+    .ph-meta{display:grid;justify-items:end;gap:3px;text-align:right;font-size:10px;color:#B9C5C5}
+    .ph-meta strong{color:#FFFEFC;font-size:13px}
+    .ph-client{margin-top:3px;padding:4px 8px;border-radius:20px;color:#F0C9AC;background:rgba(192,98,45,.3);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .report-table td.neg{color:#C0392B;font-weight:700}
+    .report-filters .grow select{min-width:210px}
     @media(max-width:1180px){.report-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:760px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media print{
@@ -211,13 +220,20 @@
               </div>
             </div>
             <form id="report-form" class="report-filters">
-              <label>Rapport<select id="report-type"><option value="calls">Appels & calibrages</option><option value="followups">Suivis par agent</option><option value="objects">Suivis par objet</option><option value="objectives">Respect & objectifs</option><option value="client">Rapport client</option></select></label>
+              <label class="grow">Type de rapport<select id="report-type">
+                <optgroup label="Synthèse"><option value="global">Rapport global · taux de respect</option><option value="overview">Vue générale · tableau de bord</option><option value="objectives">Suivi vs objectifs</option></optgroup>
+                <optgroup label="Évolutions"><option value="period-evolution">Évolution par période</option><option value="agent-evolution">Évolution par agent</option></optgroup>
+                <optgroup label="Détail"><option value="calls">Appels & calibrages</option><option value="followups">Suivis par agent</option><option value="objects">Suivis par objet</option><option value="client">Rapport client (anonyme)</option></optgroup>
+              </select></label>
               <label>Agent<select id="report-agent"><option value="all">Tous les agents</option></select></label>
+              <label>Éléments<select id="report-cat"><option value="all">Tous</option><option value="CTB">CTB · business</option><option value="CTC">CTC · client</option><option value="NC">NC · soft skills</option></select></label>
+              <label>Granularité<select id="report-grain"><option value="mois">Mois</option><option value="semaine">Semaine</option><option value="jour">Jour</option></select></label>
               <label>Du<input id="report-from" type="date" required></label>
               <label>Au<input id="report-to" type="date" required></label>
+              <label class="checkbox-label"><input id="report-anon" type="checkbox"> <span>Anonyme (masquer les noms d’agents)</span></label>
               <button class="button button-primary" type="submit">Générer le rapport</button>
             </form>
-            <div class="report-result-head"><strong id="report-title">Rapport · Appels & calibrages</strong><div><button class="button button-muted" id="export-report" type="button">Exporter CSV</button><button class="button button-muted" id="print-report" type="button">Imprimer / PDF</button></div></div>
+            <div class="report-result-head"><strong id="report-title">Rapport · Appels & calibrages</strong><div><button class="button button-muted" id="export-report" type="button">Télécharger le PDF</button></div></div>
             <p class="report-summary" id="report-summary"></p>
             <div class="report-kpis" id="report-kpis" hidden></div>
             <div class="table-wrap"><table class="agent-table report-table"><thead id="report-thead"></thead><tbody id="report-tbody"></tbody></table></div>
@@ -745,6 +761,10 @@
 
       function renderObjectiveProgress(cals,metrics,volumeTotal,targetAgents){const targetCalls=goals.callsPerAgent*targetAgents,targetCals=goals.calibrationsPerAgent*targetAgents;const data=[{name:'Appels pris',actual:volumeTotal,target:targetCalls,format:n=>fmtNum(n)},{name:'Calibrages terminés',actual:cals.length,target:targetCals,format:n=>fmtNum(n)},{name:'Respect des éléments',actual:metrics.pct,target:goals.compliancePct,format:n=>`${n}%`}];$('#objective-progress').innerHTML=data.map(x=>{const pct=x.target?Math.min(100,Math.round(x.actual/x.target*100)):0;return `<div class="objective-item"><div class="objective-item-head"><strong>${x.name}</strong><span>${x.format(x.actual)} / ${x.format(x.target)}</span></div><div class="objective-track"><div class="objective-fill" style="width:${pct}%"></div></div><small>${pct}% de l’objectif atteint</small></div>`;}).join('');}
       const sigmaWeek=iso=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+3-((d.getDay()+6)%7));const w1=new Date(d.getFullYear(),0,4);return 1+Math.round(((d-w1)/864e5-3+((w1.getDay()+6)%7))/7);};
+      // Rapport : taux de respect d'un objet getMetrics() filtré par catégorie ('all'|'CTB'|'CTC'|'NC').
+      const scoreCatOf=(m,cat)=>{if(!m)return 0;if(cat==='all'||!cat)return m.pct;const c=m.cats&&m.cats[cat];return c&&(c.ok+c.ko)?c.pct:m.pct;};
+      // Rapport : découpe une date ISO en bucket (jour / semaine ISO / mois) pour les évolutions.
+      const bucketOf=(iso,grain)=>{if(!iso)return {sort:'',label:'—'};if(grain==='jour')return {sort:iso,label:fmtDate(iso)};if(grain==='semaine'){const w=sigmaWeek(iso);return {sort:iso.slice(0,4)+'-S'+String(w).padStart(2,'0'),label:'S'+w};}const mn=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'][Number(iso.slice(5,7))-1]||'';return {sort:iso.slice(0,7),label:mn+' '+iso.slice(0,4)};};
       function monthCalibrations(){const y=today.getFullYear(),m=today.getMonth();const first=toISO(new Date(y,m,1)),last=toISO(new Date(y,m+1,0));
         return calibrations.filter(c=>(c.status||'Terminé')==='Terminé'&&c.date>=first&&c.date<=last&&(role!=='agent'||c.agentId===profile.agentId));}
       function renderTrend(){const host=$('#trend-chart');if(!host)return;const target=goals.compliancePct;
@@ -785,12 +805,13 @@
       function reportAgents(){let list=role==='agent'?agents.filter(a=>a.id===profile.agentId):agents;if($('#report-agent').value!=='all')list=list.filter(a=>a.id===$('#report-agent').value);return list;}
       function renderReport(){const from=$('#report-from').value||monthStart,to=$('#report-to').value||monthEnd,type=$('#report-type').value;if(from>to){lastReport={title:'',headers:[],rows:[]};$('#report-summary').textContent='La date de début doit précéder la date de fin.';$('#report-thead').innerHTML='';$('#report-tbody').innerHTML='';$('#report-kpis').hidden=true;return;}const reportList=reportAgents();let headers=[],rows=[],title='';
         const doneFor=id=>visibleCalibrations().filter(c=>c.agentId===id&&c.status==='Terminé'&&inPeriod(c.date,from,to));
+        const anon=$('#report-anon')?.checked;const anonLabel=(a,i)=>anon?('Agent '+(i+1)):a.name;
         const callsFor=id=>volumes.filter(v=>v.agentId===id&&v.from>=from&&v.to<=to).reduce((n,v)=>n+Number(v.count||0),0);
         const docsFor=id=>visibleDocs().filter(d=>d.agentId===id&&inPeriod(d.meetingDate,from,to));
-        if(type==='calls'){title='Appels & calibrages';headers=['Agent','Appels pris','Appels calibrés','Taux écouté','Respect'];rows=reportList.map(a=>{const c=doneFor(a.id),v=callsFor(a.id),m=getMetrics(c);return [a.name,fmtNum(v),fmtNum(c.length),v?`${Math.round(c.length/v*1000)/10}%`:'—',c.length?`${m.pct}%`:'—'];});}
-        else if(type==='followups'){title='Suivis par agent';headers=['Agent','Rencontres','Disciplinaire','Observations','Planifiés','Terminés','Annulés'];rows=reportList.map(a=>{const list=docsFor(a.id);return [a.name,...['Rencontre','Disciplinaire','Observation'].map(t=>list.filter(d=>d.type===t).length),list.filter(d=>d.status==='Planifié').length,list.filter(d=>d.status==='Terminé').length,list.filter(d=>d.status==='Annulé').length];});}
+        if(type==='calls'){title='Appels & calibrages';headers=['Agent','Appels pris','Appels calibrés','Taux écouté','Respect'];rows=reportList.map((a,i)=>{const c=doneFor(a.id),v=callsFor(a.id),m=getMetrics(c);return [anonLabel(a,i),fmtNum(v),fmtNum(c.length),v?`${Math.round(c.length/v*1000)/10}%`:'—',c.length?`${m.pct}%`:'—'];});}
+        else if(type==='followups'){title='Suivis par agent';headers=['Agent','Rencontres','Disciplinaire','Observations','Planifiés','Terminés','Annulés'];rows=reportList.map((a,i)=>{const list=docsFor(a.id);return [anonLabel(a,i),...['Rencontre','Disciplinaire','Observation'].map(t=>list.filter(d=>d.type===t).length),list.filter(d=>d.status==='Planifié').length,list.filter(d=>d.status==='Terminé').length,list.filter(d=>d.status==='Annulé').length];});}
         else if(type==='objects'){title='Suivis par objet';headers=['Type','Objet','Nombre','Part des suivis','Planifiés','Terminés','Annulés'];const grouped={};reportList.flatMap(a=>docsFor(a.id)).forEach(d=>{const key=`${d.type}||${d.object}`;(grouped[key]??={type:d.type,object:d.object,docs:[]}).docs.push(d);});const allDocs=Object.values(grouped).reduce((n,g)=>n+g.docs.length,0);rows=Object.values(grouped).map(g=>[g.type,g.object,g.docs.length,allDocs?`${Math.round(g.docs.length/allDocs*100)}%`:'0%',g.docs.filter(d=>d.status==='Planifié').length,g.docs.filter(d=>d.status==='Terminé').length,g.docs.filter(d=>d.status==='Annulé').length]);}
-        else{title='Respect & objectifs';headers=['Agent','Appels pris / objectif','Calibrages / objectif','Respect / cible'];rows=reportList.map(a=>{const c=doneFor(a.id),v=callsFor(a.id),m=getMetrics(c);return [a.name,`${fmtNum(v)} / ${fmtNum(goals.callsPerAgent)}`,`${fmtNum(c.length)} / ${fmtNum(goals.calibrationsPerAgent)}`,c.length?`${m.pct}% / ${goals.compliancePct}%`:`— / ${goals.compliancePct}%`];});}
+        else{title='Respect & objectifs';headers=['Agent','Appels pris / objectif','Calibrages / objectif','Respect / cible'];rows=reportList.map((a,i)=>{const c=doneFor(a.id),v=callsFor(a.id),m=getMetrics(c);return [anonLabel(a,i),`${fmtNum(v)} / ${fmtNum(goals.callsPerAgent)}`,`${fmtNum(c.length)} / ${fmtNum(goals.calibrationsPerAgent)}`,c.length?`${m.pct}% / ${goals.compliancePct}%`:`— / ${goals.compliancePct}%`];});}
         // ---- Synthèse KPI + ligne de totaux + méta d'en-tête PDF ----
         const allDone=reportList.flatMap(a=>doneFor(a.id));
         const km=getMetrics(allDone);
@@ -809,21 +830,70 @@
         if(type==='calls'){const tc=rows.reduce((s,r)=>s+n(r[1]),0),tk=rows.reduce((s,r)=>s+n(r[2]),0);totals=['Total',fmtNum(tc),fmtNum(tk),tc?`${Math.round(tk/tc*1000)/10}%`:'—',allDone.length?`${km.pct}%`:'—'];}
         else if(type==='followups'){totals=['Total',...headers.slice(1).map((_,i)=>fmtNum(rows.reduce((s,r)=>s+n(r[i+1]),0)))];}
         else if(type==='objects'){const t=rows.reduce((s,r)=>s+n(r[2]),0);totals=['Total','',fmtNum(t),'100%',fmtNum(rows.reduce((s,r)=>s+n(r[4]),0)),fmtNum(rows.reduce((s,r)=>s+n(r[5]),0)),fmtNum(rows.reduce((s,r)=>s+n(r[6]),0))];}
+        else if(type==='global'){
+          title='Rapport global · taux de respect';
+          headers=['Élément','Respectés','Évalués','Taux de respect','Cible','Statut'];
+          const c=goals.compliancePct;
+          const mk=(label,ok,tot,pct)=>[label,fmtNum(ok),fmtNum(tot),pct+'%',c+'%',pct>=c?'✓ Conforme':'⚠ Sous la cible'];
+          rows=[mk('Global',km.ok,km.ok+km.ko,km.pct),mk('CTB · business',km.cats.CTB.ok,km.cats.CTB.ok+km.cats.CTB.ko,km.cats.CTB.pct),mk('CTC · client',km.cats.CTC.ok,km.cats.CTC.ok+km.cats.CTC.ko,km.cats.CTC.pct),mk('NC · soft skills',km.cats.NC.ok,km.cats.NC.ok+km.cats.NC.ko,km.cats.NC.pct)];
+          totals=null;
+        }
+        else if(type==='overview'){
+          title='Vue générale · tableau de bord';
+          headers=['Indicateur','Valeur','Objectif','Atteinte','Statut'];
+          const targetCalls=goals.callsPerAgent*reportList.length,targetCals=goals.calibrationsPerAgent*reportList.length;
+          const docsAll=reportList.flatMap(a=>docsFor(a.id));
+          const renc=docsAll.filter(d=>d.type==='Rencontre').length;
+          const att=(a,t)=>t?Math.round(a/t*100)+'%':'—';
+          const st=(a,t)=>!t?'—':(a>=t?'✓ Atteint':(a>=t*0.8?'◐ Proche':'✎ À travailler'));
+          rows=[
+            ['Agents actifs',fmtNum(reportList.filter(a=>a.active!==false).length),'—','—','—'],
+            ['Appels pris',fmtNum(totalCalls),fmtNum(targetCalls),att(totalCalls,targetCalls),st(totalCalls,targetCalls)],
+            ['Calibrages terminés',fmtNum(allDone.length),fmtNum(targetCals),att(allDone.length,targetCals),st(allDone.length,targetCals)],
+            ['Score de respect',allDone.length?km.pct+'%':'—',goals.compliancePct+'%',allDone.length?att(km.pct,goals.compliancePct):'—',allDone.length&&km.pct>=goals.compliancePct?'✓ Atteint':'✎ À travailler'],
+            ['CTB · éléments business',(km.cats.CTB.ok+km.cats.CTB.ko)?km.cats.CTB.pct+'%':'—',goals.compliancePct+'%','—','—'],
+            ['CTC · éléments client',(km.cats.CTC.ok+km.cats.CTC.ko)?km.cats.CTC.pct+'%':'—',goals.compliancePct+'%','—','—'],
+            ['NC · soft skills',(km.cats.NC.ok+km.cats.NC.ko)?km.cats.NC.pct+'%':'—',goals.compliancePct+'%','—','—'],
+            ['Rencontres documentées',fmtNum(renc),'—','—','—']
+          ];
+          totals=null;
+        }
+        else if(type==='period-evolution'){
+          title='Évolution par période';
+          const grain=$('#report-grain')?.value||'mois',cat=$('#report-cat')?.value||'all';
+          headers=['Période','Calibrages','CTB','CTC','NC','Score','Évolution'];
+          const map=new Map();
+          allDone.forEach(c=>{const b=bucketOf(c.date,grain);if(!map.has(b.sort))map.set(b.sort,{sort:b.sort,label:b.label,docs:[]});map.get(b.sort).docs.push(c);});
+          const arr=[...map.values()].sort((a,b)=>a.sort<b.sort?-1:1);
+          rows=arr.map((g,i)=>{const m=getMetrics(g.docs),sc=scoreCatOf(m,cat),prev=i?scoreCatOf(getMetrics(arr[i-1].docs),cat):null;const d=prev===null?'—':(sc-prev>=0?'+':'')+(sc-prev)+' pts';return [g.label,fmtNum(g.docs.length),m.cats.CTB.pct+'%',m.cats.CTC.pct+'%',m.cats.NC.pct+'%',sc+'%',d];});
+          if(allDone.length){const m=getMetrics(allDone);totals=['Moyenne',fmtNum(allDone.length),m.cats.CTB.pct+'%',m.cats.CTC.pct+'%',m.cats.NC.pct+'%',scoreCatOf(m,cat)+'%','—'];}
+        }
+        else if(type==='agent-evolution'){
+          title='Évolution par agent';
+          const grain=$('#report-grain')?.value||'mois',cat=$('#report-cat')?.value||'all';
+          const bmap=new Map();allDone.forEach(c=>{const b=bucketOf(c.date,grain);if(!bmap.has(b.sort))bmap.set(b.sort,{sort:b.sort,label:b.label});});
+          const buckets=[...bmap.values()].sort((a,b)=>a.sort<b.sort?-1:1).map(e=>e.label);
+          headers=['Agent',...buckets,'Moyenne'];
+          rows=reportList.map((a,i)=>{const cs=doneFor(a.id);const per=buckets.map(lbl=>{const arr=cs.filter(c=>bucketOf(c.date,grain).label===lbl);return arr.length?scoreCatOf(getMetrics(arr),cat)+'%':'—';});const avg=cs.length?scoreCatOf(getMetrics(cs),cat)+'%':'—';return [anonLabel(a,i),...per,avg];});
+          if(buckets.length){const per=buckets.map(lbl=>{const arr=allDone.filter(c=>bucketOf(c.date,grain).label===lbl);return arr.length?scoreCatOf(getMetrics(arr),cat)+'%':'—';});totals=['Moyenne',...per,allDone.length?scoreCatOf(getMetrics(allDone),cat)+'%':'—'];}
+        }
         else if(type==='client'){title='Rapport client';headers=['Période','CTB','CTC','NC','Score','Évolution'];const allC=reportList.flatMap(a=>doneFor(a.id));const byW={};allC.forEach(c=>{const k='S'+sigmaWeek(c.date);(byW[k]??=[]).push(c);});const wks=Object.keys(byW).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));const graded=wks.map(k=>({k,m:getMetrics(byW[k])}));rows=graded.map((g,i)=>{const prev=i?graded[i-1].m.pct:null;const d=prev===null?'—':(g.m.pct-prev>=0?'+':'')+(g.m.pct-prev)+' pts';return [g.k,g.m.cats.CTB.pct+'%',g.m.cats.CTC.pct+'%',g.m.cats.NC.pct+'%',g.m.pct+'%',d];});}
         else if(type==='client'&&rows.length){const g=getMetrics(reportList.flatMap(a=>doneFor(a.id)));totals=['Total',g.cats.CTB.pct+'%',g.cats.CTC.pct+'%',g.cats.NC.pct+'%',g.pct+'%','—'];}
         else if(rows.length){const avg=v=>Math.round(rows.reduce((s,r)=>s+v(r),0)/rows.length);totals=['Moyenne',`${fmtNum(avg(r=>n(String(r[1]).split('/')[0])))} / ${fmtNum(goals.callsPerAgent)}`,`${fmtNum(avg(r=>n(String(r[2]).split('/')[0])))} / ${fmtNum(goals.calibrationsPerAgent)}`,`${avg(r=>n(String(r[3]).split('/')[0]))} % / ${goals.compliancePct} %`];}
         $('#report-title').textContent=`Rapport · ${title}`;
-        $('#report-summary').textContent=`${reportList.length} agent(s) · ${fmtDate(from)} – ${fmtDate(to)} · Volumes manuels dont la période est incluse dans le filtre.${type==='client'&&rows.length?` Évolution hebdo — ${[0,1,2,3,4].map(i=>{const w=[];allDone.forEach(c=>{const day=Number(c.date.slice(8,10));if(Math.min(4,Math.floor((day-1)/7))===i)w.push(c);});const m=getMetrics(w);return 'S'+sigmaWeek((allDone.length?allDone[0].date.slice(0,8):toISO(today).slice(0,8))+String(1+i*7).padStart(2,'0'))+' : '+(m.ok+m.ko?m.pct+'%':'—');}).join(' · ')}`:''}`;if(type==='client'){const cal=[];if(km.pct<goals.compliancePct)cal.push(`Score global à <b>${km.pct}%</b>, sous la cible de ${goals.compliancePct}%.`);Object.entries(QA_CATS).forEach(([k,meta])=>{const c=km.cats[k];if((c.ok+c.ko)&&c.pct<goals.compliancePct)cal.push(`<b>${k}</b> — ${meta.name.split('· ')[1]||meta.name} à <b>${c.pct}%</b>, sous la cible.`);});const bw={};allDone.forEach(c=>{const k='S'+sigmaWeek(c.date);(bw[k]??=[]).push(c);});const bk=Object.keys(bw).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1))).map(k=>({k,m:getMetrics(bw[k])}));if(bk.length>=2){const l=bk[bk.length-1].m.pct,p=bk[bk.length-2].m.pct;if(l-p<=-5)cal.push(`Baisse de <b>${p-l} points</b> sur la dernière semaine (${p}% → ${l}%).`);}if(cal.length)$('#report-summary').innerHTML+=`<br>${cal.map(a=>`<span class="alert-item danger"><i>!</i><span>${a}</span></span>`).join('')}`;}
+        $('#report-summary').textContent=`${reportList.length} agent(s) · ${fmtDate(from)} – ${fmtDate(to)} · Volumes manuels dont la période est incluse dans le filtre.${type==='client'&&rows.length?` Évolution hebdo — ${[0,1,2,3,4].map(i=>{const w=[];allDone.forEach(c=>{const day=Number(c.date.slice(8,10));if(Math.min(4,Math.floor((day-1)/7))===i)w.push(c);});const m=getMetrics(w);return 'S'+sigmaWeek((allDone.length?allDone[0].date.slice(0,8):toISO(today).slice(0,8))+String(1+i*7).padStart(2,'0'))+' : '+(m.ok+m.ko?m.pct+'%':'—');}).join(' · ')}`:''}`;if(false){/* alertes masquées dans le rapport client */const cal=[];if(km.pct<goals.compliancePct)cal.push(`Score global à <b>${km.pct}%</b>, sous la cible de ${goals.compliancePct}%.`);Object.entries(QA_CATS).forEach(([k,meta])=>{const c=km.cats[k];if((c.ok+c.ko)&&c.pct<goals.compliancePct)cal.push(`<b>${k}</b> — ${meta.name.split('· ')[1]||meta.name} à <b>${c.pct}%</b>, sous la cible.`);});const bw={};allDone.forEach(c=>{const k='S'+sigmaWeek(c.date);(bw[k]??=[]).push(c);});const bk=Object.keys(bw).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1))).map(k=>({k,m:getMetrics(bw[k])}));if(bk.length>=2){const l=bk[bk.length-1].m.pct,p=bk[bk.length-2].m.pct;if(l-p<=-5)cal.push(`Baisse de <b>${p-l} points</b> sur la dernière semaine (${p}% → ${l}%).`);}if(cal.length)$('#report-summary').innerHTML+=`<br>${cal.map(a=>`<span class="alert-item danger"><i>!</i><span>${a}</span></span>`).join('')}`;}
+        if(type==='global'||type==='overview'||type==='period-evolution'||type==='agent-evolution'){const g=$('#report-grain')?.value||'mois';$('#report-summary').textContent+=` · Granularité : ${g}`;}
         $('#report-thead').innerHTML=`<tr>${headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('')}</tr>`;
         const rowsHtml=rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i===0&&(type!=='objects'&&type!=='client')?`<span class="agent-cell">${escapeHTML(v)}</span>`:escapeHTML(v)}</td>`).join('')}</tr>`).join('');
         const totalsHtml=totals?`<tr class="totals-row">${totals.map(v=>`<td>${escapeHTML(v)}</td>`).join('')}</tr>`:'';
         $('#report-tbody').innerHTML=rows.length?rowsHtml+totalsHtml:'<tr><td colspan="8" class="empty-note">Aucun résultat pour les critères sélectionnés.</td></tr>';
+        $$('#report-tbody td').forEach(td=>{if(/Sous la cible|À travailler/.test(td.textContent))td.classList.add('neg');});
         // ---- Méta de l'en-tête PDF (logo + contexte) ----
         $('#ph-title').textContent=`Rapport · ${title}`;
         $('#ph-period').textContent=`Période : ${fmtDate(from)} – ${fmtDate(to)}`;
         $('#ph-generated').textContent=`Généré le ${new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{dateStyle:'long',timeStyle:'short'}).format(new Date())}`;
         $('#ph-author').textContent=`Édité par : ${profile.name}`;
-        lastReport={title,headers,rows};}
+        const grainG=$('#report-grain')?.value||'mois',catG=$('#report-cat')?.value||'all';const emapG=new Map();allDone.forEach(c=>{const b=bucketOf(c.date,grainG);if(!emapG.has(b.sort))emapG.set(b.sort,{sort:b.sort,label:b.label,docs:[]});emapG.get(b.sort).docs.push(c);});const evolution=[...emapG.values()].sort((a,b)=>a.sort<b.sort?-1:1).map(g=>({label:g.label,pct:scoreCatOf(getMetrics(g.docs),catG)}));const respectBars=[['Global',km.pct],['CTB',(km.cats.CTB.ok+km.cats.CTB.ko)?km.cats.CTB.pct:null],['CTC',(km.cats.CTC.ok+km.cats.CTC.ko)?km.cats.CTC.pct:null],['NC',(km.cats.NC.ok+km.cats.NC.ko)?km.cats.NC.pct:null]].map(x=>({label:x[0],pct:x[1]}));lastReport={title,headers,rows,totals,kpis,target:goals.compliancePct,period:{fromLabel:fmtDate(from),toLabel:fmtDate(to)},generated:new Intl.DateTimeFormat((window.sigmaLocale||'fr-MA'),{dateStyle:'long',timeStyle:'short'}).format(new Date()),author:profile.name,charts:{respectBars,evolution}};}
       let lastReport={title:'',headers:[],rows:[]};
       let pendingMeetKey=null;
       function refresh(){renderDashboard();renderCalendar();renderTeam();renderConfig();renderReport();}
@@ -987,10 +1057,123 @@
       $('#goals-form').addEventListener('submit',e=>{e.preventDefault();if(!canManageConfig){toast('Accès non autorisé.');return;}goals={callsPerAgent:Number($('#goal-calls').value),calibrationsPerAgent:Number($('#goal-calibrations').value),compliancePct:Number($('#goal-compliance').value)};saveAll();refresh();toast('Objectifs enregistrés.');});
       $('#report-form').addEventListener('submit',e=>{e.preventDefault();renderReport();downloadReport(true);});
       $('#report-type').addEventListener('change',renderReport);$('#report-agent').addEventListener('change',renderReport);
-      $('#report-from').addEventListener('change',renderReport);$('#report-to').addEventListener('change',renderReport);
+      $('#report-from').addEventListener('change',renderReport);$('#report-to').addEventListener('change',renderReport);$('#report-cat').addEventListener('change',renderReport);$('#report-grain').addEventListener('change',renderReport);
       $('#export-report').addEventListener('click',()=>downloadReport(false));
-        function downloadReport(auto){if(!lastReport.headers.length){if(!auto)toast('Générez un rapport avant l’export.');return;}const quote=v=>`"${String(v??'').replaceAll('"','""')}"`;const csv=String.fromCharCode(0xFEFF)+[lastReport.headers,...lastReport.rows].map(row=>row.map(quote).join(';')).join(String.fromCharCode(13,10));const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const link=document.createElement('a');const objectUrl=URL.createObjectURL(blob);link.href=objectUrl;link.download=`sigma-${lastReport.title.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.csv`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);toast(auto?'Rapport téléchargé automatiquement.':'Export CSV téléchargé.');}
-      $('#print-report').addEventListener('click',()=>{document.body.classList.add('printing-report');window.print();setTimeout(()=>document.body.classList.remove('printing-report'),600);});
+      // Nettoie un texte pour jsPDF (helvetica = WinAnsi) : remplace tirets/guillemets exotiques.
+      const T=s=>String(s??'').replace(/[\u2014\u2013]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/\u00A0/g,' ');
+      // Rasterise le logo SVG en PNG (meme origine) pour l'integrer au PDF.
+      function loadLogoDataUrl(){return new Promise(res=>{try{const img=new Image();img.onload=()=>{try{const c=document.createElement('canvas');const k=Math.min(4,1800/img.width);c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/png'));}catch(e){res(null);}};img.onerror=()=>res(null);img.src='assets/acx-sigma-logo.svg';}catch(e){res(null);}});}
+      async function downloadReport(auto){
+        if(!lastReport.headers.length){if(!auto)toast('Générez un rapport avant l’export.');return;}
+        const R=lastReport;
+        const fname='sigma-'+(R.title||'rapport').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.pdf';
+        const JSPDF=window.jspdf&&window.jspdf.jsPDF;
+        if(!JSPDF){
+          const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+          const csv=String.fromCharCode(0xFEFF)+[R.headers,...R.rows].map(row=>row.map(quote).join(';')).join(String.fromCharCode(13,10));
+          const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname.replace(/\.pdf$/,'.csv');document.body.append(a);a.click();a.remove();
+          toast('Lib PDF indisponible — export CSV.');return;
+        }
+        const doc=new JSPDF({unit:'mm',format:'a4'});
+        const W=210,H=297,M=14;
+        const INK=[23,36,45],INK2=[35,54,64],COPPER=[192,98,45],PAPER=[245,244,240],LINE=[231,228,221],MUTED=[116,128,132],GOOD=[30,158,106],BAD=[192,57,43],TOTBG=[237,233,224];
+        let y=M;
+        doc.setFillColor(INK[0],INK[1],INK[2]);doc.rect(0,0,W,32,'F');
+        doc.setFillColor(COPPER[0],COPPER[1],COPPER[2]);doc.rect(0,32,W,2,'F');
+        const logo=await loadLogoDataUrl();
+        if(logo){try{doc.addImage(logo,'PNG',M,9,46,10);}catch(e){}}
+        doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(13);
+        doc.text(T(R.title||'Rapport'),M+50,15,{maxWidth:W-M-M-50});
+        doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(212,217,220);
+        doc.text(T('Période : '+(R.period?R.period.fromLabel+' – '+R.period.toLabel:'')),M+50,21,{maxWidth:W-M-M-50});
+        doc.text(T('Généré le '+(R.generated||'')+'  ·  Édité par '+(R.author||'')),M+50,26,{maxWidth:W-M-M-50});
+        y=44;
+        if(R.kpis&&R.kpis.length){
+          doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text('Indicateurs clés',M,y);
+          const gap=3,n=R.kpis.length,cw=(W-2*M-gap*(n-1))/n,top=y+4;
+          R.kpis.forEach((k,i)=>{
+            const x=M+i*(cw+gap);
+            doc.setFillColor(PAPER[0],PAPER[1],PAPER[2]);doc.roundedRect(x,top,cw,20,2,2,'F');
+            doc.setFillColor(COPPER[0],COPPER[1],COPPER[2]);doc.rect(x,top,cw,1.2,'F');
+            doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+            doc.text(T(k[0]||''),x+2,top+6,{maxWidth:cw-4});
+            doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(INK[0],INK[1],INK[2]);
+            doc.text(T(k[1]!=null?k[1]:'—'),x+2,top+14,{maxWidth:cw-4});
+            if(k[2]){doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(T(k[2]),x+2,top+18,{maxWidth:cw-4});}
+          });
+          y=top+26;
+        }
+        const ch=R.charts||{};
+
+        if(ch.respectBars&&ch.respectBars.length){
+          doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text('Taux de respect par élément',M,y);y+=6;
+          const bx=M+26,bw=W-M-bx-16,bh=7;
+          ch.respectBars.forEach(b=>{
+            const pct=b.pct==null?null:Math.max(0,Math.min(100,b.pct));
+            doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(INK2[0],INK2[1],INK2[2]);
+            doc.text(T(b.label),M,y+5,{maxWidth:24});
+            doc.setFillColor(PAPER[0],PAPER[1],PAPER[2]);doc.roundedRect(bx,y,bw,bh,1.5,1.5,'F');
+            if(pct!=null){
+              const col=pct>=(R.target||85)?GOOD:BAD;
+              doc.setFillColor(col[0],col[1],col[2]);doc.roundedRect(bx,y,Math.max(3,bw*pct/100),bh,1.5,1.5,'F');
+              doc.setFont('helvetica','bold');doc.setTextColor(INK[0],INK[1],INK[2]);doc.text(pct+'%',bx+bw+2,y+5);
+            }else{doc.setFont('helvetica','normal');doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text('—',bx+bw+2,y+5);}
+            y+=bh+3;
+          });
+          if(R.target!=null){doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text('cible '+R.target+'%',Math.min(bx+bw*(R.target/100)+1,W-M-24),y-1);}
+          y+=4;
+        }
+        if(ch.evolution&&ch.evolution.length){
+          doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text('Évolution du score',M,y);y+=5;
+          const gx=M+10,gy=y,gw=W-M-gx-8,gh=34;
+          doc.setFillColor(PAPER[0],PAPER[1],PAPER[2]);doc.rect(gx,gy,gw,gh,'F');
+          doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.rect(gx,gy,gw,gh);
+          doc.setFontSize(6);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+          [0,50,100].forEach(v=>{const yy=gy+gh-(gh*v/100);doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.line(gx,yy,gx+gw,yy);doc.text(String(v),gx-2,yy+1,{align:'right'});});
+          if(R.target!=null){const ty=gy+gh-(gh*Math.min(100,R.target)/100);doc.setDrawColor(BAD[0],BAD[1],BAD[2]);doc.setLineDashPattern([1.5,1.5],0);doc.line(gx,ty,gx+gw,ty);doc.setLineDashPattern([],0);}
+          const n=ch.evolution.length;
+          const pts=ch.evolution.map((e,i)=>{const x=n>1?gx+gw*i/(n-1):gx+gw/2;const v=(e.pct==null)?null:Math.max(0,Math.min(100,e.pct));return {x,y:(v==null?null:gy+gh-gh*v/100),label:e.label};});
+          doc.setDrawColor(COPPER[0],COPPER[1],COPPER[2]);doc.setLineWidth(0.9);let prev=null,started=false;
+          pts.forEach(p=>{if(p.y==null){started=false;return;}if(!started){doc.line(p.x,gy+gh,p.x,p.y);started=true;}else{doc.line(prev.x,prev.y,p.x,p.y);}prev=p;});
+          doc.setFillColor(INK[0],INK[1],INK[2]);
+          pts.forEach(p=>{if(p.y!=null)doc.circle(p.x,p.y,0.9,'F');});
+          doc.setFontSize(6);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+          pts.forEach(p=>doc.text(T(p.label),p.x,gy+gh+3.5,{align:'center',maxWidth:Math.max(12,gw/n)}));
+          doc.setLineWidth(0.2);doc.setLineDashPattern([],0);
+          y=gy+gh+9;
+        }
+        if(R.headers&&R.headers.length){
+          if(y>H-46){doc.addPage();y=M;}
+          doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text('Détail',M,y);y+=4;
+          const cols=R.headers.length,colW=(W-2*M)/cols;
+          const drawHead=()=>{
+            doc.setFillColor(INK2[0],INK2[1],INK2[2]);doc.rect(M,y,W-2*M,8,'F');
+            doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(255,255,255);
+            R.headers.forEach((h,i)=>doc.text(T(h),M+i*colW+2,y+5.5,{maxWidth:colW-4}));
+            y+=8;
+          };
+          drawHead();
+          const rh=7,allRows=R.rows.concat(R.totals?[R.totals]:[]),isTot=i=>(!!R.totals&&i===allRows.length-1);
+          allRows.forEach((row,ri)=>{
+            if(y+rh>H-20){doc.addPage();y=M;drawHead();}
+            if(isTot(ri)){doc.setFillColor(TOTBG[0],TOTBG[1],TOTBG[2]);doc.rect(M,y,W-2*M,rh,'F');}
+            else if(ri%2===0){doc.setFillColor(PAPER[0],PAPER[1],PAPER[2]);doc.rect(M,y,W-2*M,rh,'F');}
+            doc.setFont('helvetica',isTot(ri)?'bold':'normal');doc.setFontSize(7.5);
+            row.forEach((cell,ci)=>{
+              const s=String(cell??'');
+              const neg=/Sous la cible|À travailler/.test(s),ok=/Conforme|Atteint/.test(s);
+              doc.setTextColor(neg?BAD[0]:(ok?GOOD[0]:INK2[0]),neg?BAD[1]:(ok?GOOD[1]:INK2[1]),neg?BAD[2]:(ok?GOOD[2]:INK2[2]));
+              doc.text(T(s),M+ci*colW+2,y+5,{maxWidth:colW-4});
+            });
+            y+=rh;
+          });
+        }
+        doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.line(M,H-14,W-M,H-14);
+        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+        doc.text('Sigma · ACX · Document généré automatiquement · Diffusion restreinte · sigma.acx.ma',M,H-9);
+        doc.save(fname);
+        toast(auto?'Rapport PDF téléchargé automatiquement.':'Rapport PDF téléchargé.');
+      }
 
       const volumeDialog=$('#volume-dialog'),volumeForm=$('#volume-form');
       $('#open-volume').addEventListener('click',()=>{if(!canManageVolumes)return;volumeForm.reset();$('#volume-from').value=fromInput.value||monthStart;$('#volume-to').value=toInput.value||monthEnd;$('#volume-agent').value=$('#volume-agent').options[0]?.value||'';volumeDialog.showModal();});

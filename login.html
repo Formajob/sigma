@@ -46,19 +46,13 @@
       <div class="access-top"><span>sigma.acx.ma</span><a href="index.html">← Retour à la présentation</a></div>
       <div class="access-card">
         <div class="card-heading">
-          <div class="eyebrow"><i></i>Accès client · démonstration</div>
+          <div class="eyebrow"><i></i>Accès client · Americana</div>
           <h2>Bienvenue.</h2>
-          <p>Choisissez votre espace client pour accéder à sa maquette.</p>
+          <p>Connectez-vous pour accéder à votre espace de suivi.</p>
         </div>
 
-        <div class="client-heading"><strong>Votre espace client</strong><span>Sélectionnez votre espace</span></div>
-        <div class="client-grid" role="group" aria-label="Choisir un espace client">
-          <button class="client-option" type="button" data-client="Americana" aria-pressed="false"><span class="client-mark" aria-hidden="true">A</span><strong>Americana</strong><span class="client-arrow" aria-hidden="true">›</span></button>
-        </div>
-
-        <p class="client-status" id="client-status" role="status" hidden></p>
-        <form class="credentials" id="credentials-form" hidden>
-          <div class="credentials-head"><strong>Connexion de démonstration</strong><span class="selected-client" id="selected-client">Americana</span></div>
+        <form class="credentials" id="credentials-form">
+          <div class="credentials-head"><strong>Connexion</strong><span class="selected-client" id="selected-client">Americana</span></div>
           <div class="form-grid">
             <div class="form-field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="username" placeholder="nom@entreprise.ma" required></div>
             <div class="form-field"><label for="password">Mot de passe</label><div class="field-wrap"><input class="password-input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required><button class="show-password" id="show-password" type="button" aria-label="Afficher le mot de passe">Voir</button></div></div>
@@ -67,7 +61,14 @@
           <p class="login-status" id="login-status" role="alert" hidden></p>
         </form>
 
-        <p class="security-note"><span aria-hidden="true">!</span><span><b>Mode maquette :</b> les identifiants de test sont vérifiés dans cette page statique. Ce contrôle n’est pas une authentification sécurisée; n’utilisez pas de mot de passe réel.</span></p>
+        <div id="space-choice" hidden>
+          <div class="client-heading"><strong>Votre espace client</strong><span>Sélectionnez votre espace</span></div>
+          <div class="client-grid" role="group" aria-label="Choisir un espace client">
+            <button class="client-option" type="button" data-client="Americana" aria-pressed="false"><span class="client-mark" aria-hidden="true">A</span><strong>Americana</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+            <button class="client-option" type="button" data-client="Marketing" aria-pressed="false"><span class="client-mark" aria-hidden="true">M</span><strong>Marketing</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+          </div>
+          <p class="client-status" id="client-status" role="status" hidden></p>
+        </div>
       </div>
       <div class="access-foot">Un produit ACX Maroc · <a href="mailto:contact@acx.ma">contact@acx.ma</a></div>
     </section>
@@ -80,11 +81,8 @@
     (() => {
       const clientButtons = Array.from(document.querySelectorAll('.client-option'));
       const credentialsForm = document.getElementById('credentials-form');
-      const selectedClient = document.getElementById('selected-client');
-      const clientStatus = document.getElementById('client-status');
       const loginStatus = document.getElementById('login-status');
       const submitBtn = credentialsForm.querySelector('.sign-in-button');
-      let activeClient = '';
 
       // Définition des cibles de redirection après connexion (pages générées).
       // - ?page=dashboard|calendrier|rapports|equipe|configuration|administration
@@ -102,25 +100,6 @@
       const requestedDoc = params.get('doc') || '';
       const targetPage = (PAGE_MAP[requestedPage] || 'dashboard.html') + (requestedDoc ? ('?doc=' + encodeURIComponent(requestedDoc)) : '');
 
-      clientButtons.forEach((button) => button.addEventListener('click', () => {
-        activeClient = button.dataset.client;
-        clientButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-        clientStatus.hidden = true;
-        loginStatus.hidden = false;
-        credentialsForm.reset();
-        if (activeClient === 'Americana') {
-          credentialsForm.hidden = false;
-          selectedClient.textContent = activeClient;
-          loginStatus.textContent = 'Connectez-vous avec votre compte Sigma (Supabase).';
-          document.getElementById('email').focus();
-        } else {
-          credentialsForm.hidden = true;
-          clientStatus.textContent = `L\u2019acc\u00e8s ${activeClient} n\u2019est pas encore branch\u00e9.`;
-          clientStatus.hidden = false;
-          loginStatus.hidden = true;
-        }
-      }));
-
       document.getElementById('show-password').addEventListener('click', (event) => {
         const password = document.getElementById('password');
         const showing = password.type === 'text';
@@ -129,10 +108,12 @@
         event.currentTarget.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
       });
 
+      const spaceChoice = document.getElementById('space-choice');
+
       // Arrivée avec motif (?msg=suspended) : compte bloqué par requireAuth.
       if (new URLSearchParams(window.location.search).get('msg') === 'suspended') {
-        clientStatus.textContent = 'Accès suspendu. Contactez votre superviseur pour réactiver votre compte.';
-        clientStatus.hidden = false;
+        loginStatus.textContent = 'Accès suspendu. Contactez votre superviseur pour réactiver votre compte.';
+        loginStatus.hidden = false;
       }
 
       credentialsForm.addEventListener('submit', async (event) => {
@@ -157,7 +138,9 @@
             loginStatus.hidden = false;
             return;
           }
-          window.location.href = targetPage;
+          // Connexion réussie : on masque le formulaire et on propose le choix de l'espace.
+          credentialsForm.hidden = true;
+          spaceChoice.hidden = false;
         } catch (err) {
           loginStatus.textContent = 'Identifiants incorrects ou compte inactif. Réessayez.';
           loginStatus.hidden = false;
@@ -166,6 +149,17 @@
           submitBtn.innerHTML = 'Se connecter <span aria-hidden="true">↗</span>';
         }
       });
+
+      // Choix de l'espace client, une fois connecté.
+      clientButtons.forEach((button) => button.addEventListener('click', () => {
+        const client = button.dataset.client;
+        if (client === 'Marketing') {
+          window.location.href = 'marketing.html';
+          return;
+        }
+        // Americana (et tout autre espace branché) : redirection vers la page demandée.
+        window.location.href = targetPage;
+      }));
     })();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47962868ad5eca6',t:'MTc5MTUwNjk2MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
