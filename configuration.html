@@ -911,6 +911,21 @@ function docLoginLink(d){try{const b=new URL('login.html',location.href);b.searc
       }
       async function deleteEntryFromDetail(e){
         const d=e.data;
+        if(e.kind==='follow'){
+          // Occurrence "suivi" = vue dérivée du même document (followUpDate).
+          // La supprimer ne doit PAS effacer le document initial : on retire
+          // seulement le suivi planifié (followUpDate vidé), serveur + local.
+          if(!confirm(t('Retirer le suivi planifié du {date} ? Le document initial du {init} sera conservé.',{date:fmtDate(d.followUpDate),init:fmtDate(d.meetingDate)})))return;
+          try{
+            const idx=docs.findIndex(x=>x.id===d.id);
+            const cur=idx>=0?docs[idx]:d;
+            const kept={...cur,followUpDate:''};
+            if(agentsSource==='supabase')await window.sigmaSupabase.updateDocument(d.id,{type:kept.type,status:kept.status,object:kept.object,meetingDate:kept.meetingDate,followUpDate:'',agentId:kept.agentId,callId:kept.callId||'',visibility:kept.visibility,fiss:kept.fiss||{}});
+            if(idx>=0)docs[idx]=kept;else docs.push(kept);
+            $('#detail-dialog').close();refresh();toast(t('Suivi planifié retiré. Document initial conservé.'));
+          }catch(err){toast('Suppression refusée : '+(err.message||err));}
+          return;
+        }
         const what=e.kind==='cal'?`le calibrage du ${fmtDate(d.date)}`:`le document « ${d.object||d.type} » du ${fmtDate(d.meetingDate)}`;
         if(!confirm(t('Supprimer définitivement {what} ?',{what})))return;
         try{
