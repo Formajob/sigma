@@ -1,16 +1,31 @@
 /* ============================================================
  * Sigma — Client Supabase partagé (Americana)
  *
- * Usage dans une page :
- *   <script src="js/supabase-config.js"></script>
- *   <script src="js/supabase-client.js"></script>
- *   <script>
- *     const info = await window.sigmaSupabase.testConnection();
- *     console.log("Agents Americana :", info.agents);
- *   </script>
+ * NOTE SÉCURITÉ (I1) : la clé `anon` ci-dessous est PUBLIQUE par design
+ * (clé client Supabase, protégée par les politiques RLS serveur).
+ * En revanche NE JAMAIS commiter de clé `service_role` : elle
+ * contourne toutes les RLS. Le fichier js/supabase-config.js est
+ * requis en prod car Vercel sert le site en statique pur (sans build),
+ * donc la config ne peut pas être injectée via variable d'environnement.
  * ============================================================ */
 (function () {
   "use strict";
+
+  // I2 — Silencieux console en production : les détails d'erreur Supabase
+  // (schéma, contraintes) ne doivent pas fuiter dans la console visiteur.
+  // Logs conservés en local : ?debug=1 ou localhost/127.0.0.1.
+  try {
+    var __dbg = /[?&]debug=1\b/.test(location.search)
+      || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if (!__dbg && window.console) {
+      ['log', 'debug', 'info', 'warn'].forEach(function (m) {
+        try { window.console[m] = function () {}; } catch (e) {}
+      });
+      // 'error' conservé : utile au support, sans détails sensibles
+      // (les messages techniques passent par toast(), pas par console).
+    }
+  } catch (e) {}
+
 
   var CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js";
   var client = null;
@@ -57,7 +72,27 @@
 
   async function signOut() {
     var db = await getClient();
-    await db.auth.signOut();
+    try {
+      await db.auth.signOut();
+    } finally {
+      // Sécurité : aucune donnée Sigma ne doit survivre à la déconnexion
+      // (poste partagé). On purge les caches applicatifs + les jetons d'auth.
+      purgeLocalData();
+    }
+  }
+
+  // Purge toutes les données locales Sigma (caches + jetons Supabase).
+  // Utilisée à la déconnexion ET en cas de compte suspendu/sans profil.
+  function purgeLocalData() {
+    try {
+      var doomed = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf('sigma-') === 0 || k.indexOf('sb-') === 0)) doomed.push(k);
+      }
+      doomed.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      try { sessionStorage.clear(); } catch (e) {}
+    } catch (e) {}
   }
 
   // Profil applicatif : rôle + agent lié (null si pas de ligne = pas d'accès)

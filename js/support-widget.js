@@ -123,7 +123,8 @@
     + 'justify-content:center;font-size:28px;margin:0 auto 14px}'
     + '.acxsw-hint{font-size:12px;color:#94A3B8;text-align:center;padding:8px}'
     + '.acxsw-close{background:none;border:0;color:#94A3B8;cursor:pointer;font-size:12px;font-family:inherit}'
-    + '.acxsw-spin{animation:acxswSpin .9s linear infinite;display:inline-block}';
+    + '.acxsw-spin{animation:acxswSpin .9s linear infinite;display:inline-block}'
+    + '.acxsw-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5}';
   var styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   document.head.appendChild(styleEl);
@@ -207,7 +208,7 @@
       + '<div>👤 ' + esc(u && u.full_name ? u.full_name : 'Non connecté') + ' · ' + esc(roleLabel(u && u.role)) + '</div>'
       + '<div>📍 ' + esc(f.page || state.page) + '</div><div>🕐 ' + esc(new Date().toLocaleString('fr-MA')) + '</div></div>'
       + (ready
-        ? '<button type="button" class="acxsw-send' + (f.urgent ? ' urgent' : '') + '" id="acxsw-send">' + (state.sending ? '<span class="acxsw-spin">⏳</span> Envoi…' : (f.urgent ? '🚨 Envoyer ticket URGENT' : 'Envoyer le ticket')) + '</button>'
+        ? (state.sendError ? '<div class="acxsw-err">⚠️ ' + esc(state.sendError) + '</div>' : '') + '<button type="button" class="acxsw-send' + (f.urgent ? ' urgent' : '') + '" id="acxsw-send">' + (state.sending ? '<span class="acxsw-spin">⏳</span> Envoi…' : (f.urgent ? '🚨 Envoyer ticket URGENT' : 'Envoyer le ticket')) + '</button>'
         : '<div class="acxsw-hint">Sélectionnez un type et décrivez le problème pour envoyer.</div>')
       + '</div></div>' + foot();
   }
@@ -263,12 +264,14 @@
       body: JSON.stringify(payload)
     }).then(function (r) { return r.json(); }).then(function (res) {
       state.sending = false;
-      if (res && res.success) { state.step = 'sent'; }
-      else { state.step = 'sent'; }
+      // Sécurité : on ne confirme l'envoi que si le serveur l'a accepté.
+      // En cas d'échec, on reste sur le formulaire avec un message d'erreur.
+      if (res && res.success) { state.step = 'sent'; state.sendError = ''; }
+      else { state.sendError = 'Envoi refusé par le serveur. Réessayez ou utilisez WhatsApp.'; }
       render();
     }).catch(function () {
       state.sending = false;
-      state.step = 'sent';
+      state.sendError = 'Erreur de connexion. Vérifiez votre internet ou utilisez WhatsApp.';
       render();
     });
   }

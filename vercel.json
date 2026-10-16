@@ -22,7 +22,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kxmddtxtjumjmqadcdyu.supabase.co wss://kxmddtxtjumjmqadcdyu.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kxmddtxtjumjmqadcdyu.supabase.co wss://kxmddtxtjumjmqadcdyu.supabase.co https://api.web3forms.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
         }
       ]
     }
