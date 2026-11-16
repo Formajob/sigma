@@ -65,7 +65,8 @@
           <div class="client-heading"><strong>Votre espace client</strong><span>Sélectionnez votre espace</span></div>
           <div class="client-grid" role="group" aria-label="Choisir un espace client">
             <button class="client-option" type="button" data-client="Americana" aria-pressed="false"><span class="client-mark" aria-hidden="true">A</span><strong>Americana</strong><span class="client-arrow" aria-hidden="true">›</span></button>
-            <button class="client-option" type="button" data-client="Marketing" aria-pressed="false"><span class="client-mark" aria-hidden="true">M</span><strong>Marketing</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+            <button class="client-option" type="button" data-client="PGV" aria-pressed="false"><span class="client-mark" aria-hidden="true">P</span><strong>PGV</strong><span class="client-arrow" aria-hidden="true">›</span></button>
+<button class="client-option" type="button" data-client="Marketing" aria-pressed="false"><span class="client-mark" aria-hidden="true">M</span><strong>Marketing</strong><span class="client-arrow" aria-hidden="true">›</span></button>
           </div>
           <p class="client-status" id="client-status" role="status" hidden></p>
         </div>
@@ -93,7 +94,7 @@
         rapports: 'rapports.html',
         equipe: 'equipe.html',
         configuration: 'configuration.html',
-        administration: 'administration.html',
+        pgv: 'pgv.html',
       };
       const params = new URLSearchParams(window.location.search);
       const requestedPage = params.get('page') || 'dashboard';
@@ -153,8 +154,8 @@
       // Choix de l'espace client, une fois connecté.
       clientButtons.forEach((button) => button.addEventListener('click', () => {
         const client = button.dataset.client;
-        if (client === 'Marketing') {
-          window.location.href = 'marketing.html';
+        if (client === 'Marketing' || client === 'PGV') {
+          window.location.href = client.toLowerCase() + '.html';
           return;
         }
         // Americana (et tout autre espace branché) : redirection vers la page demandée.
