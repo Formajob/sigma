@@ -154,8 +154,13 @@
       // Choix de l'espace client, une fois connecté.
       clientButtons.forEach((button) => button.addEventListener('click', () => {
         const client = button.dataset.client;
-        if (client === 'Marketing' || client === 'PGV') {
-          window.location.href = client.toLowerCase() + '.html';
+        if (client === 'Marketing') {
+          window.location.href = 'marketing.html';
+          return;
+        }
+        // PGV redirige vers le dashboard PGV
+        if (client === 'PGV') {
+          window.location.href = 'pgv-dashboard.html';
           return;
         }
         // Americana (et tout autre espace branché) : redirection vers la page demandée.
