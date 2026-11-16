@@ -175,7 +175,13 @@
   // QA_GRID (id + label + cat) chargé depuis supabase/qa_elements pour le mapping.
   async function loadQaElements() {
     var db = await getClient();
-    var res = await db.from("qa_elements").select("id, label, category, position").order("position");
+    // Multi-activité : qa_elements contient désormais la grille Americana (19)
+    // ET la grille PGV (32). Sans ce filtre, 51 éléments arrivent ici.
+    var res = await db.from("qa_elements").select("id, label, category, position")
+      .eq("activity", "americana").order("position");
+    if (res.error && /column .* does not exist/i.test(res.error.message || "")) {
+      res = await db.from("qa_elements").select("id, label, category, position").order("position");
+    }
     if (res.error) throw res.error;
     return (res.data || []).map(function (q) {
       return { elementId: q.id, label: q.label, cat: q.category || 'NC' };
@@ -185,14 +191,24 @@
   // Calibrages réels + résultats, remis au format UI (elements[]/reasons[] par position).
   async function loadCalibrations() {
     var db = await getClient();
-    var els = await db.from("qa_elements").select("id, position").order("position");
+    var els = await db.from("qa_elements").select("id, position")
+      .eq("activity", "americana").order("position");
+    if (els.error && /column .* does not exist/i.test(els.error.message || "")) {
+      els = await db.from("qa_elements").select("id, position").order("position");
+    }
     if (els.error) throw els.error;
     var size = (els.data || []).length;
     var posIndex = {};
     (els.data || []).forEach(function (e, i) { posIndex[e.id] = i; });
     var res = await db.from("calibrations")
       .select("id, call_id, call_date, calibration_date, agent_id, status, language, evaluator, evaluator_name, notes, calibration_results(element_id, result, reason)")
+      .eq("activity", "americana")
       .order("calibration_date", { ascending: false });
+    if (res.error && /column .* does not exist/i.test(res.error.message || "")) {
+      res = await db.from("calibrations")
+        .select("id, call_id, call_date, calibration_date, agent_id, status, language, evaluator, evaluator_name, notes, calibration_results(element_id, result, reason)")
+        .order("calibration_date", { ascending: false });
+    }
     if (res.error) throw res.error;
     return (res.data || []).map(function (c) {
       var elements = new Array(size).fill('');
