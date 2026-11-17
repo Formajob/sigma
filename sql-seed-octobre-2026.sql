@@ -234,7 +234,7 @@ select
   w.wk,
   w.cal_date,
   (array['CTB-01','CTB-04','CTB-11','NC-09','NC-10','CTB-06'])[((a.ord + w.wk) % 6) + 1] as weak_code,
-  (array['CTB-03','CTC-06','CTC-08'])[((a.ord + w.wk) % 3) + 1] as na_code,
+  (array['CTB-12','CTC-06','CTC-08'])[((a.ord + w.wk) % 3) + 1] as na_code,
   w.score_base
 from _seed_agents a
 cross join (
