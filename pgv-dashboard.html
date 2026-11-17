@@ -195,8 +195,19 @@
   if (IS_ADMIN) $('#admin-link').hidden = false;
 
   async function renderMe() {
-    if (!PROFILE.agentId) { $('#me-banner').hidden = false; $('#me-name').textContent = PROFILE.displayName || 'Mon espace';
-      $('#me-shift').textContent = 'Aucun agent lié à ce compte.'; return; }
+    // Les tuiles et raccourcis de pointage ne sont que pour le rôle Agent.
+    // Les admins/superviseurs sans fiche ne doivent jamais ressembler à des agents.
+    if (String(PROFILE.role || '').trim().toLowerCase() !== 'agent') {
+      $('#me-banner').hidden = true;
+      return;
+    }
+    if (!PROFILE.agentId) {
+      $('#me-banner').hidden = false;
+      $('#me-name').textContent = PROFILE.displayName || 'Mon espace';
+      $('#me-shift').textContent = 'Aucune fiche agent liée. Contacte un administrateur.';
+      $('#me-tiles').innerHTML = '';
+      return;
+    }
     $('#me-banner').hidden = false;
     $('#me-name').textContent = PROFILE.displayName || 'Mon espace';
 

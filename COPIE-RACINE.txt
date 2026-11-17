@@ -1,0 +1,12 @@
+CORRECTIFS SIGMA — ARCHIVE ADAPTÉE À LA RACINE DU DÉPÔT
+
+Cette archive est adaptée à la structure du dépôt local où les pages HTML sont directement à la racine (pas dans un dossier sigma-build).
+
+1) Extrais le contenu de cette archive directement dans :
+   C:\Users\User18\Desktop\SIGMA\sigma
+2) Accepte le remplacement des fichiers existants.
+3) Vérifie ensuite avec `git status` que les fichiers HTML/CSS/JS existants sont marqués modified et que les nouveaux scripts SQL/tests sont untracked.
+
+Les scripts SQL sont livrés comme fichiers seulement : ils ne sont PAS exécutés. `sql-seed-octobre-2026.sql` écrit des données de démonstration du mois d'octobre; ne l'exécute que si tu souhaites vraiment ce seed. Exécute `sql-planning-presence-pgv.sql` avant `sql-planning-nov-dec-2026.sql` si ces changements de schéma/planning sont nécessaires.
+
+Les chemins `sigma-tests/` contiennent les fixtures et tests; ils ne sont pas requis pour le déploiement web.

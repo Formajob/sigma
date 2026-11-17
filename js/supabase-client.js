@@ -109,7 +109,7 @@
     if (p.error || !p.data) return null;
     return {
       email: authRes.data.user.email,
-      role: p.data.role,
+      role: String(p.data.role || "agent").trim().toLowerCase(),
       client: "americana",
       displayName: p.data.full_name || null,
       agentId: p.data.agent_id,

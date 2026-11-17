@@ -1,0 +1,12 @@
+LIVRAISON DES CORRECTIFS SIGMA
+
+Cette archive contient les fichiers modifiés, avec leurs chemins relatifs.
+
+Copie vers le dépôt local :
+C:\Users\User18\Desktop\SIGMA\sigma
+
+Extrais l’archive à la racine du dépôt local et accepte le remplacement/merge des fichiers portant les mêmes chemins. Les chemins sigma-build/... correspondent au dossier sigma-build du projet; ops-install.sql est à la racine.
+
+Les fichiers .sql sont des scripts à examiner/exécuter manuellement dans Supabase. Leur présence dans l’archive ne signifie pas qu’ils ont été exécutés. En particulier, sql-seed-octobre-2026.sql écrit des données de démonstration d’octobre; ne pas l’exécuter sans vouloir ce seed. Le nouveau sql-planning-nov-dec-2026.sql couvre les dates du planning demandé.
+
+Le répertoire sigma-tests/ contient les fixtures/tests mis à jour et le test d’améliorations ajouté. Il n’est pas nécessaire de copier ce dossier pour déployer l’application, sauf si tu veux aussi conserver les tests.

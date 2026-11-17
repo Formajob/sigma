@@ -6,6 +6,7 @@
 - Calendrier : le clic sur une puce ouvre la modale détaillée.
 - Présence : le test DOM rend les trois cartes de démonstration, laisse choisir une date historique, affiche les limites et filtre la journée demandée. Les opérations d’action restent destinées à aujourd’hui.
 - Emails : le dialogue du tour est ouvrable et expose le choix d’agent dans la session superviseur simulée.
+- Dashboard / droits : masquage de « Mon espace » et des raccourcis agent pour les rôles non-agent; normalisation du rôle Sigma récupéré depuis `profiles`. Le lien Administration reste visible uniquement si `profiles.role` vaut `admin` ou `super_admin`.
 - Administration : ajout d’un formulaire d’invitation d’agent dans Sigma, en plus de la liste des comptes, rôles, rattachements et reset email. Le formulaire appelle `supabase/functions/admin-invite-user/index.ts`; la fonction vérifie le JWT et le rôle administrateur, invite par email et crée/rattache le profil agent. Aucun mot de passe n’est saisi ou conservé dans Sigma. La fonction Edge n’est pas déployée et aucune invitation réelle n’a été envoyée.
 - Planning demandé : ajout de `sql-planning-nov-dec-2026.sql`. Il inscrit la semaine du 16 au 22 novembre, Hind OFF le 16 et de service le 21, puis Amadou le 28 novembre et Zineb le 5 décembre; les deux autres agents sont OFF les samedis. Le fichier utilise les IDs d’employés présents dans les seeds du dépôt et les shifts `M`, `SAT`, `OFF`.
 
@@ -24,7 +25,7 @@ Les tests Node suivants ont tous terminé avec succès :
 
 `pglast` a analysé sans erreur de syntaxe les 7 fichiers SQL présents dans `sigma-build`, y compris les seeds octobre, les migrations, et le nouveau planning novembre/décembre.
 
-Après l’ajout du formulaire d’invitation, les scripts inline d’`administration.html` compilent et `t-nouvelles-pages.js` passe (le test vérifie le refus non-admin, pas l’envoi réel). Les autres tests précédemment listés reposent sur le harness DOM (`sigma-tests`), pas sur un navigateur réel. L’analyse SQL est une vérification de syntaxe, pas une exécution SQL. La fonction Edge n’a pas été compilée/déployée et aucun utilisateur de test ne s’est connecté.
+Après les corrections d’accès, `t-nouvelles-pages.js`, `t-autrepages.js` et `t-enhancements.js` passent; le test couvre le bandeau agent masqué au superviseur, le lien Administration visible pour le profil admin et le formulaire d’invitation chargé. Les scripts inline du dashboard/administration compilent. Le test ne réalise pas d’invitation réseau réelle. Les tests reposent sur le harness DOM (`sigma-tests`), pas sur un navigateur réel. L’analyse SQL est une vérification de syntaxe, pas une exécution SQL. La fonction Edge a été bundlée pour vérifier sa syntaxe, mais n’est pas déployée; aucun utilisateur de test ne s’est connecté.
 
 ## Points de sécurité / inconnues à traiter avant déploiement
 
