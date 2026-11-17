@@ -102,6 +102,8 @@
   var NAV = [
     { key: 'dashboard', href: 'pgv-dashboard.html', icon: '▦', label: 'Vue d’ensemble' },
     { key: 'calibrages', href: 'pgv-calibrages.html', icon: '◎', label: 'Calibrages' },
+    { key: 'documents', href: 'documents.html?activity=pgv', icon: '✎', label: 'Documentation' },
+    { key: 'calendrier', href: 'calendrier.html?activity=pgv', icon: '▤', label: 'Calendrier' },
     { key: 'emails', href: 'emails.html?activity=pgv', icon: '✉', label: 'Emails' },
     { key: 'attendance', href: 'attendance.html?activity=pgv', icon: '◔', label: 'Présence' },
     { key: 'planning', href: 'planning.html?activity=pgv', icon: '◷', label: 'Planning' }

@@ -65,6 +65,19 @@
     return res.data || [];
   }
 
+  /* Tous les calibrages avec leurs réponses, pour le calendrier. */
+  async function loadCalibrationsFull(from, to) {
+    var res = await db.from('calibrations')
+      .select('id, agent_id, call_id, call_date, calibration_date, status, activity, channel, ' +
+              'evaluator_name, notes, calibration_results(element_id, result, reason)')
+      .eq('activity', ACTIVITY)
+      .gte('calibration_date', from)
+      .lte('calibration_date', to)
+      .order('calibration_date', { ascending: false });
+    if (res.error) raise(res.error, 'calibrations');
+    return res.data || [];
+  }
+
   async function loadCalibrations(from, to, agentId) {
     var q = db.from('calibrations')
       .select('id, agent_id, call_id, call_date, calibration_date, status, activity, channel, evaluator_name, notes')
@@ -126,6 +139,56 @@
       }
     }
     return cal.data;
+  }
+
+  /* ---------------- documents de suivi (FISS) ---------------- */
+  async function loadDocuments(from, to, agentId) {
+    var q = db.from('documents')
+      .select('id, doc_type, object, meeting_date, follow_up_date, agent_id, call_id, ' +
+              'visibility, status, facts, impacts, solutions, followup, activity, created_at')
+      .eq('activity', ACTIVITY)
+      .order('meeting_date', { ascending: false });
+    if (from) q = q.gte('meeting_date', from);
+    if (to) q = q.lte('meeting_date', to);
+    if (agentId) q = q.eq('agent_id', agentId);
+    var res = await q;
+    if (res.error) raise(res.error, 'documents');
+    return res.data || [];
+  }
+
+  async function saveDocument(row) {
+    var user = null;
+    try { var a = await db.auth.getUser(); user = a.data && a.data.user; } catch (e) {}
+    var payload = {
+      doc_type: row.type,
+      object: row.object || null,
+      meeting_date: row.meetingDate,
+      follow_up_date: row.followUpDate || null,
+      agent_id: row.agentId,
+      call_id: row.callId || null,
+      visibility: row.visibility || 'supervisor',
+      status: row.status || 'Planifié',
+      facts: row.facts || null,
+      impacts: row.impacts || null,
+      solutions: row.solutions || null,
+      followup: row.followup || null,
+      activity: ACTIVITY,
+      channel: 'call'
+    };
+    var res;
+    if (row.id) res = await db.from('documents').update(payload).eq('id', row.id).select().single();
+    else {
+      payload.created_by = user ? user.id : null;
+      res = await db.from('documents').insert(payload).select().single();
+    }
+    if (res.error) raise(res.error, 'documents');
+    return res.data;
+  }
+
+  async function deleteDocument(id) {
+    var r = await db.from('documents').delete().eq('id', id);
+    if (r.error) raise(r.error, 'documents');
+    return true;
   }
 
   /* Document de suivi (format FISS) créé depuis un calibrage, pour coacher
@@ -371,9 +434,13 @@
     loadAgents: loadAgents,
     loadElements: loadElements,
     loadCalibrations: loadCalibrations,
+    loadCalibrationsFull: loadCalibrationsFull,
     loadResults: loadResults,
     saveCalibration: saveCalibration,
     deleteCalibration: deleteCalibration,
+    loadDocuments: loadDocuments,
+    saveDocument: saveDocument,
+    deleteDocument: deleteDocument,
     createFollowUpDoc: createFollowUpDoc,
     loadShifts: loadShifts,
     loadPlanning: loadPlanning,
