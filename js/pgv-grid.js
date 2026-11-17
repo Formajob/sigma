@@ -1,44 +1,47 @@
 /* ============================================================
    Sigma — Grille d'évaluation PGV (Protégez-Vous)
-   32 éléments · 3 familles · pondérés 1 à 3 · 6 critiques
+   v2.0 · 26 éléments · 3 familles · pondérés 1 à 3 · 6 critiques
+   Changements v2 (demande du 16/11) :
+     · V.A.T.R.E : 5 éléments regroupés en UN SEUL (NC-01)
+     · retrait : « Maîtrise de la langue du client »,
+                 « Demande qualifiée dans la bonne typologie »,
+                 « Dossier consulté dans Darwin pendant l’appel »
+     · ajout   : « Note ajoutée au dossier quand il n’en existe pas » (CTB-06)
    Compatible qa_category (CTB / CTC / NC) — n'exécute rien, expose window.*
    ============================================================ */
 (function () {
   'use strict';
 
   var PGV_GRID = [
-    /* ---------------- CTB · Traitement & conformité (11) ---------------- */
+    /* ---------------- CTB · Traitement & conformité (10) ---------------- */
     { code:'CTB-01', cat:'CTB', step:2, weight:3, critical:true,  na:false,
       label:'Identité vérifiée avant le dossier',
       critere:'Nom du client + un second élément (n° d’abonné, adresse, date de naissance ou e-mail) contrôlés avant d’ouvrir le dossier ou de communiquer une donnée.' },
-    { code:'CTB-02', cat:'CTB', step:2, weight:2, critical:false, na:false,
-      label:'Dossier consulté dans Darwin pendant l’appel',
-      critere:'Dossier ouvert et lu en séance ; pas de « je vérifie et je vous rappelle » quand l’information est disponible.' },
-    { code:'CTB-03', cat:'CTB', step:3, weight:2, critical:false, na:false,
-      label:'Demande qualifiée dans la bonne typologie',
-      critere:'Rattachement à l’une des cinq familles : abonnement, commande, accès numérique, information, réclamation.' },
-    { code:'CTB-04', cat:'CTB', step:4, weight:3, critical:true,  na:false,
+    { code:'CTB-02', cat:'CTB', step:4, weight:3, critical:true,  na:false,
       label:'Information exacte et vérifiée',
       critere:'Réponse conforme à Darwin ou à la procédure écrite ; aucune information donnée de mémoire.' },
-    { code:'CTB-05', cat:'CTB', step:4, weight:3, critical:false, na:false,
+    { code:'CTB-03', cat:'CTB', step:4, weight:3, critical:false, na:false,
       label:'Procédure appliquée jusqu’au bout',
       critere:'Toutes les étapes de la procédure sont exécutées ; aucun traitement partiel laissé à la charge du client.' },
-    { code:'CTB-06', cat:'CTB', step:4, weight:3, critical:true,  na:false,
+    { code:'CTB-04', cat:'CTB', step:4, weight:3, critical:true,  na:false,
       label:'Aucun engagement hors mandat',
       critere:'Aucun geste commercial, remboursement, délai ou exception promis sans autorisation ni base procédurale.' },
-    { code:'CTB-07', cat:'CTB', step:4, weight:2, critical:false, na:false,
+    { code:'CTB-05', cat:'CTB', step:4, weight:2, critical:false, na:false,
       label:'Actions saisies dans Darwin en direct',
       critere:'Mise à jour, note, modification ou commande enregistrées pendant l’appel, pas après.' },
-    { code:'CTB-08', cat:'CTB', step:5, weight:2, critical:false, na:true,
+    { code:'CTB-06', cat:'CTB', step:4, weight:2, critical:false, na:false,
+      label:'Note ajoutée au dossier quand il n’en existe pas',
+      critere:'Si le dossier ne contient encore aucune note de l’échange, une note est créée pendant l’appel : objet de la demande, action réalisée, suite et échéance si besoin. N/A si le dossier était déjà correctement annoté.' },
+    { code:'CTB-07', cat:'CTB', step:5, weight:2, critical:false, na:true,
       label:'Escalade déclenchée à bon escient',
       critere:'Cas transmis quand il le faut, au bon service, avec un motif explicite et vérifiable.' },
-    { code:'CTB-09', cat:'CTB', step:5, weight:2, critical:false, na:false,
+    { code:'CTB-08', cat:'CTB', step:5, weight:2, critical:false, na:false,
       label:'Suite et délai communiqués',
       critere:'Le client sait ce qui se passe ensuite, quand, et par quel canal ; l’engagement est tracé.' },
-    { code:'CTB-10', cat:'CTB', step:6, weight:1, critical:false, na:false,
+    { code:'CTB-09', cat:'CTB', step:6, weight:1, critical:false, na:false,
       label:'Dossier clôturé et statut à jour',
       critere:'Statut finalisé dans Darwin ; note de suivi créée si un suivi est nécessaire.' },
-    { code:'CTB-11', cat:'CTB', step:0, weight:3, critical:true,  na:false,
+    { code:'CTB-10', cat:'CTB', step:0, weight:3, critical:true,  na:false,
       label:'Confidentialité respectée',
       critere:'Aucune donnée communiquée à un tiers non authentifié ; aucune donnée sensible énoncée à voix haute sans nécessité.' },
 
@@ -74,44 +77,29 @@
       label:'Nom du client utilisé',
       critere:'Nom employé au moins deux fois dans l’échange, correctement prononcé.' },
 
-    /* ---------------- NC · Savoir être (11) ---------------- */
-    { code:'NC-01', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'V.A.T.R.E — Volume',
-      critere:'Volume audible et stable : ni voix étouffée, ni saturation, ni variation brutale.' },
-    { code:'NC-02', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'V.A.T.R.E — Articulation',
-      critere:'Mots détachés, aucune syllabe avalée : compréhension sans effort, même au téléphone.' },
-    { code:'NC-03', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'V.A.T.R.E — Ton',
-      critere:'Ton professionnel et chaleureux, sourire audible ; aucune agressivité ni froideur.' },
-    { code:'NC-04', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'V.A.T.R.E — Rythme',
-      critere:'Débit adapté au client, pauses respectées : ni précipitation, ni lenteur qui fait attendre.' },
-    { code:'NC-05', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'V.A.T.R.E — Énergie',
-      critere:'Dynamisme constant du décroché à la clôture, y compris en fin de journée et sur un appel difficile.' },
-    { code:'NC-06', cat:'NC', step:0, weight:2, critical:false, na:false,
+    /* ---------------- NC · Savoir être (6) ---------------- */
+    { code:'NC-01', cat:'NC', step:0, weight:3, critical:false, na:false,
+      label:'V.A.T.R.E',
+      critere:'Les cinq qualités vocales jugées ensemble, en un seul verdict : Volume audible et stable · Articulation sans syllabe avalée · Ton professionnel et chaleureux · Rythme adapté au client · Énergie constante du décroché à la clôture. Un seul « Non » suffit à faire tomber l’élément.' },
+    { code:'NC-02', cat:'NC', step:0, weight:2, critical:false, na:false,
       label:'Professionnalisme',
       critere:'Vocabulaire soigné : pas d’argot, de familiarité, ni de tics de langage (« beh », « machin », « voilà »).' },
-    { code:'NC-07', cat:'NC', step:0, weight:2, critical:false, na:false,
+    { code:'NC-03', cat:'NC', step:0, weight:2, critical:false, na:false,
       label:'Écoute active',
       critere:'Signaux d’écoute, reprises, aucune interruption, réponse à ce qui n’est pas dit explicitement.' },
-    { code:'NC-08', cat:'NC', step:0, weight:2, critical:false, na:false,
+    { code:'NC-04', cat:'NC', step:0, weight:2, critical:false, na:false,
       label:'Empathie',
       critere:'L’émotion est nommée et reconnue ; le discours s’adapte au client inquiet, pressé ou agacé.' },
-    { code:'NC-09', cat:'NC', step:0, weight:3, critical:true,  na:false,
+    { code:'NC-05', cat:'NC', step:0, weight:3, critical:true,  na:false,
       label:'Contrôle émotionnel',
       critere:'Reste calme face à l’agressivité : pas d’ironie, de ton sec, de soupir audible ni de riposte.' },
-    { code:'NC-10', cat:'NC', step:0, weight:3, critical:true,  na:false,
+    { code:'NC-06', cat:'NC', step:0, weight:3, critical:true,  na:false,
       label:'Neutralité et respect',
-      critere:'Aucun jugement, aucune discrimination, aucun commentaire personnel, politique ou religieux.' },
-    { code:'NC-11', cat:'NC', step:0, weight:1, critical:false, na:false,
-      label:'Maîtrise de la langue du client',
-      critere:'La langue choisie par le client (français, arabe, darija) est tenue et comprise sans hésitation bloquante.' }
+      critere:'Aucun jugement, aucune discrimination, aucun commentaire personnel, politique ou religieux.' }
   ];
 
   var PGV_FAMILIES = {
-    CTB: { name:'CTB · Traitement & conformité', short:'Traitement',  note:'Le parcours SAC : identification, qualification, traitement, escalade, clôture — et les règles qu’on ne transige pas.' },
+    CTB: { name:'CTB · Traitement & conformité', short:'Traitement',  note:'Le parcours SAC : identification, traitement, escalade, clôture — et les règles qu’on ne transige pas.' },
     CTC: { name:'CTC · Relation client',         short:'Relation',    note:'Ce que le client vit et comprend : accueil, reformulation, clarté, réclamation, clôture.' },
     NC:  { name:'NC · Savoir être',              short:'Savoir être', note:'La manière de le dire : V.A.T.R.E, professionnalisme, écoute active, empathie, maîtrise de soi.' }
   };

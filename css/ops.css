@@ -298,3 +298,9 @@
 .ops-modal-card{background:#fff;border:1px solid #E7E4DD;border-radius:12px;box-shadow:0 24px 60px rgba(23,36,45,.22);
   padding:20px;width:100%;max-width:560px;max-height:92vh;overflow:auto}
 body.modal-open{overflow:hidden}
+
+/* ---------- documentation de suivi (case à cocher du calibrage) ---------- */
+.cal-followup{border:1px solid #E7E4DD;border-radius:8px;background:#FBFAF7;padding:11px 12px;margin:12px 0}
+.cal-check{display:flex;align-items:center;gap:9px;font:700 12px var(--sans);color:var(--ink);cursor:pointer}
+.cal-check input{width:15px;height:15px;accent-color:#C0622D;cursor:pointer}
+.cal-check + .f-note{margin:0 0 0 24px}

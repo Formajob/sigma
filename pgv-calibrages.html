@@ -23,7 +23,7 @@
           <div>
             <span class="welcome-kicker">PGV · Qualité</span>
             <h1>Calibrages</h1>
-            <p>Écoute d’appels évaluée sur les 32 critères du parcours SAC.</p>
+            <p>Écoute d’appels évaluée sur les 26 critères du parcours SAC.</p>
           </div>
           <div class="welcome-right">
             <button class="button button-primary" id="btn-new">＋ Nouveau calibrage</button>
@@ -88,7 +88,7 @@
             </div>
             <div class="f-row c2" style="margin-bottom:0">
               <div><label class="f-label" for="f-status">Statut</label>
-                <select class="f-select" id="f-status"><option>Terminé</option><option>Planifié</option></select></div>
+                <select class="f-select" id="f-status"><option selected>Planifié</option><option>Terminé</option></select></div>
               <div><label class="f-label" for="f-notes">Note d’écoute</label>
                 <input class="f-input" id="f-notes" placeholder="contexte, difficulté particulière…"></div>
             </div>
@@ -103,13 +103,27 @@
               <div class="cal-score"><strong id="f-score">0</strong><span>%</span></div>
               <div id="f-level" class="p-pill grey" style="margin-top:8px">Grille incomplète</div>
               <div id="f-crit-warn" class="cal-warn" hidden></div>
-              <div class="cal-progress" id="f-progress">0 / 32 critères renseignés</div>
+              <div class="cal-progress" id="f-progress">0 / 26 critères renseignés</div>
               <div id="f-fams" style="margin-top:12px"></div>
             </div></div>
             <div class="panel"><div class="panel-body">
               <div class="f-row" style="margin-bottom:10px">
                 <div><label class="f-label" for="f-evaluator">Évaluateur</label><input class="f-input" id="f-evaluator" placeholder="Ton nom"></div>
               </div>
+              <div class="cal-followup">
+                <label class="cal-check"><input type="checkbox" id="f-doc">
+                  <span>Créer une documentation de suivi</span></label>
+                <p class="f-note" style="margin-top:6px">Une rencontre planifiée avec l’agent, remplie avec les points non maîtrisés de ce calibrage.</p>
+                <div id="f-doc-fields" hidden>
+                  <div class="f-row c2">
+                    <div><label class="f-label" for="f-doc-meet">Date de la rencontre</label>
+                      <input class="f-input" type="date" id="f-doc-meet"></div>
+                    <div><label class="f-label" for="f-doc-next">Échéance de suivi</label>
+                      <input class="f-input" type="date" id="f-doc-next"></div>
+                  </div>
+                </div>
+              </div>
+              <div id="f-missing" class="cal-warn" hidden></div>
               <button class="button button-primary" id="btn-save" style="width:100%">Enregistrer le calibrage</button>
               <p class="f-note" id="save-note">Le calibrage est enregistré dans Supabase, lié à l’activité PGV.</p>
             </div></div>
@@ -164,6 +178,15 @@
       'Exécute <code>sql/ops-install.sql</code> dans Supabase.', 'error');
   }
   ELEMENTS.forEach(function (e) { BY_CODE[e.code] = e; });
+
+  // la page doit trouver en base chaque élément de sa grille
+  var absents = window.PGV_GRID.filter(function (g) { return !BY_CODE[g.code]; })
+    .map(function (g) { return g.code; });
+  if (absents.length) {
+    OPS.banner('Grille à mettre à jour en base',
+      'Ces éléments de la page n’existent pas dans <code>qa_elements</code> : <b>' + absents.join(', ') +
+      '</b>. Exécute <code>sql-grille-pgv-v2.sql</code> dans Supabase, puis recharge la page.', 'warn');
+  }
 
   // filtre agent
   AGENTS.forEach(function (a) {
@@ -227,14 +250,14 @@
     $('#l-score').textContent = sumW ? Math.round(sumOk / sumW * 100) + ' %' : '—';
     $('#l-nc').textContent = nb ? ncCount : '—';
     $('#l-ok').textContent = nb ? okCount : '—';
-    $('#l-caption').textContent = AGENTS.length + ' agent' + (AGENTS.length > 1 ? 's' : '') + ' · 32 critères';
+    $('#l-caption').textContent = AGENTS.length + ' agent' + (AGENTS.length > 1 ? 's' : '') + ' · ' + window.PGV_GRID.length + ' critères';
 
     var en = $('#empty-new');
     if (en) en.addEventListener('click', function (e) { e.preventDefault(); openForm(); });
 
     OPS.$$('[data-del]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        if (!confirm('Supprimer ce calibrage et ses 32 résultats ?')) return;
+        if (!confirm('Supprimer ce calibrage et ses ' + window.PGV_GRID.length + ' résultats ?')) return;
         try {
           await pgvData.deleteCalibration(b.getAttribute('data-del'));
           OPS.toast('Calibrage supprimé');
@@ -255,6 +278,11 @@
     $('#f-agent').value = AGENTS[0] ? AGENTS[0].id : '';
     VALUES = new Array(window.PGV_GRID.length).fill('');
     REASONS = new Array(window.PGV_GRID.length).fill('');
+    $('#f-doc').checked = false;
+    $('#f-doc-fields').hidden = true;
+    $('#f-doc-meet').value = today;
+    $('#f-doc-next').value = '';
+    $('#f-missing').hidden = true;
     buildGrid();
     renderScore();
     window.scrollTo(0, 0);
@@ -282,7 +310,7 @@
               '</strong><p>' + esc(g.critere) + '</p></div>' +
             '<div class="cal-choice">' +
               ['Oui', 'Non', 'N/A'].map(function (v) {
-                var dis = (v === 'N/A' && !g.na) ? ' disabled' : '';
+                var dis = (v === 'N/A' && (!g.na || (BY_CODE[g.code] && BY_CODE[g.code].na_allowed === false))) ? ' disabled' : '';
                 return '<input type="radio" id="q' + i + v.replace('/', '') + '" name="q' + i + '" value="' + v + '"' + dis + '>' +
                   '<label for="q' + i + v.replace('/', '') + '">' + v + '</label>';
               }).join('') +
@@ -318,7 +346,7 @@
     el.textContent = lvl[0];
     el.className = 'p-pill ' + lvl[1];
     el.style.marginTop = '8px';
-    $('#f-progress').textContent = (32 - s.restants) + ' / 32 critères renseignés' +
+    $('#f-progress').textContent = (window.PGV_GRID.length - s.restants) + ' / ' + window.PGV_GRID.length + ' critères renseignés' +
       (s.restants ? ' · ' + s.restants + ' restant' + (s.restants > 1 ? 's' : '') : '');
     var warn = $('#f-crit-warn');
     if (s.critKO.length) {
@@ -334,11 +362,75 @@
     }).join('');
   }
 
+  // combler les critères laissés vides. « N/A » ne s'applique qu'aux
+  // éléments qui l'autorisent : les autres restent à renseigner.
+  function fillMissing(value) {
+    var refuses = 0, remplis = 0;
+    window.PGV_GRID.forEach(function (g, i) {
+      if (VALUES[i]) return;
+      if (value === 'N/A' && !g.na) { refuses++; return; }   // N/A interdit ici (grille)
+      if (value === 'N/A') {
+        var chk = $('#q' + i + 'NA');
+        if (chk && chk.disabled) { refuses++; return; }      // N/A désactivé en base
+      }
+      VALUES[i] = value;
+      remplis++;
+      var radio = $('#q' + i + (value === 'N/A' ? 'NA' : 'Non'));
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+    renderScore();
+    renderMissing();
+    if (refuses && !remplis) {
+      OPS.toast(refuses + ' critère(s) n’acceptent pas « N/A » — choisis « Non »', 'error');
+    } else if (refuses) {
+      OPS.toast(remplis + ' passé(s) en « N/A » · ' + refuses + ' refusent « N/A »', 'warn');
+    } else {
+      OPS.toast(remplis + ' critère(s) passé(s) en « ' + value + ' »');
+    }
+  }
+
+  function renderMissing() {
+    var manquants = window.PGV_GRID.filter(function (g, i) { return !VALUES[i]; });
+    var box = $('#f-missing');
+    if (!manquants.length) { box.hidden = true; return; }
+    var naOk = manquants.filter(function (m) { return m.na; });   // éléments qui acceptent N/A
+    box.hidden = false;
+    box.innerHTML = '<b>' + manquants.length + ' critère(s) non renseigné(s)</b> : ' +
+      manquants.map(function (m) { return m.code; }).join(', ') +
+      '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
+        '<button type="button" class="btn-sm" id="miss-non">Tout mettre en « Non »</button>' +
+        (naOk.length ? '<button type="button" class="btn-sm" id="miss-na">Mettre en « N/A » (' + naOk.length + ' possible' + (naOk.length > 1 ? 's' : '') + ')</button>' : '') +
+      '</div>' +
+      (naOk.length < manquants.length
+        ? '<p class="f-note" style="margin:6px 0 0">Les autres critères n’autorisent pas « N/A » : ils resteront à renseigner.</p>'
+        : '');
+    var bNon = $('#miss-non'), bNa = $('#miss-na');
+    if (bNon) bNon.addEventListener('click', function () { fillMissing('Non'); });
+    if (bNa) bNa.addEventListener('click', function () { fillMissing('N/A'); });
+    if (!bNon && !bNa) return;
+  }
+
   async function save() {
     var agentId = $('#f-agent').value;
     if (!agentId) { OPS.toast('Choisis un agent', 'error'); return; }
+    var horsBase = window.PGV_GRID.filter(function (g) { return !BY_CODE[g.code]; }).map(function (g) { return g.code; });
+    if (horsBase.length) {
+      OPS.toast('Grille désynchronisée : ' + horsBase.join(', ') + ' — exécute sql-grille-pgv-v2.sql', 'error');
+      return;
+    }
+
+    // des critères vides ? on propose de les remplir, sinon on s'arrête là
     var s = window.pgvScore(VALUES);
-    if (s.restants) { OPS.toast(s.restants + ' critère(s) non renseigné(s)', 'error'); return; }
+    if (s.restants) {
+      renderMissing();
+      $('#f-missing').scrollIntoView({ block: 'center' });
+      OPS.toast(s.restants + ' critère(s) à compléter', 'error');
+      return;
+    }
+
     var manquant = window.PGV_GRID.findIndex(function (g, i) { return VALUES[i] === 'Non' && !String(REASONS[i] || '').trim(); });
     if (manquant >= 0) {
       OPS.toast('Motif manquant pour ' + window.PGV_GRID[manquant].code, 'error');
@@ -346,10 +438,11 @@
       if (box) { box.scrollIntoView({ block: 'center' }); box.focus(); }
       return;
     }
+
     var btn = $('#btn-save');
     btn.disabled = true; btn.textContent = 'Enregistrement…';
     try {
-      await pgvData.saveCalibration({
+      var cal = await pgvData.saveCalibration({
         agentId: agentId,
         callId: $('#f-call').value.trim(),
         callDate: $('#f-calldate').value,
@@ -361,7 +454,39 @@
         reasons: REASONS,
         elements: window.PGV_GRID.map(function (g) { return BY_CODE[g.code]; })
       });
-      OPS.toast('Calibrage enregistré');
+
+      // documentation de suivi (rencontre) si la case est cochée
+      var docMsg = '';
+      if ($('#f-doc').checked) {
+        var nok = window.PGV_GRID.filter(function (g, i) { return VALUES[i] === 'Non'; });
+        var agentName = (AGENTS.filter(function (a) { return a.id === agentId; })[0] || {}).full_name || 'l’agent';
+        var meet = $('#f-doc-meet').value || pgvData.iso();
+        try {
+          await pgvData.createFollowUpDoc({
+            agentId: agentId,
+            callId: $('#f-call').value.trim() || null,
+            meetingDate: meet,
+            followUpDate: $('#f-doc-next').value || null,
+            object: 'Calibrage — coaching des points non maîtrisés',
+            facts: 'Calibrage du ' + OPS.fmtDate($('#f-date').value) + ' sur l’appel ' +
+                   ($('#f-call').value.trim() || '(sans numéro)') + ' : score ' + s.pct + ' %' +
+                   ', niveau ' + s.niveau + '.',
+            impacts: nok.length
+              ? nok.length + ' point(s) non maîtrisé(s) : ' + nok.map(function (g) { return g.code + ' ' + g.label; }).join(' · ')
+              : 'Aucun point non maîtrisé sur la grille : séance de consolidation.',
+            solutions: nok.length
+              ? nok.map(function (g, k) { return '• ' + g.code + ' — à retravailler : ' + g.critere; }).join('\n')
+              : '• Maintenir les acquis, partager les bonnes pratiques.',
+            followup: 'Coaching de ' + agentName + ' le ' + OPS.fmtDate(meet) + '. Revoir les ' + nok.length +
+                      ' point(s) signalé(s), puis réécoute de contrôle.'
+          });
+          docMsg = ' + documentation de suivi';
+        } catch (docErr) {
+          OPS.toast('Calibrage enregistré, mais la documentation a échoué : ' + docErr.message, 'error');
+        }
+      }
+
+      OPS.toast('Calibrage enregistré' + docMsg);
       closeForm();
       loadList();
     } catch (e) {
@@ -372,6 +497,10 @@
   }
 
   // ---------- événements ----------
+  $('#f-doc').addEventListener('change', function () {
+    $('#f-doc-fields').hidden = !this.checked;
+  });
+
   $('#btn-new').addEventListener('click', openForm);
   $('#btn-cancel').addEventListener('click', closeForm);
   $('#btn-save').addEventListener('click', save);

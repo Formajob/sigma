@@ -128,6 +128,31 @@
     return cal.data;
   }
 
+  /* Document de suivi (format FISS) créé depuis un calibrage, pour coacher
+     les points non maîtrisés. Le calibrage est lié via call_id + agent. */
+  async function createFollowUpDoc(row) {
+    var user = null;
+    try { var a = await db.auth.getUser(); user = a.data && a.data.user; } catch (e) {}
+    var res = await db.from('documents').insert({
+      doc_type: 'Rencontre',
+      object: row.object || 'Calibrage',
+      meeting_date: row.meetingDate,
+      follow_up_date: row.followUpDate || null,
+      agent_id: row.agentId,
+      call_id: row.callId || null,
+      visibility: 'agent',
+      status: 'Planifié',
+      facts: row.facts || null,
+      impacts: row.impacts || null,
+      solutions: row.solutions || null,
+      followup: row.followup || null,
+      activity: ACTIVITY,
+      created_by: user ? user.id : null
+    }).select().single();
+    if (res.error) raise(res.error, 'documents');
+    return res.data;
+  }
+
   async function deleteCalibration(id) {
     var r = await db.from('calibration_results').delete().eq('calibration_id', id);
     if (r.error) raise(r.error, 'calibration_results');
@@ -349,6 +374,7 @@
     loadResults: loadResults,
     saveCalibration: saveCalibration,
     deleteCalibration: deleteCalibration,
+    createFollowUpDoc: createFollowUpDoc,
     loadShifts: loadShifts,
     loadPlanning: loadPlanning,
     savePlanningEntry: savePlanningEntry,
