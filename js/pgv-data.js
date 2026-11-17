@@ -111,9 +111,11 @@
       call_date: row.callDate || row.date,
       calibration_date: row.date,
       status: row.status || 'Terminé',
-      language: row.language || 'fr',
-      evaluator: row.evaluator || (user && user.email) || null,
-      evaluator_name: row.evaluator || null,
+      // Les colonnes sont des enums historiques : la langue attend le libellé,
+      // et le type d'évaluateur est « Autre » quand le nom est saisi librement.
+      language: row.language || 'Français',
+      evaluator: row.evaluator_kind || 'Autre',
+      evaluator_name: row.evaluator || (user && user.email) || null,
       notes: row.notes || null,
       activity: ACTIVITY,
       channel: 'call',
@@ -335,6 +337,17 @@
     return res.data || [];
   }
 
+  async function saveEmailAgentRow(workDate, agentId, sac, other, note) {
+    var res = await db.from('email_agent_daily').upsert({
+      activity: ACTIVITY, work_date: workDate, agent_id: agentId,
+      treated_sac: Math.max(0, +sac || 0),
+      treated_other: Math.max(0, +other || 0),
+      note: note || null
+    }, { onConflict: 'activity,work_date,agent_id' }).select().single();
+    if (res.error) raise(res.error, 'email_agent_daily');
+    return res.data;
+  }
+
   async function saveEmailDay(row) {
     var res = await db.from('email_days').upsert({
       activity: ACTIVITY,
@@ -355,9 +368,31 @@
     return res.data;
   }
 
+  /* ---------------- activité quotidienne de l'agent (appels) ---------------- */
+  async function loadAgentActivity(from, to, agentId) {
+    var q = db.from('agent_daily_activity')
+      .select('id, work_date, agent_id, calls_treated, note')
+      .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
+    if (agentId) q = q.eq('agent_id', agentId);
+    var res = await q.order('work_date');
+    if (res.error) raise(res.error, 'agent_daily_activity');
+    return res.data || [];
+  }
+
+  async function saveAgentActivityAgent(agentId, workDate, calls, note) {
+    var res = await db.from('agent_daily_activity').upsert({
+      activity: ACTIVITY, work_date: workDate, agent_id: agentId,
+      calls_treated: Math.max(0, +calls || 0),
+      note: note || null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'activity,work_date,agent_id' }).select().single();
+    if (res.error) raise(res.error, 'agent_daily_activity');
+    return res.data;
+  }
+
   async function loadEmailAgents(from, to) {
     var res = await db.from('email_agent_daily')
-      .select('work_date, agent_id, treated_sac, treated_other')
+      .select('work_date, agent_id, treated_sac, treated_other, note')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
     if (res.error) raise(res.error, 'email_agent_daily');
     return res.data || [];
@@ -462,6 +497,9 @@
     cacheSet: cacheSet,
     cacheGet: cacheGet,
     cacheClear: cacheClear,
+    loadAgentActivity: loadAgentActivity,
+    saveAgentActivityAgent: saveAgentActivityAgent,
+    saveEmailAgentRow: saveEmailAgentRow,
     isMissing: function (e) { return !!(e && e.missing); }
   };
 })();
