@@ -1,1 +1,290 @@
-<html><head><meta charset=utf-8/><title>Planning</title>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17242D">
+<meta name="robots" content="noindex, nofollow">
+<title>PGV · Planning — Sigma</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
+<link rel="stylesheet" href="css/ops.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <main class="main">
+    <header class="topbar"></header>
+    <div class="content">
+      <div id="ops-banner" class="p-banner" hidden></div>
+
+      <div class="welcome-row">
+        <div>
+          <span class="welcome-kicker">PGV · Organisation</span>
+          <h1>Planning</h1>
+          <p>Shifts, repos, vacances et maladie par agent et par semaine.</p>
+        </div>
+        <div class="welcome-right">
+          <button class="btn-sm" id="btn-apply-week">Appliquer la semaine type</button>
+        </div>
+      </div>
+
+      <div class="pl-toolbar">
+        <div class="pl-week">
+          <button class="btn-sm" id="btn-prev">‹</button>
+          <strong id="week-label">—</strong>
+          <button class="btn-sm" id="btn-next">›</button>
+          <button class="btn-sm" id="btn-today">Cette semaine</button>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span class="tag" id="week-hours">—</span>
+          <button class="btn-sm" id="btn-csv">Exporter CSV</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <div class="scroll-x">
+            <table class="pl-grid" id="grid">
+              <thead></thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <p class="f-note" id="rotation-note">—</p>
+    </div>
+  </main>
+</div>
+
+<script src="js/i18n.js"></script>
+<script>window.__SIGMA_PAGE = 'planning';</script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="scripts/app-shared.js"></script>
+<script src="js/pgv-grid.js"></script>
+<script src="js/pgv-data.js"></script>
+<script src="js/ops-common.js"></script>
+<script>
+(async function () {
+  'use strict';
+  var $ = OPS.$, esc = OPS.esc;
+  var session = await OPS.boot({ active: 'planning', title: 'Planning' });
+  if (!session) return;
+  var isManager = session.isManager;
+
+  var AGENTS = [], SHIFTS = [], ENTRIES = {}, WEEK = OPS.mondayOf(pgvData.iso());
+  var DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  var ANCHOR_SATURDAY = '2026-11-21';   // samedi de référence = 1er agent de la rotation
+
+  if (!isManager) {
+    $('#btn-apply-week').disabled = true;
+    $('#btn-apply-week').title = 'Réservé au superviseur';
+  }
+
+  try {
+    await pgvData.init();
+    AGENTS = await pgvData.loadAgents();
+    SHIFTS = await pgvData.loadShifts();
+  } catch (e) {
+    OPS.banner('Migration incomplète',
+      OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'planning_shifts') : esc(e.message), 'error');
+    return;
+  }
+  if (!AGENTS.length) {
+    OPS.banner('Aucun agent PGV',
+      'La table <code>agents</code> ne contient aucun agent pour l’activité PGV. Exécute <code>sql/ops-install.sql</code>.');
+  }
+
+  var shiftByCode = {};
+  SHIFTS.forEach(function (s) { shiftByCode[s.code] = s; });
+  var WORK = SHIFTS.filter(function (s) { return s.is_work; });
+  var DEFAULT_CODE = WORK.length ? WORK[0].code : 'M';
+
+  function dates() {
+    var out = [];
+    for (var i = 0; i < 7; i++) out.push(OPS.addDays(WEEK, i));
+    return out;
+  }
+
+  /* rotation du samedi : bascule toutes les semaines */
+  function saturdayAgent(dateISO) {
+    if (!AGENTS.length) return null;
+    var weeks = Math.round((OPS.parseISO(dateISO) - OPS.parseISO(ANCHOR_SATURDAY)) / (7 * 864e5));
+    var idx = ((weeks % AGENTS.length) + AGENTS.length) % AGENTS.length;
+    return AGENTS[idx];
+  }
+  function saturdayOfWeek() {
+    var sat = dates()[5];
+    var weeks = Math.round((OPS.parseISO(sat) - OPS.parseISO(ANCHOR_SATURDAY)) / (7 * 864e5));
+    if (weeks % AGENTS.length === 0) return saturdayAgent(sat);
+    return saturdayAgent(sat);
+  }
+
+  async function load() {
+    var ds = dates();
+    try {
+      var rows = await pgvData.loadPlanning(ds[0], ds[6]);
+      ENTRIES = {};
+      rows.forEach(function (r) { ENTRIES[r.agent_id + '|' + r.work_date] = r; });
+    } catch (e) {
+      OPS.banner('Planning illisible', esc(e.message), 'error');
+      ENTRIES = {};
+    }
+    render();
+  }
+
+  function cellValue(agentId, dateISO) {
+    var e = ENTRIES[agentId + '|' + dateISO];
+    return e ? e.shift_code : '';
+  }
+
+  function render() {
+    var ds = dates();
+    $('#week-label').textContent = 'S' + OPS.weekNumber(ds[0]) + ' · ' + OPS.fmtDate(ds[0]) + ' – ' + OPS.fmtDate(ds[6]);
+
+    var head = '<tr><th class="pl-agent-col">Agent</th>' +
+      ds.map(function (d, i) {
+        var wd = OPS.parseISO(d).getDay();
+        return '<th' + (wd === 0 || wd === 6 ? ' style="background:#F6F4EF"' : '') + '>' + DAYS[i] +
+          '<br><span style="font-weight:600;color:#A09A91">' + OPS.fmtDate(d) + '</span></th>';
+      }).join('') + '<th>Total</th></tr>';
+    $('#grid thead').innerHTML = head;
+
+    var body = AGENTS.map(function (a) {
+      var mins = 0;
+      var cells = ds.map(function (d, i) {
+        var wd = OPS.parseISO(d).getDay();
+        var val = cellValue(a.id, d);
+        var sh = shiftByCode[val];
+        if (sh && sh.is_work) mins += duration(sh);
+        var opts = '<option value="">—</option>' + SHIFTS.map(function (s) {
+          return '<option value="' + s.code + '"' + (s.code === val ? ' selected' : '') + '>' +
+            s.code + (s.is_work && s.start_time ? ' · ' + s.start_time.slice(0, 5) : '') + '</option>';
+        }).join('');
+        var cls = val === 'OFF' ? 'off' : val === 'VAC' ? 'vac' : val === 'MAL' ? 'mal' : (val === 'FORM' ? 'form' : '');
+        return '<td class="pl-cell' + (wd === 0 || wd === 6 ? ' weekend' : '') + '">' +
+          '<select data-agent="' + a.id + '" data-date="' + d + '" class="' + cls + '"' + (isManager ? '' : ' disabled') + '>' +
+          opts + '</select></td>';
+      }).join('');
+      return '<tr><td class="pl-agent">' + esc(a.full_name) + '<small>' + esc(a.staff_id || '') + '</small></td>' +
+        cells + '<td class="pl-hour">' + OPS.minutes(mins) + '</td></tr>';
+    }).join('');
+    $('#grid tbody').innerHTML = body || '<tr><td colspan="9"><p class="empty-note">Aucun agent.</p></td></tr>';
+
+    var foot = '<tr><td class="pl-agent">Effectif</td>' + ds.map(function (d) {
+      var n = AGENTS.filter(function (a) {
+        var sh = shiftByCode[cellValue(a.id, d)];
+        return sh && sh.is_work;
+      }).length;
+      return '<td>' + (n || '—') + '</td>';
+    }).join('') + '<td></td></tr>';
+    $('#grid tfoot').innerHTML = foot;
+
+    var total = 0;
+    AGENTS.forEach(function (a) {
+      ds.forEach(function (d) {
+        var sh = shiftByCode[cellValue(a.id, d)];
+        if (sh && sh.is_work) total += duration(sh);
+      });
+    });
+    $('#week-hours').textContent = 'Semaine : ' + OPS.minutes(total) + ' planifiées';
+
+    var sat = saturdayOfWeek();
+    $('#rotation-note').innerHTML = 'Rotation du samedi : <b>' + esc(sat ? sat.full_name : '—') +
+      '</b> le samedi ' + OPS.fmtDate(ds[5]) + '. Un seul agent travaille le samedi, les autres sont en repos. ' +
+      'Le dimanche n’est jamais ouvré.';
+  }
+
+  function duration(sh) {
+    if (!sh.start_time || !sh.end_time) return 0;
+    var a = sh.start_time.split(':'), b = sh.end_time.split(':');
+    var m1 = (+a[0]) * 60 + (+a[1]), m2 = (+b[0]) * 60 + (+b[1]);
+    if (m2 <= m1) m2 += 24 * 60;         // shift de nuit
+    return m2 - m1 - (sh.break_minutes || 0);
+  }
+
+  async function saveCell(agentId, dateISO, code) {
+    try {
+      if (!code) { await pgvData.clearPlanningEntry(agentId, dateISO); }
+      else { await pgvData.savePlanningEntry(agentId, dateISO, code); }
+      var key = agentId + '|' + dateISO;
+      if (!code) delete ENTRIES[key];
+      else ENTRIES[key] = { agent_id: agentId, work_date: dateISO, shift_code: code };
+      render();
+      OPS.toast('Planning enregistré');
+    } catch (e) {
+      OPS.toast(e.message, 'error');
+      load();
+    }
+  }
+
+  $('#grid').addEventListener('change', function (e) {
+    var s = e.target;
+    if (s.tagName !== 'SELECT') return;
+    saveCell(s.getAttribute('data-agent'), s.getAttribute('data-date'), s.value);
+  });
+
+  $('#btn-prev').addEventListener('click', function () { WEEK = OPS.addDays(WEEK, -7); load(); });
+  $('#btn-next').addEventListener('click', function () { WEEK = OPS.addDays(WEEK, 7); load(); });
+  $('#btn-today').addEventListener('click', function () { WEEK = OPS.mondayOf(pgvData.iso()); load(); });
+
+  $('#btn-apply-week').addEventListener('click', async function () {
+    if (!isManager) return;
+    var ds = dates();
+    var sat = saturdayOfWeek();
+    var plan = [];
+    AGENTS.forEach(function (a) {
+      ds.forEach(function (d, i) {
+        var wd = OPS.parseISO(d).getDay();
+        if (wd === 0) plan.push([a, d, 'OFF']);
+        else if (wd === 6) plan.push([a, d, (sat && sat.id === a.id) ? DEFAULT_CODE : 'OFF']);
+        else plan.push([a, d, DEFAULT_CODE]);
+      });
+    });
+    var existing = plan.filter(function (p) { return cellValue(p[0].id, p[1]); }).length;
+    var msg = 'Appliquer la semaine type : ' + plan.length + ' cellules.\n' +
+      existing + ' cellule(s) déjà remplie(s) seront écrasées.\n\nContinuer ?';
+    if (!confirm(msg)) return;
+    var btn = this; btn.disabled = true; btn.textContent = 'Application…';
+    var n = 0;
+    try {
+      for (var i = 0; i < plan.length; i++) {
+        await pgvData.savePlanningEntry(plan[i][0].id, plan[i][1], plan[i][2]);
+        n++;
+      }
+      OPS.toast(n + ' cellules enregistrées');
+      await load();
+    } catch (e) {
+      OPS.toast('Arrêt à la cellule ' + (n + 1) + ' : ' + e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Appliquer la semaine type';
+    }
+  });
+
+  $('#btn-csv').addEventListener('click', function () {
+    var ds = dates();
+    var lines = ['agent,matricule,date,shift,debut,fin'];
+    AGENTS.forEach(function (a) {
+      ds.forEach(function (d) {
+        var code = cellValue(a.id, d);
+        if (!code) return;
+        var sh = shiftByCode[code] || {};
+        lines.push([a.full_name, a.staff_id || '', d, code, sh.start_time || '', sh.end_time || ''].join(','));
+      });
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'planning-pgv-' + ds[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  await load();
+})();
+</script>
+<script src="js/support-widget.js" defer></script>
+</body>
+</html>

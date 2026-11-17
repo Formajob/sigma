@@ -1,1 +1,500 @@
-<html><head><meta charset=utf-8/><title>Attendance</title></head><body>Attendance page</body></html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17242D">
+<meta name="robots" content="noindex, nofollow">
+<title>PGV · Présence — Sigma</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
+<link rel="stylesheet" href="css/ops.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <main class="main">
+    <header class="topbar"></header>
+    <div class="content">
+      <div id="ops-banner" class="p-banner" hidden></div>
+
+      <div class="welcome-row">
+        <div>
+          <span class="welcome-kicker">PGV · Temps de travail</span>
+          <h1>Présence</h1>
+          <p id="at-sub">Arrivées, départs et pauses — la traçabilité que WebEx ne fournit pas.</p>
+        </div>
+        <div class="welcome-right">
+          <span class="at-clock" id="clock">--:--:--</span>
+        </div>
+      </div>
+
+      <div class="at-tabs" role="tablist">
+        <button class="at-tab active" data-tab="live" role="tab">Temps réel</button>
+        <button class="at-tab" data-tab="me" role="tab">Ma journée</button>
+        <button class="at-tab" data-tab="week" role="tab">Semaine</button>
+      </div>
+
+      <!-- ================= TEMPS RÉEL ================= -->
+      <section id="tab-live">
+        <div class="at-counters" id="counters"></div>
+        <div class="p-grid2" style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px">
+          <div class="panel">
+            <div class="panel-head"><h2>Agents</h2><small id="live-date">—</small></div>
+            <div class="panel-body" style="padding:0">
+              <div class="scroll-x"><table class="p-table">
+                <thead><tr><th>Agent</th><th>Shift</th><th>Arrivée</th><th class="num">Écart</th>
+                  <th>Statut</th><th>Pauses</th><th class="num">Net</th><th>Chronologie</th></tr></thead>
+                <tbody id="live-body"></tbody>
+              </table></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Alertes</h2><small id="alert-count">—</small></div>
+            <div class="panel-body" id="alerts" style="padding:6px 12px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MA JOURNÉE ================= -->
+      <section id="tab-me" hidden>
+        <div class="panel"><div class="panel-body">
+          <div class="f-row" id="me-picker" style="max-width:340px" hidden>
+            <div><label class="f-label" for="me-agent">Pointer pour</label>
+              <select class="f-select" id="me-agent"></select></div>
+          </div>
+          <div class="at-actions" id="me-actions">
+            <button class="at-btn primary" id="b-in">Je commence ma journée <small id="b-in-time"></small></button>
+            <button class="at-btn" id="b-out">Je termine ma journée <small id="b-out-time"></small></button>
+            <div class="at-break-menu" id="b-breaks">
+              <button data-break="pause">Pause 15</button>
+              <button data-break="lunch">Lunch 60</button>
+              <button data-break="sortie">Sortie 10</button>
+              <button data-break="coaching">Coaching</button>
+              <button data-break="formation">Formation</button>
+              <button data-break="technique">Technique</button>
+            </div>
+            <button class="at-btn" id="b-resume">Je reprends <small id="b-resume-time"></small></button>
+          </div>
+          <p class="f-note" id="me-shift">—</p>
+          <div class="at-summary" id="me-summary"></div>
+        </div></div>
+      </section>
+
+      <!-- ================= SEMAINE ================= -->
+      <section id="tab-week" hidden>
+        <div class="panel"><div class="panel-body" style="padding:0">
+          <div class="scroll-x"><table class="p-table" id="week-table">
+            <thead id="week-head"></thead><tbody id="week-body"></tbody>
+          </table></div>
+        </div></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="js/i18n.js"></script>
+<script>window.__SIGMA_PAGE = 'attendance';</script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="scripts/app-shared.js"></script>
+<script src="js/pgv-grid.js"></script>
+<script src="js/pgv-data.js"></script>
+<script src="js/ops-common.js"></script>
+<script>
+(async function () {
+  'use strict';
+  var $ = OPS.$, $$ = OPS.$$, esc = OPS.esc;
+  var session = await OPS.boot({ active: 'attendance', title: 'Présence' });
+  if (!session) return;
+  var profile = session.profile, isManager = session.isManager;
+  var TODAY = pgvData.iso();
+
+  var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], BREAKS = {}, ACKS = {};
+  var myAgentId = profile.agentId || null;
+  var currentTab = 'live', filterStatus = null;
+
+  try {
+    await pgvData.init();
+    AGENTS = await pgvData.loadAgents();
+    SHIFTS = await pgvData.loadShifts();
+    var bs = await pgvData.loadBreakSettings();
+    bs.forEach(function (b) { BREAKS[b.break_type] = b; });
+  } catch (e) {
+    OPS.banner('Migration incomplète',
+      OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'attendance_events') : esc(e.message), 'error');
+    return;
+  }
+  SHIFTS.forEach(function (s) { SHIFT[s.code] = s; });
+
+  var showPicker = isManager || !myAgentId;
+  if (!myAgentId) myAgentId = AGENTS.length ? AGENTS[0].id : null;
+
+  /* ---------------- chargement ---------------- */
+  async function loadDay() {
+    try {
+      var rows = await pgvData.loadPlanning(TODAY, TODAY);
+      PLANNING = {};
+      rows.forEach(function (r) { PLANNING[r.agent_id] = r; });
+      EVENTS = await pgvData.loadAttendance(TODAY);
+      var a = await pgvData.loadAcks(TODAY);
+      ACKS = {};
+      a.forEach(function (x) { ACKS[x.agent_id + '|' + x.alert_code] = true; });
+    } catch (e) {
+      OPS.banner('Lecture impossible', esc(e.message), 'error');
+    }
+    renderLive(); renderMe();
+  }
+
+  /* ---------------- calcul ---------------- */
+  function computeDay(agentId) {
+    var ev = EVENTS.filter(function (e) { return e.agent_id === agentId; });
+    var plan = PLANNING[agentId];
+    var sh = plan ? SHIFT[plan.shift_code] : null;
+
+    var firstIn = null, lastOut = null, presence = 0, open = null;
+    var breaks = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0 };
+    var breakOpen = null, breakOpenType = null;
+    var sessions = 0;
+
+    ev.forEach(function (e) {
+      var t = new Date(e.occurred_at).getTime();
+      if (e.event_type === 'in') { if (open == null) open = t; firstIn = firstIn || t; sessions++; }
+      else if (e.event_type === 'out') { if (open != null) { presence += (t - open); open = null; } lastOut = t; }
+      else if (e.event_type === 'break_start') { breakOpen = t; breakOpenType = e.break_type || 'pause'; }
+      else if (e.event_type === 'break_end') {
+        if (breakOpen != null) { breaks[breakOpenType] += (t - breakOpen); }
+        if (open != null) { presence -= (t - breakOpen); }
+        breakOpen = null; breakOpenType = null;
+      }
+    });
+
+    var now = Date.now();
+    var openMin = (open != null) ? Math.round((now - open) / 60000) : 0;
+    var openBreakMin = (breakOpen != null) ? Math.round((now - breakOpen) / 60000) : 0;
+    var presenceMin = Math.round(presence / 60000) + openMin;
+    var breakMin = 0; Object.keys(breaks).forEach(function (k) { breakMin += Math.round(breaks[k] / 60000); });
+    breakMin += openBreakMin;
+    var net = Math.max(0, presenceMin - breakMin);
+
+    // statut
+    var status = 'off';
+    if (!sh || !sh.is_work) status = plan ? 'off' : 'unplanned';
+    if (ev.length) {
+      if (open != null || breakOpen != null) status = breakOpen != null ? 'break' : 'online';
+      else if (lastOut != null) status = 'out';
+    } else if (sh && sh.is_work) {
+      var start = shiftStart(sh, TODAY);
+      var late = start ? Math.round((now - start) / 60000) : 0;
+      status = late > 15 ? 'absent' : late > 5 ? 'late' : 'waiting';
+      if (late <= 0) status = 'waiting';
+    }
+
+    return {
+      agentId: agentId, shift: sh, plan: plan,
+      firstIn: firstIn, lastOut: lastOut, presenceMin: presenceMin, breakMin: breakMin,
+      breaksMin: {
+        pause: Math.round(breaks.pause / 60000),
+        lunch: Math.round(breaks.lunch / 60000),
+        sortie: Math.round(breaks.sortie / 60000),
+        autre: Math.round((breaks.coaching + breaks.formation + breaks.technique) / 60000)
+      },
+      openBreak: breakOpen != null ? breakOpenType : null,
+      openBreakMin: openBreakMin,
+      net: net, status: status, sessions: sessions,
+      lateMin: (firstIn && sh && sh.is_work) ? Math.max(0, Math.round((firstIn - shiftStart(sh, TODAY)) / 60000)) : 0
+    };
+  }
+
+  function shiftStart(sh, dateISO) {
+    if (!sh || !sh.start_time) return null;
+    var hmm = sh.start_time.split(':');
+    var d = OPS.parseISO(dateISO);
+    d.setHours(+hmm[0], +hmm[1], 0, 0);
+    return d.getTime();
+  }
+  function shiftEnd(sh, dateISO) {
+    if (!sh || !sh.end_time) return null;
+    var hmm = sh.end_time.split(':');
+    var d = OPS.parseISO(dateISO);
+    d.setHours(+hmm[0], +hmm[1], 0, 0);
+    var s = shiftStart(sh, dateISO);
+    if (s != null && d.getTime() <= s) d.setDate(d.getDate() + 1);
+    return d.getTime();
+  }
+
+  var STATUS_LABEL = {
+    online: ['En ligne', 'online'], break: ['En pause', 'break'], late: ['En retard', 'late'],
+    absent: ['Absent', 'absent'], out: ['Sorti', 'out'], off: ['Repos', 'off'],
+    unplanned: ['Hors planning', 'off'], waiting: ['Attendu', 'off']
+  };
+
+  /* ---------------- alertes ---------------- */
+  function alertsFor(day) {
+    var out = [];
+    var now = Date.now();
+    var a = AGENTS.filter(function (x) { return x.id === day.agentId; })[0] || { full_name: 'Agent' };
+    var sh = day.shift;
+    if (!sh || !sh.is_work) {
+      if (day.presenceMin > 0) out.push({ code: 'unplanned_work', kind: 'info', text: '<b>' + esc(a.full_name) + '</b> a pointé un jour non travaillé.' });
+      return out;
+    }
+    var start = shiftStart(sh, TODAY), end = shiftEnd(sh, TODAY);
+    if (day.status === 'late') out.push({ code: 'late_checkin', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé — shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
+    if (day.status === 'absent') out.push({ code: 'no_checkin', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> est absent : shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
+    if (day.openBreak) {
+      var droit = (BREAKS[day.openBreak] || {}).max_minutes || 15;
+      if (day.openBreakMin > droit + 5) out.push({ code: 'break_over', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + day.openBreak + ' dépassée (' + day.openBreakMin + ' min / ' + droit + ').' });
+      if (day.openBreakMin > 120) out.push({ code: 'break_open_long', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> : pause ouverte depuis ' + OPS.minutes(day.openBreakMin) + '.' });
+    }
+    ['pause', 'lunch', 'sortie'].forEach(function (k) {
+      var max = (BREAKS[k] || {}).max_minutes;
+      if (max && day.breaksMin[k] > max) out.push({ code: 'break_over_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + k + ' ' + day.breaksMin[k] + ' min pour un droit de ' + max + '.' });
+    });
+    if (end && now > end + 15 * 60000 && day.status === 'online') out.push({ code: 'no_checkout', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé son départ.' });
+    if (day.lastOut && end && day.lastOut < end - 15 * 60000) out.push({ code: 'early_leave', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> est parti ' + OPS.minutes(Math.round((end - day.lastOut) / 60000)) + ' avant la fin du shift.' });
+    return out;
+  }
+
+  /* ---------------- rendu temps réel ---------------- */
+  function renderLive() {
+    $('#live-date').textContent = OPS.fmtDateLong(TODAY);
+    var days = AGENTS.map(function (a) { return computeDay(a.id); });
+    var c = { online: 0, break: 0, late: 0, absent: 0, out: 0, waiting: 0, off: 0, unplanned: 0 };
+    days.forEach(function (d) { if (c[d.status] != null) c[d.status]++; });
+    var presents = days.filter(function (d) { return ['online', 'break', 'out'].indexOf(d.status) >= 0; }).length;
+
+    var cards = [
+      { k: null, n: presents, l: 'Présents', cls: 'good' },
+      { k: 'online', n: c.online, l: 'En ligne', cls: 'good' },
+      { k: 'break', n: c.break, l: 'En pause', cls: 'warn' },
+      { k: 'late', n: c.late, l: 'En retard', cls: 'warn' },
+      { k: 'absent', n: c.absent, l: 'Absents', cls: 'bad' },
+      { k: 'out', n: c.out, l: 'Sortis', cls: 'grey' }
+    ];
+    $('#counters').innerHTML = cards.map(function (x) {
+      return '<button class="at-count ' + x.cls + (filterStatus === x.k ? ' active' : '') + '" data-f="' + (x.k || '') + '">' +
+        '<strong>' + x.n + '</strong><span>' + x.l + '</span></button>';
+    }).join('');
+    $$('#counters .at-count').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var f = b.getAttribute('data-f') || null;
+        filterStatus = (filterStatus === f) ? null : f;
+        renderLive();
+      });
+    });
+
+    var rows = days.filter(function (d) {
+      if (!filterStatus) return true;
+      if (filterStatus === 'presents') return ['online', 'break', 'out'].indexOf(d.status) >= 0;
+      return d.status === filterStatus;
+    }).map(function (d) {
+      var a = AGENTS.filter(function (x) { return x.id === d.agentId; })[0] || { full_name: '—' };
+      var st = STATUS_LABEL[d.status] || ['—', 'off'];
+      var sh = d.shift;
+      var arrivee = d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—';
+      var ecart = d.firstIn ? (d.lateMin > 0 ? '+' + d.lateMin + ' min' : 'à l’heure') : '—';
+      var pauses = d.breaksMin.pause + '′ / ' + ((BREAKS.pause || {}).max_minutes * ((BREAKS.pause || {}).max_per_day || 1) || 30) + '′';
+      var lunch = d.breaksMin.lunch ? ' · lunch ' + d.breaksMin.lunch + '′' : '';
+      return '<tr>' +
+        '<td class="name">' + esc(a.full_name) + '</td>' +
+        '<td>' + (sh && sh.is_work ? (sh.code + ' · ' + sh.start_time.slice(0, 5) + '–' + sh.end_time.slice(0, 5)) : (d.plan ? d.plan.shift_code : '—')) + '</td>' +
+        '<td class="mono">' + arrivee + '</td>' +
+        '<td class="num ' + (d.lateMin > 5 ? 'mono' : '') + '" style="' + (d.lateMin > 5 ? 'color:#9E3B34;font-weight:800' : '') + '">' + ecart + '</td>' +
+        '<td><span class="at-badge ' + st[1] + '">' + st[0] + '</span></td>' +
+        '<td class="mono">' + pauses + lunch + '</td>' +
+        '<td class="num mono">' + (d.net ? OPS.minutes(d.net) : '—') + '</td>' +
+        '<td style="min-width:170px">' + timeline(d) + '</td>' +
+      '</tr>';
+    });
+    $('#live-body').innerHTML = rows.length ? rows.join('')
+      : '<tr><td colspan="8"><p class="empty-note">Aucun agent pour ce filtre.</p></td></tr>';
+
+    // alertes
+    var all = [];
+    days.forEach(function (d) { alertsFor(d).forEach(function (x) { all.push({ a: d.agentId, x: x }); }); });
+    all = all.filter(function (o) { return !ACKS[o.a + '|' + o.x.code]; });
+    all.sort(function (p, q) {
+      var w = { danger: 0, warn: 1, info: 2 };
+      return (w[p.x.kind] || 3) - (w[q.x.kind] || 3);
+    });
+    $('#alert-count').textContent = all.length ? all.length + ' active(s)' : 'aucune';
+    $('#alerts').innerHTML = all.length ? all.map(function (o) {
+      return '<div class="at-alert ' + o.x.kind + '"><span class="dot"></span><span>' + o.x.text + '</span>' +
+        (isManager ? '<button class="btn-sm" data-ack="' + o.a + '" data-code="' + o.x.code + '">Ignorer</button>' : '') + '</div>';
+    }).join('') : '<p class="empty-note">Aucune alerte ouverte.</p>';
+
+    $$('#alerts [data-ack]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        try {
+          await pgvData.ackAlert(b.getAttribute('data-ack'), TODAY, b.getAttribute('data-code'));
+          ACKS[b.getAttribute('data-ack') + '|' + b.getAttribute('data-code')] = true;
+          renderLive();
+        } catch (e) { OPS.toast(e.message, 'error'); }
+      });
+    });
+  }
+
+  function timeline(d) {
+    var ev = EVENTS.filter(function (e) { return e.agent_id === d.agentId; });
+    var base = OPS.parseISO(TODAY).getTime() + 6 * 3600000;
+    var span = 17 * 3600000;
+    var segs = '', open = null, openT = null;
+    ev.forEach(function (e) {
+      var t = new Date(e.occurred_at).getTime();
+      if (e.event_type === 'in') { open = t; openT = 'work'; }
+      else if (e.event_type === 'out' && openT === 'work') { segs += seg(open, t, 'work'); open = null; openT = null; }
+      else if (e.event_type === 'break_start') { open = t; openT = 'break'; }
+      else if (e.event_type === 'break_end' && openT === 'break') { segs += seg(open, t, 'break'); open = t; }
+    });
+    if (openT === 'work' && open != null) segs += seg(open, Date.now(), 'work');
+    if (openT === 'break' && open != null) segs += seg(open, Date.now(), 'break');
+    var nowX = Math.max(0, Math.min(100, (Date.now() - base) / span * 100));
+    return '<div class="at-tl"><div class="at-tl-track">' + segs +
+      '<span class="at-tl-now" style="left:' + nowX + '%"></span></div></div>' +
+      '<div class="at-tl-scale"><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>';
+
+    function seg(from, to, kind) {
+      var l = Math.max(0, Math.min(100, (from - base) / span * 100));
+      var w = Math.max(0.6, Math.min(100 - l, (to - from) / span * 100));
+      return '<span class="at-tl-seg ' + kind + '" style="left:' + l + '%;width:' + w + '%"></span>';
+    }
+  }
+
+  /* ---------------- ma journée ---------------- */
+  var myDay = null;
+  /* sélecteur d'agent : superviseur, ou profil sans agent lié */
+  if (showPicker && AGENTS.length) {
+    var sel = $('#me-agent');
+    sel.innerHTML = AGENTS.map(function (a) {
+      return '<option value="' + a.id + '">' + esc(a.full_name) + ' · ' + esc(a.staff_id || '') + '</option>';
+    }).join('');
+    sel.value = myAgentId;
+    sel.addEventListener('change', function () { myAgentId = sel.value; renderMe(); });
+    $('#me-picker').hidden = false;
+  }
+
+  function renderMe() {
+    if (!myAgentId) {
+      $('#me-shift').textContent = 'Aucun agent associé à ton profil : la page Équipe doit lier ton compte.';
+      return;
+    }
+    var me = AGENTS.filter(function (a) { return a.id === myAgentId; })[0];
+    myDay = computeDay(myAgentId);
+    var d = myDay;
+    var ev = EVENTS.filter(function (e) { return e.agent_id === myAgentId; });
+
+    $('#at-sub').textContent = me ? ('Journée de ' + me.full_name + ' — arrivées, départs et pauses.') : '—';
+
+    var inBtn = $('#b-in'), outBtn = $('#b-out'), resumeBtn = $('#b-resume');
+    var last = ev.length ? ev[ev.length - 1] : null;
+    var onBreak = !!last && last.event_type === 'break_start';
+    var inService = !!last && (last.event_type === 'in' || last.event_type === 'break_end');
+
+    inBtn.disabled = inService || onBreak;          // déjà en poste
+    outBtn.disabled = !inService;                    // fin possible seulement en poste
+    resumeBtn.disabled = !onBreak;                   // reprise seulement en pause
+    $$('#b-breaks button').forEach(function (b) { b.disabled = !inService; });
+
+    $('#me-shift').innerHTML = d.shift && d.shift.is_work
+      ? 'Shift prévu : <b>' + d.shift.code + ' · ' + d.shift.start_time.slice(0, 5) + '–' + d.shift.end_time.slice(0, 5) + '</b>'
+      : (d.plan ? 'Aujourd’hui : <b>' + d.plan.shift_code + '</b> — un pointage sera signalé hors planning.' : 'Aucun shift planifié aujourd’hui.');
+
+    var st = STATUS_LABEL[d.status] || ['—', 'off'];
+    $('#me-summary').innerHTML = [
+      ['Statut', st[0]],
+      ['Arrivée', d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—'],
+      ['Pause', d.breaksMin.pause + '′ / ' + ((BREAKS.pause || {}).max_minutes || 15) + '′'],
+      ['Lunch', d.breaksMin.lunch + '′ / ' + ((BREAKS.lunch || {}).max_minutes || 60) + '′'],
+      ['Temps net', d.net ? OPS.minutes(d.net) : '—']
+    ].map(function (kv) {
+      return '<div class="at-kv"><span>' + kv[0] + '</span><strong>' + kv[1] + '</strong></div>';
+    }).join('');
+  }
+
+  async function post(type, breakType) {
+    try {
+      await pgvData.addEvent(myAgentId, type, breakType, TODAY, 'agent');
+      OPS.toast(type === 'in' ? 'Journée démarrée' : type === 'out' ? 'Journée terminée' :
+        type === 'break_start' ? 'Pause enregistrée' : 'Reprise enregistrée');
+      await loadDay();
+    } catch (e) { OPS.toast(e.message, 'error'); }
+  }
+
+  $('#b-in').addEventListener('click', function () { post('in'); });
+  $('#b-out').addEventListener('click', function () {
+    if (!confirm('Terminer la journée ?')) return;
+    post('out');
+  });
+  $('#b-resume').addEventListener('click', function () { post('break_end'); });
+  $$('#b-breaks button').forEach(function (b) {
+    b.addEventListener('click', function () { post('break_start', b.getAttribute('data-break')); });
+  });
+
+  /* ---------------- semaine ---------------- */
+  async function renderWeek() {
+    var monday = OPS.mondayOf(TODAY);
+    var ds = [];
+    for (var i = 0; i < 7; i++) ds.push(OPS.addDays(monday, i));
+    $('#week-head').innerHTML = '<tr><th>Agent</th>' + ds.map(function (d) {
+      return '<th>' + OPS.fmtDate(d) + '</th>';
+    }).join('') + '<th class="num">Net</th></tr>';
+
+    var evW = [], planW = {};
+    try {
+      evW = await pgvData.loadAttendanceRange(ds[0], ds[6]);
+      var rows = await pgvData.loadPlanning(ds[0], ds[6]);
+      rows.forEach(function (r) { planW[r.agent_id + '|' + r.work_date] = r; });
+    } catch (e) { OPS.toast(e.message, 'error'); }
+
+    $('#week-body').innerHTML = AGENTS.map(function (a) {
+      var total = 0;
+      var cells = ds.map(function (d) {
+        var ev = evW.filter(function (e) { return e.agent_id === a.id && e.work_date === d; });
+        var plan = planW[a.id + '|' + d];
+        var net = netOf(ev);
+        total += net;
+        var label = net ? OPS.minutes(net) : (plan ? plan.shift_code : '—');
+        var col = net ? '#2F6B4F' : (plan && plan.shift_code === 'OFF' ? '#A09A91' : '#8A857D');
+        return '<td class="mono" style="color:' + col + '">' + label + '</td>';
+      }).join('');
+      return '<tr><td class="name">' + esc(a.full_name) + '</td>' + cells + '<td class="num mono">' + OPS.minutes(total) + '</td></tr>';
+    }).join('');
+  }
+
+  function netOf(ev) {
+    var presence = 0, brk = 0, open = null, bopen = null;
+    ev.forEach(function (e) {
+      var t = new Date(e.occurred_at).getTime();
+      if (e.event_type === 'in') open = t;
+      else if (e.event_type === 'out' && open) { presence += t - open; open = null; }
+      else if (e.event_type === 'break_start') bopen = t;
+      else if (e.event_type === 'break_end') { if (bopen) { brk += t - bopen; presence -= t - bopen; bopen = null; } }
+    });
+    return Math.max(0, Math.round((presence) / 60000));
+  }
+
+  /* ---------------- onglets + horloge ---------------- */
+  $$('.at-tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      currentTab = t.getAttribute('data-tab');
+      $$('.at-tab').forEach(function (x) { x.classList.toggle('active', x === t); });
+      $('#tab-live').hidden = currentTab !== 'live';
+      $('#tab-me').hidden = currentTab !== 'me';
+      $('#tab-week').hidden = currentTab !== 'week';
+      if (currentTab === 'week') renderWeek();
+    });
+  });
+
+  function tick() {
+    $('#clock').textContent = new Date().toLocaleTimeString('fr-MA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  await loadDay();
+  setInterval(function () { if (currentTab === 'live') loadDay(); }, 30000);
+})();
+</script>
+<script src="js/support-widget.js" defer></script>
+</body>
+</html>

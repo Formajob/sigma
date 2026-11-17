@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17242D">
+<meta name="robots" content="noindex, nofollow">
+<title>PGV · Emails — Sigma</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
+<link rel="stylesheet" href="css/ops.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <main class="main">
+    <header class="topbar"></header>
+    <div class="content">
+      <div id="ops-banner" class="p-banner" hidden></div>
+
+      <div class="welcome-row">
+        <div>
+          <span class="welcome-kicker">PGV · Courrier</span>
+          <h1>Emails</h1>
+          <p>Un agent de service par jour ouvré, à tour de rôle. Suivi des emails SAC reçus et traités.</p>
+        </div>
+        <div class="welcome-right">
+          <button class="button button-primary" id="btn-entry">＋ Saisir la journée</button>
+        </div>
+      </div>
+
+      <!-- Tour du jour -->
+      <div class="em-hero">
+        <div class="em-hero-main">
+          <strong id="duty-name">—</strong>
+          <span id="duty-sub">Agent de service emails</span>
+        </div>
+        <div class="em-hero-side">
+          <b id="duty-rest">—</b>
+          <small id="duty-rest-label">restant à traiter</small>
+        </div>
+      </div>
+
+      <div class="period-bar" style="margin-bottom:14px">
+        <div class="period-info"><strong>Période</strong><span id="period-label">—</span></div>
+        <div class="period-inputs">
+          <label>Du <input type="date" id="p-from"></label>
+          <label>Au <input type="date" id="p-to"></label>
+          <button class="small-button" id="btn-period">Appliquer</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:14px">
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Reçus</span><span class="kpi-icon">✉</span></div><strong class="kpi-value" id="k-recv">—</strong><span class="kpi-foot">toutes catégories</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Dont SAC</span><span class="kpi-icon">◎</span></div><strong class="kpi-value" id="k-sac">—</strong><span class="kpi-foot">à traiter par le SAC</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Traités SAC</span><span class="kpi-icon">✓</span></div><strong class="kpi-value" id="k-done">—</strong><span class="kpi-foot">clôturés</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Taux</span><span class="kpi-icon">%</span></div><strong class="kpi-value" id="k-rate">—</strong><span class="kpi-foot">traités ÷ reçus SAC</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Poids du SAC</span><span class="kpi-icon">◈</span></div><strong class="kpi-value" id="k-weight">—</strong><span class="kpi-foot">SAC ÷ total reçus</span></article>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-head"><h2>Calendrier du mois</h2><small id="cal-caption">—</small></div>
+        <div class="panel-body">
+          <div class="em-cal" id="cal-head"></div>
+          <div class="em-cal" id="cal"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+        <div class="panel">
+          <div class="panel-head"><h2>Par agent</h2><small>sur la période</small></div>
+          <div class="panel-body" style="padding:0">
+            <table class="p-table"><thead><tr><th>Agent</th><th class="num">Jours de service</th><th class="num">SAC traités</th><th class="num">Moy. / jour</th><th class="num">Part</th></tr></thead>
+            <tbody id="agent-body"></tbody></table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Journées</h2><small>détaillées</small></div>
+          <div class="panel-body" style="padding:0">
+            <div class="scroll-x"><table class="p-table"><thead><tr><th>Date</th><th>Prévu</th><th>Réel</th><th class="num">Reçus</th><th class="num">SAC</th><th class="num">Traités</th></tr></thead>
+            <tbody id="days-body"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ================= SAISIE ================= -->
+<div id="dlg" class="ops-modal" role="dialog" aria-modal="true" aria-labelledby="dlg-title" hidden>
+  <div class="ops-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 id="dlg-title" style="margin:0;font:600 19px var(--serif)">Saisie de la journée</h2>
+      <button type="button" class="btn-sm" id="d-close">Fermer</button>
+    </div>
+    <div class="f-row c2">
+      <div><label class="f-label" for="d-date">Date</label><input class="f-input" type="date" id="d-date"></div>
+      <div><label class="f-label" for="d-duty">Agent de service</label><select class="f-select" id="d-duty"></select></div>
+    </div>
+    <div class="f-row c3">
+      <div><label class="f-label" for="d-total">Reçus total</label><input class="f-input" type="number" min="0" id="d-total" value="0"></div>
+      <div><label class="f-label" for="d-sac">Dont SAC</label><input class="f-input" type="number" min="0" id="d-sac" value="0"></div>
+      <div><label class="f-label" for="d-done">Traités SAC</label><input class="f-input" type="number" min="0" id="d-done" value="0"></div>
+    </div>
+    <div class="f-row c3">
+      <div><label class="f-label" for="d-spam">Spam</label><input class="f-input" type="number" min="0" id="d-spam" value="0"></div>
+      <div><label class="f-label" for="d-pub">Publicité</label><input class="f-input" type="number" min="0" id="d-pub" value="0"></div>
+      <div><label class="f-label" for="d-autre">Autre département</label><input class="f-input" type="number" min="0" id="d-autre" value="0"></div>
+    </div>
+    <div class="f-row">
+      <div><label class="f-label" for="d-note">Note</label><input class="f-input" id="d-note" placeholder="optionnel"></div>
+    </div>
+    <div id="dlg-warn" class="cal-warn" hidden></div>
+    <button type="button" class="button button-primary" id="d-save" style="width:100%;margin-top:12px">Enregistrer</button>
+  </div>
+</div>
+
+<script src="js/i18n.js"></script>
+<script>window.__SIGMA_PAGE = 'emails';</script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="scripts/app-shared.js"></script>
+<script src="js/pgv-grid.js"></script>
+<script src="js/pgv-data.js"></script>
+<script src="js/ops-common.js"></script>
+<script>
+(async function () {
+  'use strict';
+  var $ = OPS.$, $$ = OPS.$$, esc = OPS.esc;
+  var session = await OPS.boot({ active: 'emails', title: 'Emails' });
+  if (!session) return;
+  var isManager = session.isManager;
+
+  var AGENTS = [], ROTATION = [], SETTINGS = null, DAYS = [], PLAN = {}, AGDAY = [];
+  var TODAY = pgvData.iso();
+  var FROM = pgvData.startOfMonth(), TO = pgvData.endOfMonth();
+
+  if (!isManager) $('#btn-entry').style.display = 'none';
+
+  try {
+    await pgvData.init();
+    AGENTS = await pgvData.loadAgents();
+    ROTATION = await pgvData.loadRotation();
+    SETTINGS = await pgvData.loadEmailSettings();
+    if (!ROTATION.length) throw Object.assign(new Error('email_rotation vide'), { table: 'email_rotation' });
+  } catch (e) {
+    OPS.banner('Données emails indisponibles',
+      OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'email_rotation') : esc(e.message) +
+        ' — vérifie que <code>sql/ops-install.sql</code> a bien inséré la rotation.', 'error');
+    return;
+  }
+
+  var agentById = {};
+  AGENTS.forEach(function (a) { agentById[a.id] = a; });
+
+  function name(id) { return agentById[id] ? agentById[id].full_name : '—'; }
+
+  /* ---------------- rotation ---------------- */
+  var ROT_IDS = ROTATION.map(function (r) { return r.agent_id; });
+
+  async function loadPlanningRange(from, to) {
+    var rows = await pgvData.loadPlanning(from, to);
+    PLAN = {};
+    rows.forEach(function (r) {
+      if (!PLAN[r.work_date]) PLAN[r.work_date] = {};
+      var sh = SHIFT_CACHE[r.shift_code];
+      PLAN[r.work_date][r.agent_id] = { is_work: sh ? sh.is_work : false, shift: r.shift_code };
+    });
+  }
+  var SHIFT_CACHE = {};
+  try {
+    (await pgvData.loadShifts()).forEach(function (s) { SHIFT_CACHE[s.code] = s; });
+  } catch (e) {}
+
+  function simulate(from, to) {
+    return pgvData.simulateRotation(from, to, ROT_IDS, PLAN, SETTINGS.skip_weekend !== false);
+  }
+
+  /* ---------------- chargement ---------------- */
+  async function load() {
+    try {
+      await loadPlanningRange(FROM, TO);
+      DAYS = await pgvData.loadEmailDays(FROM, TO);
+      AGDAY = await pgvData.loadEmailAgents(FROM, TO);
+    } catch (e) {
+      OPS.banner('Lecture impossible', esc(e.message), 'error');
+      DAYS = []; AGDAY = [];
+    }
+    render();
+  }
+
+  function dayMap() {
+    var m = {};
+    DAYS.forEach(function (d) { m[d.work_date] = d; });
+    return m;
+  }
+
+  /* ---------------- tour du jour ---------------- */
+  function renderDuty() {
+    var todayMap = simulate(TODAY, TODAY)[0] || { duty: null, planned: null, open: false };
+    var rec = dayMap()[TODAY];
+    var duty = (rec && rec.duty_agent_id) || todayMap.duty;
+    var planned = (rec && rec.planned_agent_id) || todayMap.planned;
+
+    $('#duty-name').textContent = duty ? 'Aujourd’hui : ' + name(duty) : (todayMap.open ? 'Aucun agent désigné' : 'Journée non ouvrée');
+    var extra = [];
+    if (planned && duty && planned !== duty) extra.push('remplace ' + name(planned));
+    if (!todayMap.open) extra.push('aucun agent planifié ce jour');
+    $('#duty-sub').textContent = 'Agent de service emails' + (extra.length ? ' · ' + extra.join(' · ') : '') +
+      ' · ' + OPS.fmtDateLong(TODAY);
+
+    var rest = rec ? Math.max(0, (rec.received_sac || 0) - (rec.treated_sac || 0)) : null;
+    $('#duty-rest').textContent = rest == null ? '—' : rest;
+    $('#duty-rest-label').textContent = rest == null ? 'non saisi' : (rest === 0 ? 'tout est traité' : 'restant à traiter');
+  }
+
+  /* ---------------- rendu ---------------- */
+  function render() {
+    renderDuty();
+    $('#period-label').textContent = OPS.fmtDate(FROM) + ' → ' + OPS.fmtDate(TO);
+
+    var recv = 0, sac = 0, done = 0;
+    DAYS.forEach(function (d) { recv += d.received_total || 0; sac += d.received_sac || 0; done += d.treated_sac || 0; });
+    $('#k-recv').textContent = recv || '—';
+    $('#k-sac').textContent = sac || '—';
+    $('#k-done').textContent = done || '—';
+    $('#k-rate').textContent = sac ? OPS.pct(done, sac) + ' %' : '—';
+    $('#k-weight').textContent = recv ? OPS.pct(sac, recv) + ' %' : '—';
+
+    renderCalendar();
+    renderAgents();
+    renderDays();
+  }
+
+  function renderCalendar() {
+    var m = dayMap();
+    var sim = simulate(FROM, TO);
+    var simMap = {};
+    sim.forEach(function (s) { simMap[s.date] = s; });
+
+    $('#cal-caption').textContent = OPS.fmtDate(FROM) + ' → ' + OPS.fmtDate(TO);
+    $('#cal-head').innerHTML = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+      .map(function (d) { return '<div class="em-cal-head">' + d + '</div>'; }).join('');
+
+    var first = OPS.parseISO(FROM);
+    var offset = (first.getDay() + 6) % 7;
+    var cells = [];
+    for (var i = 0; i < offset; i++) cells.push('<div class="em-day empty"></div>');
+
+    var d = FROM;
+    while (d <= TO) {
+      var rec = m[d], s = simMap[d];
+      var duty = (rec && rec.duty_agent_id) || (s && s.duty) || null;
+      var open = s ? s.open : true;
+      var cls = 'em-day';
+      if (!open) cls += ' closed';
+      else if (!rec || (!rec.received_total && !rec.treated_sac)) cls += (duty ? ' noduty' : '');
+      else if ((rec.treated_sac || 0) >= (rec.received_sac || 0) && (rec.received_sac || 0) > 0) cls += ' done';
+      else if ((rec.treated_sac || 0) > 0) cls += ' partial';
+      else cls += ' missed';
+      if (d === TODAY) cls += ' today';
+
+      var initials = duty ? name(duty).split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2) : '—';
+      cells.push('<button class="' + cls + '" data-date="' + d + '" title="' + esc(OPS.fmtDateLong(d)) + '">' +
+        '<span class="d">' + OPS.fmtDate(d) + '</span>' +
+        '<span class="who">' + esc(initials) + '</span>' +
+        '<span class="n">' + (rec ? ((rec.treated_sac || 0) + '/' + (rec.received_sac || 0)) : '·') + '</span></button>');
+      d = pgvData.nextDay(d);
+    }
+    $('#cal').innerHTML = cells.join('');
+
+    $$('#cal [data-date]').forEach(function (b) {
+      b.addEventListener('click', function () { openEntry(b.getAttribute('data-date')); });
+    });
+  }
+
+  function renderAgents() {
+    var per = {};
+    AGDAY.forEach(function (r) {
+      per[r.agent_id] = per[r.agent_id] || { sac: 0, days: 0 };
+      per[r.agent_id].sac += r.treated_sac || 0;
+      if ((r.treated_sac || 0) > 0) per[r.agent_id].days++;
+    });
+    var totalSac = 0;
+    Object.keys(per).forEach(function (k) { totalSac += per[k].sac; });
+
+    var rows = AGENTS.map(function (a) {
+      var p = per[a.id] || { sac: 0, days: 0 };
+      var dutyDays = DAYS.filter(function (d) { return (d.duty_agent_id || d.planned_agent_id) === a.id; }).length;
+      return '<tr><td class="name">' + esc(a.full_name) + '</td>' +
+        '<td class="num">' + dutyDays + '</td>' +
+        '<td class="num">' + p.sac + '</td>' +
+        '<td class="num">' + (p.days ? Math.round(p.sac / p.days) : '—') + '</td>' +
+        '<td class="num">' + (totalSac ? OPS.pct(p.sac, totalSac) + ' %' : '—') + '</td></tr>';
+    });
+    $('#agent-body').innerHTML = rows.join('');
+  }
+
+  function renderDays() {
+    var m = dayMap();
+    var sim = simulate(FROM, TO);
+    var rows = sim.filter(function (s) { return s.open; }).slice(-14).reverse().map(function (s) {
+      var rec = m[s.date] || {};
+      return '<tr><td class="mono">' + OPS.fmtDate(s.date) + '</td>' +
+        '<td>' + esc(name(s.planned)) + '</td>' +
+        '<td>' + esc(rec.duty_agent_id ? name(rec.duty_agent_id) : '—') + '</td>' +
+        '<td class="num">' + (rec.received_total || 0) + '</td>' +
+        '<td class="num">' + (rec.received_sac || 0) + '</td>' +
+        '<td class="num">' + (rec.treated_sac || 0) + '</td></tr>';
+    });
+    $('#days-body').innerHTML = rows.length ? rows.join('')
+      : '<tr><td colspan="6"><p class="empty-note">Aucune journée ouvrée sur la période.</p></td></tr>';
+  }
+
+  /* ---------------- saisie ---------------- */
+  function openEntry(dateISO) {
+    var dlg = $('#dlg');
+    $('#d-date').value = dateISO || TODAY;
+    $('#d-duty').innerHTML = AGENTS.map(function (a) {
+      return '<option value="' + a.id + '">' + esc(a.full_name) + '</option>';
+    }).join('');
+    var rec = dayMap()[dateISO];
+    var sim = simulate(dateISO, dateISO)[0] || {};
+    $('#d-duty').value = (rec && rec.duty_agent_id) || sim.duty || (AGENTS[0] && AGENTS[0].id) || '';
+    $('#d-total').value = rec ? rec.received_total : 0;
+    $('#d-sac').value = rec ? rec.received_sac : 0;
+    $('#d-done').value = rec ? rec.treated_sac : 0;
+    $('#d-spam').value = rec ? rec.non_sac_spam : 0;
+    $('#d-pub').value = rec ? rec.non_sac_pub : 0;
+    $('#d-autre').value = rec ? rec.non_sac_autre_departement : 0;
+    $('#d-note').value = rec ? (rec.note || '') : '';
+    $('#dlg-warn').hidden = true;
+    dlg.hidden = false;
+    document.body.classList.add('modal-open');
+  }
+
+  function check() {
+    var t = +$('#d-total').value || 0, s = +$('#d-sac').value || 0;
+    var sp = +$('#d-spam').value || 0, pu = +$('#d-pub').value || 0, au = +$('#d-autre').value || 0;
+    var done = +$('#d-done').value || 0;
+    var w = [];
+    if (s > t) w.push('Les emails SAC dépassent le total reçu.');
+    if (sp + pu + au > t) w.push('La somme des catégories non-SAC dépasse le total.');
+    if (done > s) w.push('Les emails traités dépassent les emails SAC reçus.');
+    var el = $('#dlg-warn');
+    if (w.length) { el.hidden = false; el.textContent = w.join(' '); } else { el.hidden = true; }
+    return !w.length;
+  }
+  ['#d-total', '#d-sac', '#d-spam', '#d-pub', '#d-autre', '#d-done'].forEach(function (s) {
+    $(s).addEventListener('input', check);
+  });
+
+  function closeEntry() {
+    $('#dlg').hidden = true;
+    document.body.classList.remove('modal-open');
+  }
+  $('#d-close').addEventListener('click', closeEntry);
+  $('#dlg').addEventListener('click', function (e) { if (e.target === $('#dlg')) closeEntry(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('#dlg').hidden) closeEntry();
+  });
+  $('#btn-entry').addEventListener('click', function () { openEntry(TODAY); });
+
+  $('#d-save').addEventListener('click', async function () {
+    var consistent = check();
+    var dateISO = $('#d-date').value;
+    if (!dateISO) { OPS.toast('Choisis une date', 'error'); return; }
+    if (!consistent && !confirm('Les chiffres sont incohérents. Enregistrer quand même ?')) return;
+    var sim = simulate(dateISO, dateISO)[0] || {};
+    var btn = this; btn.disabled = true; btn.textContent = 'Enregistrement…';
+    try {
+      await pgvData.saveEmailDay({
+        work_date: dateISO,
+        planned_agent_id: sim.planned || null,
+        duty_agent_id: $('#d-duty').value || null,
+        received_total: +$('#d-total').value || 0,
+        received_sac: +$('#d-sac').value || 0,
+        non_sac_spam: +$('#d-spam').value || 0,
+        non_sac_pub: +$('#d-pub').value || 0,
+        non_sac_autre_departement: +$('#d-autre').value || 0,
+        treated_sac: +$('#d-done').value || 0,
+        note: $('#d-note').value.trim()
+      });
+      // répartition par agent : tout au titulaire, sauf saisie fine ultérieure
+      var duty = $('#d-duty').value;
+      if (duty) {
+        try {
+          var db = await window.sigmaSupabase.getClient();
+          await db.from('email_agent_daily').upsert({
+            activity: 'pgv', work_date: dateISO, agent_id: duty,
+            treated_sac: +$('#d-done').value || 0, treated_other: 0
+          }, { onConflict: 'activity,work_date,agent_id' });
+        } catch (err) { /* non bloquant */ }
+      }
+      OPS.toast('Journée enregistrée');
+      closeEntry();
+      await load();
+    } catch (e) {
+      OPS.toast(e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+    }
+  });
+
+  $('#btn-period').addEventListener('click', function () {
+    FROM = $('#p-from').value || FROM;
+    TO = $('#p-to').value || TO;
+    load();
+  });
+  $('#p-from').value = FROM;
+  $('#p-to').value = TO;
+
+  await load();
+})();
+</script>
+<script src="js/support-widget.js" defer></script>
+</body>
+</html>
