@@ -22,7 +22,7 @@
           <span class="welcome-kicker">PGV · Comptes et droits</span>
           <h1>Administration</h1>
           <p>Agents et superviseurs, rôles, rattachement aux fiches agents et accès sécurisés.</p>
-          <p class="f-note">Pour un nouvel agent : invite son email dans Supabase Auth, puis rattache-le à sa fiche agent ici. Le profil Agent est créé lors du rattachement ; aucun mot de passe n’est stocké dans Sigma.</p>
+          <p class="f-note">Les comptes et rattachements se gèrent depuis cette page. Sigma conserve le rôle et la fiche agent; l’authentification sécurisée gère le mot de passe et envoie un lien d’invitation au titulaire.</p>
         </div>
       </div>
 
@@ -39,6 +39,24 @@
           <article class="kpi"><div class="kpi-top"><span class="kpi-label">Agents</span><span class="kpi-icon">◎</span></div><strong class="kpi-value" id="k-agents">—</strong><span class="kpi-foot">rôle agent</span></article>
           <article class="kpi"><div class="kpi-top"><span class="kpi-label">Superviseurs</span><span class="kpi-icon">◈</span></div><strong class="kpi-value" id="k-sup">—</strong><span class="kpi-foot">superviseur et au-dessus</span></article>
           <article class="kpi"><div class="kpi-top"><span class="kpi-label">Sans fiche</span><span class="kpi-icon">!</span></div><strong class="kpi-value" id="k-orph">—</strong><span class="kpi-foot">agent non rattaché</span></article>
+        </div>
+
+        <div class="section-title">
+          <div><h2>Inviter un agent</h2><p>Le titulaire choisira son mot de passe via le lien reçu par email.</p></div>
+        </div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-body">
+            <form id="adm-invite-form" class="f-row c4" style="align-items:end;margin-bottom:0">
+              <div><label class="f-label" for="adm-invite-name">Nom complet</label>
+                <input class="f-input" id="adm-invite-name" autocomplete="name" required maxlength="120"></div>
+              <div><label class="f-label" for="adm-invite-email">Email professionnel</label>
+                <input class="f-input" id="adm-invite-email" type="email" autocomplete="email" required maxlength="254"></div>
+              <div><label class="f-label" for="adm-invite-agent">Fiche agent</label>
+                <select class="f-select" id="adm-invite-agent" required><option value="">Choisir une fiche…</option></select></div>
+              <div><button class="button button-primary" id="adm-invite-submit" type="submit">Envoyer l’invitation</button></div>
+            </form>
+            <p class="f-note" style="margin:12px 0 0">Aucun mot de passe n’est saisi, envoyé par Sigma ou enregistré dans la table des profils.</p>
+          </div>
         </div>
 
         <div class="section-title">
@@ -139,6 +157,9 @@
     AGENTS = (aR.data || []).filter(function (a) {
       return a.activity ? a.activity === 'pgv' : /pgv/i.test(a.team || '');
     });
+    $('#adm-invite-agent').innerHTML = '<option value="">Choisir une fiche…</option>' + AGENTS.map(function (a) {
+      return '<option value="' + esc(a.id) + '">' + esc(a.full_name) + ' · ' + esc(a.staff_id || '') + '</option>';
+    }).join('');
 
     renderKpis();
     renderTable();
@@ -277,6 +298,39 @@
     if (r.error) throw new Error(r.error.message || 'Appel refusé');
     return r.data;
   }
+
+  $('#adm-invite-form').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var btn = $('#adm-invite-submit');
+    var payload = {
+      full_name: ($('#adm-invite-name').value || '').trim(),
+      email: ($('#adm-invite-email').value || '').trim(),
+      agent_id: $('#adm-invite-agent').value
+    };
+    if (!payload.full_name || !payload.email || !payload.agent_id) {
+      OPS.toast('Renseigne le nom, l’email et la fiche agent.', 'error');
+      return;
+    }
+    if (!confirm('Envoyer une invitation à ' + payload.email + ' et la rattacher à ' +
+        ($('#adm-invite-agent').selectedOptions[0].textContent) + ' ?')) return;
+    btn.disabled = true;
+    try {
+      var result = await db.functions.invoke('admin-invite-user', { body: payload });
+      if (result.error) {
+        var details = result.error.message || 'Invitation impossible';
+        if (result.error.context && result.error.context.json) {
+          var body = await result.error.context.json().catch(function () { return null; });
+          if (body && body.error) details = body.error;
+        }
+        throw new Error(details);
+      }
+      $('#adm-invite-form').reset();
+      OPS.toast('Invitation envoyée. L’agent définira son mot de passe via le lien reçu.');
+      await loadAll();
+    } catch (e) {
+      OPS.toast((e && e.message) || 'Invitation impossible. Vérifie le déploiement de la fonction admin-invite-user.', 'error');
+    } finally { btn.disabled = false; }
+  });
 
   $('#adm-search').addEventListener('input', renderTable);
 
