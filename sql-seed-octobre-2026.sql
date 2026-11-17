@@ -105,12 +105,14 @@ insert into public.planning_entries (activity, work_date, agent_id, shift_code, 
 select 'pgv', x.d, x.agent_id,
        case
          when not x.open then 'OFF'
-         when x.is_sat then case when x.sat_slot = x.ord - 1 then 'M' else 'OFF' end
+         when x.d = date '2026-10-05' and x.staff_id = '204186' then 'OFF'
+         when x.is_sat then case when x.sat_slot = x.ord - 1 then 'SAT' else 'OFF' end
          else 'M'
        end,
-       case when x.is_sat and x.sat_slot = x.ord - 1 then 'Samedi — service' else null end
+       case when x.d = date '2026-10-05' and x.staff_id = '204186' then 'Repos planifié'
+            when x.is_sat and x.sat_slot = x.ord - 1 then 'Samedi — service' else null end
 from (
-  select d.d, d.open, d.is_sat, d.sat_slot, a.id as agent_id, a.ord
+  select d.d, d.open, d.is_sat, d.sat_slot, a.id as agent_id, a.staff_id, a.ord
   from _seed_days d cross join _seed_agents a
 ) x;
 
@@ -126,19 +128,26 @@ join _seed_agents a on a.id = p.agent_id
 cross join lateral (
   select
     p.work_date::timestamp
-      + interval '9 hour'
-      + make_interval(mins => (52 + (a.ord * 3) + (extract(day from p.work_date)::int % 7))::int) as t_in
+      + interval '14 hour'
+      + make_interval(mins => (case when p.shift_code = 'SAT'
+           then (extract(day from p.work_date)::int % 4)
+           else (a.ord * 2 + extract(day from p.work_date)::int % 5)
+         end)::int) as t_in
 ) t
 cross join lateral (
-  values
-    ('in',        null,          t.t_in),
-    ('break_start', 'pause',     t.t_in + interval '2 hour 40 min'),
-    ('break_end',  null,         t.t_in + interval '2 hour 55 min'),
-    ('break_start', 'lunch',     t.t_in + interval '4 hour 20 min'),
-    ('break_end',  null,         t.t_in + interval '5 hour 18 min'),
-    ('break_start', 'sortie',    t.t_in + interval '7 hour 5 min'),
-    ('break_end',  null,         t.t_in + interval '7 hour 14 min'),
-    ('out',        null,         t.t_in + interval '8 hour 6 min')
+  select 'in'::text as event_type, null::text as break_type, t.t_in as ts
+  union all select 'break_start','pause',t.t_in + interval '1 hour 15 min' where p.shift_code = 'SAT'
+  union all select 'break_end',null,t.t_in + interval '1 hour 30 min' where p.shift_code = 'SAT'
+  union all select 'out',null,t.t_in + interval '3 hour 45 min' where p.shift_code = 'SAT'
+  union all select 'break_start','pause',t.t_in + interval '2 hour 15 min' where p.shift_code <> 'SAT'
+  union all select 'break_end',null,t.t_in + interval '2 hour 30 min' where p.shift_code <> 'SAT'
+  union all select 'break_start','lunch',t.t_in + interval '4 hour 05 min' where p.shift_code <> 'SAT'
+  union all select 'break_end',null,t.t_in + interval '5 hour 03 min' where p.shift_code <> 'SAT'
+  union all select 'break_start','pause',t.t_in + interval '5 hour 45 min' where p.shift_code <> 'SAT'
+  union all select 'break_end',null,t.t_in + interval '6 hour 00 min' where p.shift_code <> 'SAT'
+  union all select 'break_start','sortie',t.t_in + interval '7 hour 00 min' where p.shift_code <> 'SAT'
+  union all select 'break_end',null,t.t_in + interval '7 hour 05 min' where p.shift_code <> 'SAT'
+  union all select 'out',null,t.t_in + interval '8 hour 45 min' where p.shift_code <> 'SAT'
 ) v(event_type, break_type, ts)
 where p.activity = 'pgv'
   and p.shift_code <> 'OFF'
@@ -153,24 +162,48 @@ insert into public.email_days
    received_total, received_sac, non_sac_spam, non_sac_pub,
    non_sac_autre_departement, non_sac_autre, treated_sac, note)
 select 'pgv', d.d,
-       duty.agent_id, duty.agent_id,
-       118 + (extract(day from d.d)::int * 7) % 46,
-        64 + (extract(day from d.d)::int * 5) % 28,
-        18 + (extract(day from d.d)::int * 3) % 12,
-        11 + (extract(day from d.d)::int * 2) % 9,
-         7 + (extract(day from d.d)::int) % 6,
-         4 + (extract(day from d.d)::int * 3) % 5,
-        61 + (extract(day from d.d)::int * 5) % 27,
+       planned.agent_id, duty.agent_id,
+       v.received_total, v.received_sac, v.non_sac_spam, v.non_sac_pub,
+       v.non_sac_autre_departement, v.non_sac_autre, v.treated_sac,
        null
-from _seed_days d
+from (
+  select d, row_number() over (order by d) - 1 as seq
+  from _seed_days
+  where dow between 1 and 5
+) d
 join lateral (
-  select p.agent_id
-  from public.planning_entries p
-  where p.activity = 'pgv' and p.work_date = d.d and p.shift_code <> 'OFF'
-  order by p.agent_id
+  select r.agent_id
+  from (
+    select er.agent_id, row_number() over (order by er.position) - 1 as pos,
+           count(*) over () as n
+    from public.email_rotation er
+    where er.activity = 'pgv' and er.active
+  ) r
+  order by ((r.pos - (d.seq % r.n) + r.n) % r.n)
+  limit 1
+) planned on true
+join lateral (
+  select r.agent_id
+  from (
+    select er.agent_id, row_number() over (order by er.position) - 1 as pos,
+           count(*) over () as n
+    from public.email_rotation er
+    where er.activity = 'pgv' and er.active
+  ) r
+  join public.planning_entries p on p.activity = 'pgv' and p.work_date = d.d
+       and p.agent_id = r.agent_id and p.shift_code not in ('OFF','VAC','MAL')
+  order by ((r.pos - (d.seq % r.n) + r.n) % r.n)
   limit 1
 ) duty on true
-where d.open;
+cross join lateral (
+  select 118 + (extract(day from d.d)::int * 7) % 46 as received_total,
+          64 + (extract(day from d.d)::int * 5) % 28 as received_sac,
+          18 + (extract(day from d.d)::int * 3) % 12 as non_sac_spam,
+          11 + (extract(day from d.d)::int * 2) % 9 as non_sac_pub,
+           7 + (extract(day from d.d)::int) % 6 as non_sac_autre_departement,
+           4 + (extract(day from d.d)::int * 3) % 5 as non_sac_autre,
+          61 + (extract(day from d.d)::int * 5) % 27 as treated_sac
+) v;
 
 -- Les traités SAC ne peuvent pas dépasser les reçus SAC
 update public.email_days

@@ -38,6 +38,12 @@
             </label>
             <label>Du <input type="date" id="filter-from"></label>
             <label>Au <input type="date" id="filter-to"></label>
+            <div class="cal-nav month-nav" aria-label="Navigation mensuelle">
+              <button class="btn-sm" id="month-prev" aria-label="Mois précédent">‹</button>
+              <strong id="month-label">—</strong>
+              <button class="btn-sm" id="month-next" aria-label="Mois suivant">›</button>
+              <button class="btn-sm" id="month-current">Ce mois</button>
+            </div>
             <button class="small-button" id="btn-filter">Filtrer</button>
           </div>
         </div>
@@ -150,16 +156,25 @@
 
   var session = await OPS.boot({ active: 'calibrages', title: 'Calibrages' });
   if (!session) return;
-  var profile = session.profile, isManager = session.isManager;
+  var profile = session.profile, isManager = session.isManager, isAgent = profile.role === 'agent';
 
   var AGENTS = [], ELEMENTS = [], BY_CODE = {}, CAL = [], RESULTS = [];
   var VALUES = [], REASONS = [];
 
   if (!isManager) { $('#btn-new').style.display = 'none'; }
+  if (isAgent) { $('#filter-agent').closest('label').hidden = true; }
 
   // ---------- démarrage ----------
-  $('#filter-from').value = pgvData.startOfMonth();
-  $('#filter-to').value = pgvData.endOfMonth();
+  var FILTER_MONTH = new Date();
+  function setFilterMonth(d) {
+    FILTER_MONTH = new Date(d.getFullYear(), d.getMonth(), 1);
+    var from = new Date(FILTER_MONTH.getFullYear(), FILTER_MONTH.getMonth(), 1);
+    var to = new Date(FILTER_MONTH.getFullYear(), FILTER_MONTH.getMonth() + 1, 0);
+    $('#filter-from').value = pgvData.iso(from);
+    $('#filter-to').value = pgvData.iso(to);
+    $('#month-label').textContent = FILTER_MONTH.toLocaleDateString('fr-MA', { month:'long', year:'numeric' });
+  }
+  setFilterMonth(new Date());
 
   try {
     await pgvData.init();
@@ -200,7 +215,7 @@
   // ---------- liste ----------
   async function loadList() {
     var from = $('#filter-from').value, to = $('#filter-to').value;
-    var agentId = $('#filter-agent').value || null;
+    var agentId = isAgent ? profile.agentId : ($('#filter-agent').value || null);
     $('#list-period').textContent = OPS.fmtDate(from) + ' → ' + OPS.fmtDate(to);
     $('#list-body').innerHTML = '<tr><td colspan="8"><p class="empty-note">Chargement…</p></td></tr>';
     try {
@@ -504,6 +519,10 @@
   $('#btn-new').addEventListener('click', openForm);
   $('#btn-cancel').addEventListener('click', closeForm);
   $('#btn-save').addEventListener('click', save);
+  function shiftFilterMonth(n) { setFilterMonth(new Date(FILTER_MONTH.getFullYear(), FILTER_MONTH.getMonth() + n, 1)); loadList(); }
+  $('#month-prev').addEventListener('click', function () { shiftFilterMonth(-1); });
+  $('#month-next').addEventListener('click', function () { shiftFilterMonth(1); });
+  $('#month-current').addEventListener('click', function () { setFilterMonth(new Date()); loadList(); });
   $('#btn-filter').addEventListener('click', loadList);
   $('#filter-agent').addEventListener('change', loadList);
 

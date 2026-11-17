@@ -48,6 +48,7 @@
       <div class="crumbs"><span>PGV</span><span class="crumb-dot">/</span><strong>Vue d’ensemble</strong></div>
       <div class="top-actions">
         <span class="welcome-date" id="today-label"></span>
+        <a class="button button-muted" id="admin-link" href="administration.html" hidden>Administration</a>
         <a class="button button-primary" href="pgv-calibrages.html">＋ Nouveau calibrage</a>
       </div>
     </header>
@@ -64,12 +65,34 @@
         </div>
       </div>
 
+      <!-- ================= MON ESPACE (agent) ================= -->
+      <div class="me-banner" id="me-banner" hidden>
+        <div class="me-banner-head">
+          <div>
+            <span class="me-kicker">Mon espace</span>
+            <strong id="me-name">—</strong>
+            <small id="me-shift">—</small>
+          </div>
+          <div class="me-pointage">
+            <span class="me-clock" id="me-clock">--:--</span>
+            <span class="me-state" id="me-state">—</span>
+          </div>
+        </div>
+        <div class="me-tiles" id="me-tiles"></div>
+        <div class="me-actions">
+          <a class="button button-muted" href="attendance.html?activity=pgv">Pointer ma journée</a>
+          <a class="button button-muted" href="attendance.html?activity=pgv#activite">Saisir appels &amp; emails</a>
+          <a class="button button-primary" href="pgv-calibrages.html">Voir mes calibrages</a>
+        </div>
+      </div>
+
       <div class="period-bar">
-        <div class="period-info"><strong>Période</strong><span id="period-summary">—</span></div>
-        <div class="period-inputs">
-          <label>Du <input type="date" id="period-from"></label>
-          <label>Au <input type="date" id="period-to"></label>
-          <button class="small-button" id="apply-period">Appliquer</button>
+        <div class="period-info"><strong>Mois affiché</strong><span id="period-summary">—</span></div>
+        <div class="cal-nav" aria-label="Navigation mensuelle">
+          <button class="btn-sm" id="dash-month-prev" aria-label="Mois précédent">‹</button>
+          <strong id="dash-month-label">—</strong>
+          <button class="btn-sm" id="dash-month-next" aria-label="Mois suivant">›</button>
+          <button class="btn-sm" id="dash-month-now">Ce mois</button>
         </div>
       </div>
 
@@ -154,10 +177,84 @@
 
   // ---------- 1. Période (mois courant) ----------
   var now = new Date();
-  var from = new Date(now.getFullYear(), now.getMonth(), 1);
-  var to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  $('#period-from').value = iso(from);
-  $('#period-to').value = iso(to);
+  var periodMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  var from, to;
+  function setMonth(d) {
+    periodMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    from = new Date(periodMonth.getFullYear(), periodMonth.getMonth(), 1);
+    to = new Date(periodMonth.getFullYear(), periodMonth.getMonth() + 1, 0);
+    var label = periodMonth.toLocaleDateString('fr-MA', { month: 'long', year: 'numeric' });
+    $('#dash-month-label').textContent = label;
+    $('#period-summary').textContent = label;
+  }
+  setMonth(now);
+
+  // ---------- 1b. Mon espace : identité, pointage, activité, calibrages ----------
+  var IS_ADMIN = ['admin', 'super_admin'].indexOf(PROFILE.role) >= 0;
+  var IS_MANAGER = ['superviseur', 'admin', 'super_admin', 'qualite'].indexOf(PROFILE.role) >= 0;
+  if (IS_ADMIN) $('#admin-link').hidden = false;
+
+  async function renderMe() {
+    if (!PROFILE.agentId) { $('#me-banner').hidden = false; $('#me-name').textContent = PROFILE.displayName || 'Mon espace';
+      $('#me-shift').textContent = 'Aucun agent lié à ce compte.'; return; }
+    $('#me-banner').hidden = false;
+    $('#me-name').textContent = PROFILE.displayName || 'Mon espace';
+
+    function hm(d) { return d ? new Date(d).toLocaleTimeString('fr-MA', { hour:'2-digit', minute:'2-digit' }) : '—'; }
+    var todayISO = iso(new Date());
+
+    var myEvents = [], myPlan = null, myAct = { calls: 0, sac: 0, other: 0 };
+    var myCal = [];
+    try {
+      var evR = await db.from('attendance_events')
+        .select('event_type, break_type, occurred_at').eq('activity', 'pgv')
+        .eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).order('occurred_at');
+      myEvents = evR.data || [];
+      var plR = await db.from('planning_entries')
+        .select('shift_code').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
+      myPlan = plR.data || null;
+      var acR = await db.from('agent_daily_activity')
+        .select('calls_treated').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
+      if (acR.data) myAct.calls = acR.data.calls_treated || 0;
+      var emR = await db.from('email_agent_daily')
+        .select('treated_sac, treated_other').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
+      if (emR.data) { myAct.sac = emR.data.treated_sac || 0; myAct.other = emR.data.treated_other || 0; }
+    } catch (e) { /* tables optionnelles */ }
+
+    var firstIn = null, last = null, onBreak = false;
+    myEvents.forEach(function (e) {
+      if (e.event_type === 'in' && !firstIn) firstIn = e.occurred_at;
+      last = e;
+    });
+    onBreak = !!last && last.event_type === 'break_start';
+    var state = !last ? 'Pas encore pointé' : onBreak ? 'En pause' :
+      last.event_type === 'out' ? 'Journée terminée' : 'En poste';
+
+    $('#me-state').textContent = state;
+    $('#me-state').className = 'me-state ' + (!last ? 'grey' : onBreak ? 'warn' : last.event_type === 'out' ? 'grey' : 'ok');
+    $('#me-shift').textContent = (myPlan ? 'Shift ' + myPlan.shift_code : 'Aucun shift planifié aujourd’hui') +
+      ' · arrivée ' + hm(firstIn);
+
+    var calOk = 0, calN = 0;
+    CAL.forEach(function (c) { if (c.agent_id === PROFILE.agentId) calN++; });
+    var objC = (window.PGV_OBJECTIFS || {}).calibragesParMois || 4;
+    var totalEmails = myAct.sac + myAct.other;
+
+    var tiles = [
+      { l: 'Appels saisis', v: myAct.calls, f: 'aujourd’hui' },
+      { l: 'Emails traités', v: totalEmails, f: myAct.sac + ' SAC · ' + myAct.other + ' autres' },
+      { l: 'Calibrages du mois', v: calN + ' / ' + objC, f: 'objectif mensuel' },
+      { l: 'Présence', v: firstIn ? hm(firstIn) : '—', f: state.toLowerCase() }
+    ];
+    $('#me-tiles').innerHTML = tiles.map(function (t) {
+      return '<div class="me-tile"><span>' + esc(t.l) + '</span><strong>' + esc(String(t.v)) + '</strong><small>' + esc(t.f) + '</small></div>';
+    }).join('');
+  }
+
+  function tickClock() {
+    var el = $('#me-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('fr-MA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
 
   // ---------- 2. Données ----------
   try { db = await window.sigmaSupabase.getClient(); } catch (e) {
@@ -175,6 +272,7 @@
     if (a.activity) return a.activity === 'pgv';
     return /pgv/i.test(a.team || '');
   });
+  if (!IS_MANAGER) AGENTS = AGENTS.filter(function (a) { return a.id === PROFILE.agentId; });
 
   // 2b. éléments de grille
   var eRes = await db.from('qa_elements').select('id, code, category, label, position, activity').eq('active', true).order('position');
@@ -189,8 +287,8 @@
   if (cRes.error) { migrationMissing = true; cRes = await db.from('calibrations').select('id, agent_id, call_id, call_date, calibration_date, status')
     .gte('calibration_date', iso(from)).lte('calibration_date', iso(to)).order('calibration_date', { ascending: false }); }
   CAL = (cRes.data || []).filter(function (c) {
-    if (c.activity) return c.activity === 'pgv';
-    return AGENTS.some(function (a) { return a.id === c.agent_id; });
+    if (c.activity && c.activity !== 'pgv') return false;
+    return IS_MANAGER ? AGENTS.some(function (a) { return a.id === c.agent_id; }) : c.agent_id === PROFILE.agentId;
   });
 
   // 2d. résultats
@@ -199,6 +297,10 @@
       .in('calibration_id', CAL.map(function (c) { return c.id; }));
     RESULTS = rRes.data || [];
   }
+
+  // Mon espace : à jour après les données
+  await renderMe();
+  tickClock(); setInterval(tickClock, 1000);
 
   render();
 
@@ -370,11 +472,8 @@
     }
   }
 
-  // ---------- 4. Période ----------
-  $('#apply-period').addEventListener('click', async function () {
-    from = new Date($('#period-from').value + 'T00:00:00');
-    to = new Date($('#period-to').value + 'T00:00:00');
-    $('#period-summary').textContent = 'du ' + from.toLocaleDateString('fr-MA') + ' au ' + to.toLocaleDateString('fr-MA');
+  // ---------- 4. Navigation mensuelle ----------
+  async function loadPeriod() {
     var cRes = await db.from('calibrations').select('id, agent_id, call_id, call_date, calibration_date, status, activity')
       .gte('calibration_date', iso(from)).lte('calibration_date', iso(to))
       .order('calibration_date', { ascending: false });
@@ -383,8 +482,8 @@
         .gte('calibration_date', iso(from)).lte('calibration_date', iso(to)).order('calibration_date', { ascending: false });
     }
     CAL = (cRes.data || []).filter(function (c) {
-      if (c.activity) return c.activity === 'pgv';
-      return AGENTS.some(function (a) { return a.id === c.agent_id; });
+      if (c.activity && c.activity !== 'pgv') return false;
+      return IS_MANAGER ? AGENTS.some(function (a) { return a.id === c.agent_id; }) : c.agent_id === PROFILE.agentId;
     });
     RESULTS = [];
     if (CAL.length) {
@@ -393,7 +492,11 @@
       RESULTS = r.data || [];
     }
     render();
-  });
+  }
+  function shiftMonth(n) { setMonth(new Date(periodMonth.getFullYear(), periodMonth.getMonth() + n, 1)); loadPeriod(); }
+  $('#dash-month-prev').addEventListener('click', function () { shiftMonth(-1); });
+  $('#dash-month-next').addEventListener('click', function () { shiftMonth(1); });
+  $('#dash-month-now').addEventListener('click', function () { setMonth(new Date()); loadPeriod(); });
 
   // ---------- 5. Déconnexion ----------
   var lo = $('#logout-link');
@@ -403,7 +506,7 @@
     location.href = 'login.html';
   });
 
-  $('#period-summary').textContent = 'du ' + from.toLocaleDateString('fr-MA') + ' au ' + to.toLocaleDateString('fr-MA');
+  $('#period-summary').textContent = periodMonth.toLocaleDateString('fr-MA', { month: 'long', year: 'numeric' });
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

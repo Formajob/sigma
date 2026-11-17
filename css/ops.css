@@ -347,6 +347,7 @@ body.modal-open{overflow:hidden}
 .cal-cell.is-weekend{background:#FCFBF8}
 .cal-daynum{font:800 7.5px var(--sans);letter-spacing:.08em;color:#8C9497;display:flex;justify-content:space-between}
 .cal-chip{display:block;font:600 8.5px/1.35 var(--sans);padding:2px 4px;border-radius:3px;text-decoration:none;
+  width:100%;text-align:left;border-top:0;border-right:0;border-bottom:0;cursor:pointer;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:2px solid transparent}
 .cal-chip.cal{background:#FDF2EC;color:#A34D22;border-left-color:#C0622D}
 .cal-chip.doc-rencontre{background:#EEF4EF;color:#2F6B4F;border-left-color:#2F6B4F}
@@ -370,3 +371,87 @@ body.modal-open{overflow:hidden}
   .cal-cell{min-height:70px}
   .cal-chip{font-size:7.5px}
 }
+
+/* ---------- Présence · onglet Activité ---------- */
+.act-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; }
+.act-field small { display:block; margin-top:5px; color:#8A857D; font-size:7.6px; }
+.act-field .f-input { width:100%; }
+.act-foot { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:16px;
+  padding-top:14px; border-top:1px solid var(--line); }
+.act-foot .f-note { margin:0; color:#6C787D; font-size:8.4px; }
+@media (max-width: 900px) { .act-grid { grid-template-columns:1fr 1fr; } }
+@media (max-width: 560px) { .act-grid { grid-template-columns:1fr; } }
+
+/* ---------- Vue d'ensemble · Mon espace (agent) ---------- */
+.me-banner { margin:0 0 14px; padding:16px 18px; border:1px solid var(--line); border-radius:7px;
+  background:linear-gradient(180deg,#FCFBF9,#F7F5F1); box-shadow:0 3px 10px rgba(23,36,45,.02); }
+.me-banner-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.me-kicker { display:block; color:var(--copper); font-size:7.6px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.me-banner-head strong { display:block; margin-top:3px; font:600 17px var(--serif); color:var(--ink); }
+.me-banner-head small { display:block; margin-top:2px; color:#7D898C; font-size:8.2px; }
+.me-pointage { text-align:right; }
+.me-clock { display:block; font:600 18px var(--mono, ui-monospace); color:var(--ink); letter-spacing:-.02em; }
+.me-state { display:inline-block; margin-top:4px; padding:2px 8px; border-radius:20px; font-size:7.4px; font-weight:800; }
+.me-state.ok { color:#2F6B4F; background:#E7F1EA; }
+.me-state.warn { color:#8A5A1F; background:#F7EEDD; }
+.me-state.grey { color:#6C787D; background:#EFEDE8; }
+.me-tiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:14px; }
+.me-tile { padding:10px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; }
+.me-tile span { display:block; color:#728084; font-size:7.4px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+.me-tile strong { display:block; margin-top:5px; font-size:19px; letter-spacing:-.04em; color:var(--ink); }
+.me-tile small { display:block; margin-top:2px; color:#8A857D; font-size:7.4px; }
+.me-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); }
+@media (max-width: 760px) { .me-tiles { grid-template-columns:1fr 1fr; } }
+
+/* ---------- Administration ---------- */
+.role-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; }
+.role-card { padding:13px 14px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+.role-card strong { display:block; color:var(--ink); font:600 14px var(--serif); margin-bottom:6px; }
+.role-card p { margin:0; color:#6C787D; font-size:8.4px; line-height:1.6; }
+.muted-note { color:#9AA3A5; font-size:8px; }
+.p-pill.ok { color:#2F6B4F; background:#E7F1EA; }
+.p-pill.grey { color:#6C787D; background:#EFEDE8; }
+@media (max-width: 900px) { .role-grid { grid-template-columns:1fr 1fr; } }
+@media (max-width: 560px) { .role-grid { grid-template-columns:1fr; } }
+
+/* ---------- Rapports ---------- */
+.rep-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:14px; }
+.rep-checks { display:grid; grid-template-columns:1fr 1fr; gap:7px 14px; }
+.rep-checks label { display:flex; align-items:center; gap:7px; color:#3F4C50; font-size:8.6px; }
+.rep-checks input { accent-color:var(--copper); }
+.rep-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.rep-ico { font-size:12px; line-height:1; }
+.rep-preview { margin-top:14px; padding-top:13px; border-top:1px solid var(--line); }
+.rep-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+.rep-summary div { padding:9px 11px; border:1px solid var(--line); border-radius:5px; background:#FCFBF9; }
+.rep-summary span { display:block; color:#728084; font-size:7.2px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.rep-summary strong { display:block; margin-top:4px; font-size:17px; color:var(--ink); letter-spacing:-.03em; }
+.rep-summary small { display:block; margin-top:1px; color:#8A857D; font-size:7.2px; }
+.rep-legend { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.rep-legend strong { display:block; color:var(--ink); font:600 12px var(--serif); margin-bottom:4px; }
+.rep-legend span { color:#6C787D; font-size:8.2px; line-height:1.55; }
+@media (max-width: 1000px) { .rep-grid { grid-template-columns:1fr; } .rep-legend { grid-template-columns:1fr 1fr; } }
+@media (max-width: 620px) { .rep-checks { grid-template-columns:1fr; } .rep-summary { grid-template-columns:1fr 1fr; } }
+
+/* Présence : sélecteur de date et cartes d'équipe */
+.at-daybar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.at-daybar strong{font:700 12px var(--sans);color:var(--ink);margin-right:auto}
+.at-daybar label,.at-daybar small{font:600 10px var(--sans);color:var(--muted)}
+.at-daybar input{padding:7px 9px;border:1px solid var(--line);border-radius:6px;color:var(--ink);font:600 11px var(--sans)}
+.attendance-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.attendance-card{border:1px solid var(--line);border-left:4px solid #A09A91;border-radius:9px;background:#fff;padding:14px;box-shadow:0 2px 8px rgba(23,36,45,.04)}
+.attendance-card.status-online{border-left-color:#2F6B4F}.attendance-card.status-break{border-left-color:#C08A2D}
+.attendance-card.status-lunch{border-left-color:#8A5A12}.attendance-card.status-out{border-left-color:#3A4E86}
+.attendance-card.status-meeting{border-left-color:#7B61A8}.attendance-card.status-late,.attendance-card.status-absent{border-left-color:#9E3B34}
+.attendance-card.status-off{border-left-color:#A09A91}
+.attendance-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.attendance-card-top strong{display:block;font:700 14px var(--sans);color:var(--ink)}
+.attendance-card-top small{display:block;margin-top:4px;color:var(--muted);font:600 10px var(--sans)}
+.attendance-card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.attendance-card-metrics div{min-width:0}.attendance-card-metrics small{display:block;color:var(--muted);font:600 9px var(--sans);margin-bottom:3px}
+.attendance-card-metrics b{display:block;color:var(--ink);font:700 11px var(--sans)}
+.attendance-card-alert{margin-top:12px;padding:7px 8px;background:#FFF6E8;color:#8A5A12;border-radius:6px;font:700 10px var(--sans)}
+.at-badge.lunch{background:#FFF6E8;color:#8A5A12}.at-badge.meeting{background:#F2EDFA;color:#65489A}
+.at-badge.out{background:#EEF1F8;color:#3A4E86}
+@media(max-width:1000px){.attendance-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.attendance-cards{grid-template-columns:1fr}.at-daybar strong{width:100%}}

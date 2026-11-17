@@ -59,6 +59,7 @@
 
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-head"><h2>Calendrier du mois</h2><small id="cal-caption">—</small></div>
+        <p class="f-note" style="padding:0 14px">Clique une journée pour voir le tour et, si tu es superviseur, modifier l’agent de service.</p>
         <div class="panel-body">
           <div class="em-cal" id="cal-head"></div>
           <div class="em-cal" id="cal"></div>
@@ -69,7 +70,7 @@
         <div class="panel">
           <div class="panel-head"><h2>Par agent</h2><small>sur la période</small></div>
           <div class="panel-body" style="padding:0">
-            <table class="p-table"><thead><tr><th>Agent</th><th class="num">Jours de service</th><th class="num">SAC traités</th><th class="num">Moy. / jour</th><th class="num">Part</th></tr></thead>
+            <table class="p-table"><thead><tr><th>Agent</th><th class="num">Jours de service</th><th class="num">SAC traités</th><th class="num">Autres</th><th class="num">Total</th><th class="num">Moy. / jour</th><th class="num">Part</th></tr></thead>
             <tbody id="agent-body"></tbody></table>
           </div>
         </div>
@@ -95,7 +96,7 @@
     </div>
     <div class="f-row c2">
       <div><label class="f-label" for="d-date">Date</label><input class="f-input" type="date" id="d-date"></div>
-      <div><label class="f-label" for="d-duty">Agent de service</label><select class="f-select" id="d-duty"></select></div>
+      <div><label class="f-label" for="d-duty">Tour de service · agent responsable</label><select class="f-select" id="d-duty"></select></div>
     </div>
     <div class="f-row c3">
       <div><label class="f-label" for="d-total">Reçus total</label><input class="f-input" type="number" min="0" id="d-total" value="0"></div>
@@ -277,20 +278,24 @@
   function renderAgents() {
     var per = {};
     AGDAY.forEach(function (r) {
-      per[r.agent_id] = per[r.agent_id] || { sac: 0, days: 0 };
+      per[r.agent_id] = per[r.agent_id] || { sac: 0, other: 0, days: 0 };
       per[r.agent_id].sac += r.treated_sac || 0;
-      if ((r.treated_sac || 0) > 0) per[r.agent_id].days++;
+      per[r.agent_id].other += r.treated_other || 0;
+      if ((r.treated_sac || 0) + (r.treated_other || 0) > 0) per[r.agent_id].days++;
     });
     var totalSac = 0;
     Object.keys(per).forEach(function (k) { totalSac += per[k].sac; });
 
     var rows = AGENTS.map(function (a) {
-      var p = per[a.id] || { sac: 0, days: 0 };
+      var p = per[a.id] || { sac: 0, other: 0, days: 0 };
       var dutyDays = DAYS.filter(function (d) { return (d.duty_agent_id || d.planned_agent_id) === a.id; }).length;
+      var other = p.other || 0;
       return '<tr><td class="name">' + esc(a.full_name) + '</td>' +
         '<td class="num">' + dutyDays + '</td>' +
         '<td class="num">' + p.sac + '</td>' +
-        '<td class="num">' + (p.days ? Math.round(p.sac / p.days) : '—') + '</td>' +
+        '<td class="num">' + other + '</td>' +
+        '<td class="num mono">' + (p.sac + other) + '</td>' +
+        '<td class="num">' + (p.days ? Math.round((p.sac + other) / p.days) : '—') + '</td>' +
         '<td class="num">' + (totalSac ? OPS.pct(p.sac, totalSac) + ' %' : '—') + '</td></tr>';
     });
     $('#agent-body').innerHTML = rows.join('');
@@ -316,6 +321,8 @@
   function openEntry(dateISO) {
     var dlg = $('#dlg');
     $('#d-date').value = dateISO || TODAY;
+    $('#d-duty').disabled = !isManager;
+    $('#d-save').hidden = !isManager;
     $('#d-duty').innerHTML = AGENTS.map(function (a) {
       return '<option value="' + a.id + '">' + esc(a.full_name) + '</option>';
     }).join('');

@@ -32,27 +32,32 @@
         <button class="at-tab active" data-tab="live" role="tab">Temps réel</button>
         <button class="at-tab" data-tab="me" role="tab">Ma journée</button>
         <button class="at-tab" data-tab="week" role="tab">Semaine</button>
+        <button class="at-tab" data-tab="activity" role="tab">Activité</button>
       </div>
 
       <!-- ================= TEMPS RÉEL ================= -->
       <section id="tab-live">
-        <div class="at-counters" id="counters"></div>
-        <div class="p-grid2" style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px">
-          <div class="panel">
-            <div class="panel-head"><h2>Agents</h2><small id="live-date">—</small></div>
-            <div class="panel-body" style="padding:0">
-              <div class="scroll-x"><table class="p-table">
-                <thead><tr><th>Agent</th><th>Shift</th><th>Arrivée</th><th class="num">Écart</th>
-                  <th>Statut</th><th>Pauses</th><th class="num">Net</th><th>Chronologie</th></tr></thead>
-                <tbody id="live-body"></tbody>
-              </table></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-head"><h2>Alertes</h2><small id="alert-count">—</small></div>
-            <div class="panel-body" id="alerts" style="padding:6px 12px"></div>
-          </div>
+        <div class="at-daybar">
+          <strong>Présences du jour</strong>
+          <label for="live-day">Choisir une date passée</label>
+          <input type="date" id="live-day">
+          <button class="btn-sm" id="live-today">Aujourd’hui</button>
+          <small id="live-date">—</small>
         </div>
+        <div class="at-counters" id="counters"></div>
+        <div class="attendance-cards" id="agent-cards"></div>
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-head"><h2>Alertes et dépassements</h2><small id="alert-count">—</small></div>
+          <div class="panel-body" id="alerts" style="padding:6px 12px"></div>
+        </div>
+        <details class="panel" style="margin-top:14px">
+          <summary class="panel-head"><h2>Chronologie détaillée</h2></summary>
+          <div class="panel-body" style="padding:0"><div class="scroll-x"><table class="p-table">
+            <thead><tr><th>Agent</th><th>Shift</th><th>Début</th><th>Fin</th><th>Statut</th>
+              <th>Pauses / sorties</th><th class="num">Durée live</th><th>Chronologie</th></tr></thead>
+            <tbody id="live-body"></tbody>
+          </table></div></div>
+        </details>
       </section>
 
       <!-- ================= MA JOURNÉE ================= -->
@@ -68,10 +73,9 @@
             <div class="at-break-menu" id="b-breaks">
               <button data-break="pause">Pause 15</button>
               <button data-break="lunch">Lunch 60</button>
-              <button data-break="sortie">Sortie 10</button>
-              <button data-break="coaching">Coaching</button>
-              <button data-break="formation">Formation</button>
-              <button data-break="technique">Technique</button>
+              <button data-break="sortie">Sortie temp. 5</button>
+              <button data-break="rencontre">Rencontre 30</button>
+              <button data-break="reunion">Réunion 30</button>
             </div>
             <button class="at-btn" id="b-resume">Je reprends <small id="b-resume-time"></small></button>
           </div>
@@ -87,6 +91,56 @@
             <thead id="week-head"></thead><tbody id="week-body"></tbody>
           </table></div>
         </div></div>
+      </section>
+
+      <!-- ================= ACTIVITÉ ================= -->
+      <section id="tab-activity" hidden>
+        <div class="panel">
+          <div class="panel-head"><h2>Ma saisie du jour</h2><small id="act-date">—</small></div>
+          <div class="panel-body">
+            <div class="f-row" id="act-picker" style="max-width:340px" hidden>
+              <div><label class="f-label" for="act-agent">Saisir pour</label>
+                <select class="f-select" id="act-agent"></select></div>
+            </div>
+            <div class="act-grid">
+              <div class="act-field">
+                <label class="f-label" for="act-calls">Appels traités</label>
+                <input class="f-input" type="number" min="0" step="1" id="act-calls" value="0">
+                <small>ton décompte du jour, hors emails</small>
+              </div>
+              <div class="act-field">
+                <label class="f-label" for="act-sac">Emails SAC traités</label>
+                <input class="f-input" type="number" min="0" step="1" id="act-sac" value="0">
+                <small>dossiers SAC clôturés</small>
+              </div>
+              <div class="act-field">
+                <label class="f-label" for="act-other">Autres emails traités</label>
+                <input class="f-input" type="number" min="0" step="1" id="act-other" value="0">
+                <small>spam, publicité, autres services</small>
+              </div>
+              <div class="act-field">
+                <label class="f-label" for="act-note">Note</label>
+                <input class="f-input" id="act-note" placeholder="optionnel">
+                <small>contexte utile au suivi</small>
+              </div>
+            </div>
+            <div class="act-foot">
+              <span class="f-note" id="act-hint">—</span>
+              <button class="button button-primary" id="act-save">Enregistrer ma saisie</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-head"><h2>Mon activité — 30 derniers jours</h2><small id="act-totals">—</small></div>
+          <div class="panel-body" style="padding:0">
+            <div class="scroll-x"><table class="p-table">
+              <thead><tr><th>Jour</th><th class="num">Appels</th><th class="num">SAC</th>
+                <th class="num">Autres emails</th><th class="num">Total emails</th><th>Note</th></tr></thead>
+              <tbody id="act-body"></tbody>
+            </table></div>
+          </div>
+        </div>
       </section>
 
     </div>
@@ -109,6 +163,7 @@
   if (!session) return;
   var profile = session.profile, isManager = session.isManager;
   var TODAY = pgvData.iso();
+  var VIEW_DAY = TODAY;
 
   var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], BREAKS = {}, ACKS = {};
   var myAgentId = profile.agentId || null;
@@ -133,11 +188,11 @@
   /* ---------------- chargement ---------------- */
   async function loadDay() {
     try {
-      var rows = await pgvData.loadPlanning(TODAY, TODAY);
+      var rows = await pgvData.loadPlanning(VIEW_DAY, VIEW_DAY);
       PLANNING = {};
       rows.forEach(function (r) { PLANNING[r.agent_id] = r; });
-      EVENTS = await pgvData.loadAttendance(TODAY);
-      var a = await pgvData.loadAcks(TODAY);
+      EVENTS = await pgvData.loadAttendance(VIEW_DAY);
+      var a = await pgvData.loadAcks(VIEW_DAY);
       ACKS = {};
       a.forEach(function (x) { ACKS[x.agent_id + '|' + x.alert_code] = true; });
     } catch (e) {
@@ -147,13 +202,15 @@
   }
 
   /* ---------------- calcul ---------------- */
-  function computeDay(agentId) {
+  function computeDay(agentId, dayISO) {
+    dayISO = dayISO || VIEW_DAY;
     var ev = EVENTS.filter(function (e) { return e.agent_id === agentId; });
     var plan = PLANNING[agentId];
     var sh = plan ? SHIFT[plan.shift_code] : null;
 
     var firstIn = null, lastOut = null, presence = 0, open = null;
-    var breaks = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0 };
+    var breaks = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0, rencontre: 0, reunion: 0 };
+    var breakCounts = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0, rencontre: 0, reunion: 0 };
     var breakOpen = null, breakOpenType = null;
     var sessions = 0;
 
@@ -161,7 +218,7 @@
       var t = new Date(e.occurred_at).getTime();
       if (e.event_type === 'in') { if (open == null) open = t; firstIn = firstIn || t; sessions++; }
       else if (e.event_type === 'out') { if (open != null) { presence += (t - open); open = null; } lastOut = t; }
-      else if (e.event_type === 'break_start') { breakOpen = t; breakOpenType = e.break_type || 'pause'; }
+      else if (e.event_type === 'break_start') { breakOpen = t; breakOpenType = e.break_type || 'pause'; breakCounts[breakOpenType] = (breakCounts[breakOpenType] || 0) + 1; }
       else if (e.event_type === 'break_end') {
         if (breakOpen != null) { breaks[breakOpenType] += (t - breakOpen); }
         if (open != null) { presence -= (t - breakOpen); }
@@ -169,9 +226,10 @@
       }
     });
 
-    var now = Date.now();
-    var openMin = (open != null) ? Math.round((now - open) / 60000) : 0;
-    var openBreakMin = (breakOpen != null) ? Math.round((now - breakOpen) / 60000) : 0;
+    var todayView = dayISO === TODAY;
+    var now = todayView ? Date.now() : new Date(dayISO + 'T23:59:59').getTime();
+    var openMin = (open != null) ? Math.max(0, Math.round((now - open) / 60000)) : 0;
+    var openBreakMin = (breakOpen != null) ? Math.max(0, Math.round((now - breakOpen) / 60000)) : 0;
     var presenceMin = Math.round(presence / 60000) + openMin;
     var breakMin = 0; Object.keys(breaks).forEach(function (k) { breakMin += Math.round(breaks[k] / 60000); });
     breakMin += openBreakMin;
@@ -181,10 +239,10 @@
     var status = 'off';
     if (!sh || !sh.is_work) status = plan ? 'off' : 'unplanned';
     if (ev.length) {
-      if (open != null || breakOpen != null) status = breakOpen != null ? 'break' : 'online';
+      if (open != null || breakOpen != null) status = breakOpen != null ? (breakOpenType === 'pause' ? 'break_pause' : 'break_' + breakOpenType) : 'online';
       else if (lastOut != null) status = 'out';
     } else if (sh && sh.is_work) {
-      var start = shiftStart(sh, TODAY);
+      var start = shiftStart(sh, dayISO);
       var late = start ? Math.round((now - start) / 60000) : 0;
       status = late > 15 ? 'absent' : late > 5 ? 'late' : 'waiting';
       if (late <= 0) status = 'waiting';
@@ -197,12 +255,15 @@
         pause: Math.round(breaks.pause / 60000),
         lunch: Math.round(breaks.lunch / 60000),
         sortie: Math.round(breaks.sortie / 60000),
+        rencontre: Math.round(breaks.rencontre / 60000),
+        reunion: Math.round(breaks.reunion / 60000),
         autre: Math.round((breaks.coaching + breaks.formation + breaks.technique) / 60000)
       },
       openBreak: breakOpen != null ? breakOpenType : null,
       openBreakMin: openBreakMin,
       net: net, status: status, sessions: sessions,
-      lateMin: (firstIn && sh && sh.is_work) ? Math.max(0, Math.round((firstIn - shiftStart(sh, TODAY)) / 60000)) : 0
+      date: dayISO, breakCounts: breakCounts,
+      lateMin: (firstIn && sh && sh.is_work) ? Math.max(0, Math.round((firstIn - shiftStart(sh, dayISO)) / 60000)) : 0
     };
   }
 
@@ -224,7 +285,10 @@
   }
 
   var STATUS_LABEL = {
-    online: ['En ligne', 'online'], break: ['En pause', 'break'], late: ['En retard', 'late'],
+    online: ['En poste', 'online'], break: ['En pause', 'break'], break_pause: ['Pause', 'break'],
+    break_lunch: ['Lunch', 'lunch'], break_sortie: ['Sortie temporaire', 'out'],
+    break_rencontre: ['Rencontre', 'meeting'], break_reunion: ['Réunion', 'meeting'],
+    break_coaching: ['Coaching', 'meeting'], break_formation: ['Formation', 'meeting'], break_technique: ['Technique', 'meeting'], late: ['En retard', 'late'],
     absent: ['Absent', 'absent'], out: ['Sorti', 'out'], off: ['Repos', 'off'],
     unplanned: ['Hors planning', 'off'], waiting: ['Attendu', 'off']
   };
@@ -232,14 +296,14 @@
   /* ---------------- alertes ---------------- */
   function alertsFor(day) {
     var out = [];
-    var now = Date.now();
+    var now = day.date === TODAY ? Date.now() : new Date(day.date + 'T23:59:59').getTime();
     var a = AGENTS.filter(function (x) { return x.id === day.agentId; })[0] || { full_name: 'Agent' };
     var sh = day.shift;
     if (!sh || !sh.is_work) {
       if (day.presenceMin > 0) out.push({ code: 'unplanned_work', kind: 'info', text: '<b>' + esc(a.full_name) + '</b> a pointé un jour non travaillé.' });
       return out;
     }
-    var start = shiftStart(sh, TODAY), end = shiftEnd(sh, TODAY);
+    var start = shiftStart(sh, day.date), end = shiftEnd(sh, day.date);
     if (day.status === 'late') out.push({ code: 'late_checkin', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé — shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
     if (day.status === 'absent') out.push({ code: 'no_checkin', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> est absent : shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
     if (day.openBreak) {
@@ -247,9 +311,10 @@
       if (day.openBreakMin > droit + 5) out.push({ code: 'break_over', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + day.openBreak + ' dépassée (' + day.openBreakMin + ' min / ' + droit + ').' });
       if (day.openBreakMin > 120) out.push({ code: 'break_open_long', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> : pause ouverte depuis ' + OPS.minutes(day.openBreakMin) + '.' });
     }
-    ['pause', 'lunch', 'sortie'].forEach(function (k) {
-      var max = (BREAKS[k] || {}).max_minutes;
+    ['pause', 'lunch', 'sortie', 'rencontre', 'reunion'].forEach(function (k) {
+      var setting = BREAKS[k] || {}, max = setting.max_minutes;
       if (max && day.breaksMin[k] > max) out.push({ code: 'break_over_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + k + ' ' + day.breaksMin[k] + ' min pour un droit de ' + max + '.' });
+      if (setting.max_per_day && (day.breakCounts[k] || 0) > setting.max_per_day) out.push({ code: 'break_count_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + (day.breakCounts[k] || 0) + ' ' + k + ' pris(es), maximum ' + setting.max_per_day + '.' });
     });
     if (end && now > end + 15 * 60000 && day.status === 'online') out.push({ code: 'no_checkout', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé son départ.' });
     if (day.lastOut && end && day.lastOut < end - 15 * 60000) out.push({ code: 'early_leave', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> est parti ' + OPS.minutes(Math.round((end - day.lastOut) / 60000)) + ' avant la fin du shift.' });
@@ -258,11 +323,13 @@
 
   /* ---------------- rendu temps réel ---------------- */
   function renderLive() {
-    $('#live-date').textContent = OPS.fmtDateLong(TODAY);
-    var days = AGENTS.map(function (a) { return computeDay(a.id); });
+    $('#live-date').textContent = OPS.fmtDateLong(VIEW_DAY);
+    $('#live-day').value = VIEW_DAY;
+    var visibleAgents = isManager ? AGENTS : AGENTS.filter(function (a) { return a.id === myAgentId; });
+    var days = visibleAgents.map(function (a) { return computeDay(a.id, VIEW_DAY); });
     var c = { online: 0, break: 0, late: 0, absent: 0, out: 0, waiting: 0, off: 0, unplanned: 0 };
-    days.forEach(function (d) { if (c[d.status] != null) c[d.status]++; });
-    var presents = days.filter(function (d) { return ['online', 'break', 'out'].indexOf(d.status) >= 0; }).length;
+    days.forEach(function (d) { if (d.status.indexOf('break_') === 0) c.break++; else if (c[d.status] != null) c[d.status]++; });
+    var presents = days.filter(function (d) { return ['online', 'out'].indexOf(d.status) >= 0 || d.status.indexOf('break_') === 0; }).length;
 
     var cards = [
       { k: null, n: presents, l: 'Présents', cls: 'good' },
@@ -284,9 +351,30 @@
       });
     });
 
+    $('#agent-cards').innerHTML = days.map(function (d) {
+      var a = visibleAgents.filter(function (x) { return x.id === d.agentId; })[0] || { full_name:'—' };
+      var st = STATUS_LABEL[d.status] || ['—','off'];
+      var shift = d.shift && d.shift.is_work ? d.shift.start_time.slice(0,5) + '–' + d.shift.end_time.slice(0,5) : (d.plan ? d.plan.shift_code : 'Repos');
+      var alerts = alertsFor(d);
+      return '<article class="attendance-card status-' + st[1] + '">' +
+        '<div class="attendance-card-top"><div><strong>' + esc(a.full_name) + '</strong><small>' + esc(shift) + '</small></div>' +
+          '<span class="at-badge ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
+        '<div class="attendance-card-metrics">' +
+          '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
+          '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
+          '<div><small>Temps net' + (VIEW_DAY === TODAY ? ' live' : '') + '</small><b>' + (d.net ? OPS.minutes(d.net) : '0 min') + '</b></div>' +
+          '<div><small>Pauses</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + d.breaksMin.pause + ' / 30 min</b></div>' +
+          '<div><small>Lunch</small><b>' + (d.breakCounts.lunch || 0) + ' prise(s) · ' + d.breaksMin.lunch + ' / 60 min</b></div>' +
+          '<div><small>Sorties temp.</small><b>' + (d.breakCounts.sortie || 0) + ' prises · ' + d.breaksMin.sortie + ' / 5 min max.</b></div>' +
+          '<div><small>Rencontre / réunion</small><b>' + ((d.breakCounts.rencontre || 0) + (d.breakCounts.reunion || 0)) + ' · ' + ((d.breaksMin.rencontre || 0) + (d.breaksMin.reunion || 0)) + ' / 30 min</b></div>' +
+        '</div>' + (alerts.length ? '<div class="attendance-card-alert">⚠ ' + alerts.length + ' alerte(s) ou dépassement</div>' : '') +
+      '</article>';
+    }).join('') || '<p class="empty-note">Aucun agent à afficher.</p>';
+
     var rows = days.filter(function (d) {
       if (!filterStatus) return true;
-      if (filterStatus === 'presents') return ['online', 'break', 'out'].indexOf(d.status) >= 0;
+      if (filterStatus === 'presents') return ['online', 'out'].indexOf(d.status) >= 0 || d.status.indexOf('break_') === 0;
+      if (filterStatus === 'break') return d.status.indexOf('break_') === 0;
       return d.status === filterStatus;
     }).map(function (d) {
       var a = AGENTS.filter(function (x) { return x.id === d.agentId; })[0] || { full_name: '—' };
@@ -294,13 +382,13 @@
       var sh = d.shift;
       var arrivee = d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—';
       var ecart = d.firstIn ? (d.lateMin > 0 ? '+' + d.lateMin + ' min' : 'à l’heure') : '—';
-      var pauses = d.breaksMin.pause + '′ / ' + ((BREAKS.pause || {}).max_minutes * ((BREAKS.pause || {}).max_per_day || 1) || 30) + '′';
-      var lunch = d.breaksMin.lunch ? ' · lunch ' + d.breaksMin.lunch + '′' : '';
+      var pauses = (d.breakCounts.pause || 0) + ' pauses · ' + d.breaksMin.pause + '′';
+      var lunch = ' · ' + (d.breakCounts.lunch || 0) + ' lunch · ' + d.breaksMin.lunch + '′ · ' + (d.breakCounts.sortie || 0) + ' sorties · ' + d.breaksMin.sortie + '′';
       return '<tr>' +
         '<td class="name">' + esc(a.full_name) + '</td>' +
         '<td>' + (sh && sh.is_work ? (sh.code + ' · ' + sh.start_time.slice(0, 5) + '–' + sh.end_time.slice(0, 5)) : (d.plan ? d.plan.shift_code : '—')) + '</td>' +
         '<td class="mono">' + arrivee + '</td>' +
-        '<td class="num ' + (d.lateMin > 5 ? 'mono' : '') + '" style="' + (d.lateMin > 5 ? 'color:#9E3B34;font-weight:800' : '') + '">' + ecart + '</td>' +
+        '<td class="mono">' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</td>' +
         '<td><span class="at-badge ' + st[1] + '">' + st[0] + '</span></td>' +
         '<td class="mono">' + pauses + lunch + '</td>' +
         '<td class="num mono">' + (d.net ? OPS.minutes(d.net) : '—') + '</td>' +
@@ -327,7 +415,7 @@
     $$('#alerts [data-ack]').forEach(function (b) {
       b.addEventListener('click', async function () {
         try {
-          await pgvData.ackAlert(b.getAttribute('data-ack'), TODAY, b.getAttribute('data-code'));
+          await pgvData.ackAlert(b.getAttribute('data-ack'), VIEW_DAY, b.getAttribute('data-code'));
           ACKS[b.getAttribute('data-ack') + '|' + b.getAttribute('data-code')] = true;
           renderLive();
         } catch (e) { OPS.toast(e.message, 'error'); }
@@ -337,7 +425,7 @@
 
   function timeline(d) {
     var ev = EVENTS.filter(function (e) { return e.agent_id === d.agentId; });
-    var base = OPS.parseISO(TODAY).getTime() + 6 * 3600000;
+    var base = OPS.parseISO(VIEW_DAY).getTime() + 6 * 3600000;
     var span = 17 * 3600000;
     var segs = '', open = null, openT = null;
     ev.forEach(function (e) {
@@ -349,7 +437,7 @@
     });
     if (openT === 'work' && open != null) segs += seg(open, Date.now(), 'work');
     if (openT === 'break' && open != null) segs += seg(open, Date.now(), 'break');
-    var nowX = Math.max(0, Math.min(100, (Date.now() - base) / span * 100));
+    var nowX = VIEW_DAY === TODAY ? Math.max(0, Math.min(100, (Date.now() - base) / span * 100)) : 0;
     return '<div class="at-tl"><div class="at-tl-track">' + segs +
       '<span class="at-tl-now" style="left:' + nowX + '%"></span></div></div>' +
       '<div class="at-tl-scale"><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>';
@@ -380,7 +468,7 @@
       return;
     }
     var me = AGENTS.filter(function (a) { return a.id === myAgentId; })[0];
-    myDay = computeDay(myAgentId);
+    myDay = computeDay(myAgentId, VIEW_DAY);
     var d = myDay;
     var ev = EVENTS.filter(function (e) { return e.agent_id === myAgentId; });
 
@@ -391,10 +479,10 @@
     var onBreak = !!last && last.event_type === 'break_start';
     var inService = !!last && (last.event_type === 'in' || last.event_type === 'break_end');
 
-    inBtn.disabled = inService || onBreak;          // déjà en poste
-    outBtn.disabled = !inService;                    // fin possible seulement en poste
-    resumeBtn.disabled = !onBreak;                   // reprise seulement en pause
-    $$('#b-breaks button').forEach(function (b) { b.disabled = !inService; });
+    inBtn.disabled = VIEW_DAY !== TODAY || inService || onBreak;          // déjà en poste
+    outBtn.disabled = VIEW_DAY !== TODAY || !inService;                    // fin possible seulement en poste
+    resumeBtn.disabled = VIEW_DAY !== TODAY || !onBreak;                   // reprise seulement en pause
+    $$('#b-breaks button').forEach(function (b) { b.disabled = VIEW_DAY !== TODAY || !inService; });
 
     $('#me-shift').innerHTML = d.shift && d.shift.is_work
       ? 'Shift prévu : <b>' + d.shift.code + ' · ' + d.shift.start_time.slice(0, 5) + '–' + d.shift.end_time.slice(0, 5) + '</b>'
@@ -447,7 +535,8 @@
       rows.forEach(function (r) { planW[r.agent_id + '|' + r.work_date] = r; });
     } catch (e) { OPS.toast(e.message, 'error'); }
 
-    $('#week-body').innerHTML = AGENTS.map(function (a) {
+    var weekAgents = isManager ? AGENTS : AGENTS.filter(function (a) { return a.id === myAgentId; });
+    $('#week-body').innerHTML = weekAgents.map(function (a) {
       var total = 0;
       var cells = ds.map(function (d) {
         var ev = evW.filter(function (e) { return e.agent_id === a.id && e.work_date === d; });
@@ -474,6 +563,92 @@
     return Math.max(0, Math.round((presence) / 60000));
   }
 
+  /* ---------------- activité : appels + emails du jour ---------------- */
+  var actAgentId = myAgentId;
+  var ACT_DAYS = {};
+
+  if (showPicker && AGENTS.length) {
+    var actSel = $('#act-agent');
+    actSel.innerHTML = AGENTS.map(function (a) {
+      return '<option value="' + a.id + '">' + esc(a.full_name) + ' · ' + esc(a.staff_id || '') + '</option>';
+    }).join('');
+    actSel.value = actAgentId;
+    actSel.addEventListener('change', function () { actAgentId = actSel.value; loadActivity(); });
+    $('#act-picker').hidden = false;
+  }
+  if ($('#act-agent') && !showPicker && myAgentId) $('#act-agent').value = myAgentId;
+
+  function last30() {
+    return OPS.addDays(TODAY, -29);
+  }
+
+  async function loadActivity() {
+    var agentId = actAgentId || myAgentId;
+    if (!agentId) return;
+    $('#act-date').textContent = OPS.fmtDateLong(TODAY);
+    var from = last30(), to = TODAY;
+    try {
+      var acts = await pgvData.loadAgentActivity(from, to, agentId);
+      var ems = await pgvData.loadEmailAgents(from, to);
+      var mine = ems.filter(function (r) { return r.agent_id === agentId; });
+      ACT_DAYS = {};
+      acts.forEach(function (r) {
+        ACT_DAYS[r.work_date] = ACT_DAYS[r.work_date] || {};
+        ACT_DAYS[r.work_date].calls = r.calls_treated;
+        ACT_DAYS[r.work_date].callsNote = r.note;
+      });
+      mine.forEach(function (r) {
+        ACT_DAYS[r.work_date] = ACT_DAYS[r.work_date] || {};
+        ACT_DAYS[r.work_date].sac = r.treated_sac;
+        ACT_DAYS[r.work_date].other = r.treated_other;
+        ACT_DAYS[r.work_date].mailNote = r.note;
+      });
+    } catch (e) {
+      OPS.banner('Lecture impossible', OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'agent_daily_activity') : esc(e.message), 'error');
+      return;
+    }
+
+    var today = ACT_DAYS[TODAY] || {};
+    $('#act-calls').value = today.calls || 0;
+    $('#act-sac').value = today.sac || 0;
+    $('#act-other').value = today.other || 0;
+    $('#act-note').value = today.callsNote || today.mailNote || '';
+    $('#act-hint').textContent = today.calls || today.sac || today.other
+      ? 'Saisie déjà enregistrée aujourd’hui — tu peux la corriger.'
+      : 'Aucune saisie aujourd’hui.';
+
+    var days = Object.keys(ACT_DAYS).sort().reverse();
+    var totC = 0, totS = 0, totO = 0;
+    $('#act-body').innerHTML = days.length ? days.map(function (d) {
+      var x = ACT_DAYS[d];
+      var c = x.calls || 0, sa = x.sac || 0, ot = x.other || 0;
+      totC += c; totS += sa; totO += ot;
+      return '<tr><td class="name">' + OPS.fmtDate(d) + '</td>' +
+        '<td class="num mono">' + c + '</td>' +
+        '<td class="num mono">' + sa + '</td>' +
+        '<td class="num mono">' + ot + '</td>' +
+        '<td class="num mono">' + (sa + ot) + '</td>' +
+        '<td>' + esc(x.callsNote || x.mailNote || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="6"><p class="empty-note">Pas encore d’activité enregistrée sur les 30 derniers jours.</p></td></tr>';
+    $('#act-totals').textContent = 'Total sur la période : ' + totC + ' appels · ' + (totS + totO) + ' emails';
+  }
+
+  $('#act-save').addEventListener('click', async function () {
+    var agentId = actAgentId || myAgentId;
+    if (!agentId) { OPS.toast('Aucun agent associé à ton profil.', 'error'); return; }
+    var btn = this;
+    btn.disabled = true;
+    try {
+      await pgvData.saveAgentActivityAgent(agentId, TODAY, +$('#act-calls').value || 0, $('#act-note').value.trim());
+      await pgvData.saveEmailAgentRow(TODAY, agentId, +$('#act-sac').value || 0, +$('#act-other').value || 0, $('#act-note').value.trim());
+      OPS.toast('Saisie enregistrée');
+      await loadActivity();
+      renderLive(); renderMe();
+    } catch (e) {
+      OPS.banner('Enregistrement impossible', OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'agent_daily_activity') : esc(e.message), 'error');
+    } finally { btn.disabled = false; }
+  });
+
   /* ---------------- onglets + horloge ---------------- */
   $$('.at-tab').forEach(function (t) {
     t.addEventListener('click', function () {
@@ -482,7 +657,9 @@
       $('#tab-live').hidden = currentTab !== 'live';
       $('#tab-me').hidden = currentTab !== 'me';
       $('#tab-week').hidden = currentTab !== 'week';
+      $('#tab-activity').hidden = currentTab !== 'activity';
       if (currentTab === 'week') renderWeek();
+      if (currentTab === 'activity') loadActivity();
     });
   });
 
@@ -490,6 +667,14 @@
     $('#clock').textContent = new Date().toLocaleTimeString('fr-MA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
   tick(); setInterval(tick, 1000);
+
+  $('#live-day').max = TODAY;
+  $('#live-day').value = TODAY;
+  $('#live-day').addEventListener('change', function () {
+    if (this.value && this.value <= TODAY) { VIEW_DAY = this.value; loadDay(); }
+    else { this.value = TODAY; OPS.toast('Choisis aujourd’hui ou une date passée.', 'error'); }
+  });
+  $('#live-today').addEventListener('click', function () { VIEW_DAY = TODAY; $('#live-day').value = TODAY; loadDay(); });
 
   await loadDay();
   setInterval(function () { if (currentTab === 'live') loadDay(); }, 30000);

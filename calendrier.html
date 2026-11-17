@@ -62,15 +62,19 @@
         </div>
       </div>
 
-      <div class="panel" style="margin-top:14px">
-        <div class="panel-head"><h2>Détail du jour</h2><small id="day-label">—</small></div>
-        <div class="panel-body" id="day-list">
-          <p class="empty-note">Choisis une date dans le calendrier.</p>
-        </div>
-      </div>
 
     </div>
   </main>
+</div>
+
+<div id="event-modal" class="ops-modal" role="dialog" aria-modal="true" aria-labelledby="event-title" hidden>
+  <div class="ops-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+      <h2 id="event-title" style="margin:0;font:600 19px var(--serif)">Détail</h2>
+      <button type="button" class="btn-sm" id="event-close">Fermer</button>
+    </div>
+    <div id="event-body"></div>
+  </div>
 </div>
 
 <script src="js/i18n.js"></script>
@@ -87,6 +91,7 @@
   var $ = OPS.$, $$ = OPS.$$, esc = OPS.esc;
   var session = await OPS.boot({ active: 'calendrier', title: 'Calendrier' });
   if (!session) return;
+  var isManager = session.isManager, profile = session.profile;
 
   var AGENTS = [], agentById = {};
   var CAL = [], DOCS = [];
@@ -124,6 +129,10 @@
     try {
       CAL = await pgvData.loadCalibrationsFull(b.from, b.to);
       DOCS = await pgvData.loadDocuments(b.from, b.to);
+      if (!isManager) {
+        CAL = CAL.filter(function (c) { return c.agent_id === profile.agentId; });
+        DOCS = DOCS.filter(function (d) { return d.agent_id === profile.agentId; });
+      }
     } catch (e) {
       OPS.banner('Lecture impossible', esc(e.message), 'error');
       CAL = []; DOCS = [];
@@ -197,11 +206,11 @@
       var cls = 'cal-cell' + (iso === today ? ' today' : '') + ((wd === 0 || wd === 6) ? ' is-weekend' : '');
       var chips = list.slice(0, 3).map(function (e) {
         if (e.kind === 'cal') {
-          return '<span class="cal-chip cal" title="Calibrage · ' + esc(name(e.agentId)) + '">' +
-            esc(name(e.agentId).split(' ')[0]) + ' · calibrage</span>';
+          return '<button type="button" class="cal-chip cal" data-event-kind="cal" data-event-id="' + esc(e.id) + '" title="Ouvrir le calibrage · ' + esc(name(e.agentId)) + '">' +
+            esc(name(e.agentId).split(' ')[0]) + ' · calibrage</button>';
         }
-        return '<span class="cal-chip ' + ('doc-' + slug(e.type)) + '" title="' + esc(e.type + ' · ' + name(e.agentId)) + '">' +
-          esc(name(e.agentId).split(' ')[0]) + ' · ' + esc(e.type) + '</span>';
+        return '<button type="button" class="cal-chip ' + ('doc-' + slug(e.type)) + '" data-event-kind="doc" data-event-id="' + esc(e.id) + '" title="Ouvrir ' + esc(e.type + ' · ' + name(e.agentId)) + '">' +
+          esc(name(e.agentId).split(' ')[0]) + ' · ' + esc(e.type) + '</button>';
       }).join('');
       if (list.length > 3) chips += '<span class="cal-more">+' + (list.length - 3) + '</span>';
       cells.push('<div class="' + cls + '" data-date="' + iso + '">' +
@@ -210,18 +219,16 @@
     }
     $('#cal').innerHTML = cells.join('');
 
-    $$('#cal [data-date]').forEach(function (c) {
-      c.addEventListener('click', function () {
-        SELECTED = c.getAttribute('data-date');
-        renderDay(byDate[SELECTED] || []);
+    $$('#cal [data-event-id]').forEach(function (chip) {
+      chip.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var kind = chip.getAttribute('data-event-kind'), id = chip.getAttribute('data-event-id');
+        var record = (kind === 'cal' ? CAL : DOCS).filter(function (x) { return x.id === id; })[0];
+        if (!record) return;
+        SELECTED = kind === 'cal' ? record.calibration_date : record.meeting_date;
+        renderDay([{ kind: kind, record: record }]);
       });
     });
-
-    if (!SELECTED) {
-      var firstWith = Object.keys(byDate).sort().filter(function (d) { return d >= today; })[0];
-      SELECTED = firstWith || (today.slice(0, 7) === MONTH ? today : b.from);
-    }
-    renderDay(byDate[SELECTED] || []);
   }
 
   function slug(t) {
@@ -230,15 +237,15 @@
   }
 
   function renderDay(list) {
-    $('#day-label').textContent = OPS.fmtDateLong(SELECTED);
+    $('#event-title').textContent = (list.length ? (list[0].kind === 'cal' ? 'Calibrage' : list[0].record.doc_type) : 'Événements') + ' · ' + OPS.fmtDateLong(SELECTED);
     if (!list.length) {
-      $('#day-list').innerHTML = '<p class="empty-note">Rien ce jour-là.</p>';
+      $('#event-body').innerHTML = '<p class="empty-note">Rien ce jour-là.</p>';
       return;
     }
     list.sort(function (a, b) {
       return (a.kind === 'cal' ? 0 : 1) - (b.kind === 'cal' ? 0 : 1);
     });
-    $('#day-list').innerHTML = '<div class="cal-daylist">' + list.map(function (e) {
+    $('#event-body').innerHTML = '<div class="cal-daylist">' + list.map(function (e) {
       if (e.kind === 'cal') {
         var c = e.record;
         var rows = c.calibration_results || [];
@@ -269,7 +276,14 @@
         '<p style="margin-top:6px"><a href="documents.html?activity=pgv">Ouvrir dans la documentation</a></p>' +
       '</article>';
     }).join('') + '</div>';
+    $('#event-modal').hidden = false;
+    document.body.classList.add('modal-open');
   }
+
+  function closeEvent() { $('#event-modal').hidden = true; document.body.classList.remove('modal-open'); }
+  $('#event-close').addEventListener('click', closeEvent);
+  $('#event-modal').addEventListener('click', function (e) { if (e.target === $('#event-modal')) closeEvent(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#event-modal').hidden) closeEvent(); });
 
   /* ---------------- navigation ---------------- */
   function shiftMonth(n) {
