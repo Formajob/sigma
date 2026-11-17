@@ -115,12 +115,12 @@ La page Administration permet désormais de saisir le nom, l’adresse email et 
 Cette action utilise la Supabase Edge Function `supabase/functions/admin-invite-user/index.ts`. Déploie-la depuis la racine du dépôt (après avoir copié le dossier `supabase/functions/`) :
 
 ```powershell
-supabase secrets set APP_ORIGIN="https://TON-DOMAINE" AUTH_REDIRECT_URL="https://TON-DOMAINE/login.html" --project-ref TON_PROJECT_REF
-supabase functions deploy admin-invite-user --project-ref TON_PROJECT_REF
+supabase secrets set AUTH_REDIRECT_URL="https://TON-DOMAINE/login.html" --project-ref TON_PROJECT_REF
+supabase functions deploy admin-invite-user --no-verify-jwt --project-ref TON_PROJECT_REF
 ```
 
-Remplace les deux valeurs par le domaine Sigma et la référence du projet. Ajoute aussi l’URL de redirection à la liste des Redirect URLs autorisées dans les réglages Auth du projet. Les variables Supabase de runtime sont fournies à la fonction; la clé `service_role` doit rester exclusivement dans l’environnement Edge Function et ne doit jamais être copiée dans les fichiers du navigateur.
+Remplace le domaine et la référence du projet. Ajoute l’URL de redirection à la liste des Redirect URLs autorisées. `--no-verify-jwt` laisse passer la requête OPTIONS du navigateur; la fonction vérifie elle-même le JWT avec `getUser()` puis revalide côté serveur que le profil actif est `admin` ou `super_admin`. Ne retire pas ces contrôles. Les variables Supabase de runtime sont fournies à la fonction; la clé `service_role` doit rester exclusivement dans l’environnement Edge Function et ne doit jamais être copiée dans les fichiers du navigateur.
 
-La fonction vérifie le JWT de l’appelant et revalide côté serveur que le profil actif est `admin` ou `super_admin`, puis vérifie la fiche agent PGV. Une adresse déjà inscrite n’est pas invitée à nouveau : rattache le compte existant dans la table de Sigma, puis utilise le bouton de réinitialisation pour que son titulaire définisse son mot de passe.
+La fonction vérifie ensuite la fiche agent PGV. Une adresse déjà inscrite n’est pas invitée à nouveau : rattache le compte existant dans la table de Sigma, puis utilise le bouton de réinitialisation pour que son titulaire définisse son mot de passe.
 
 Après déploiement, vérifie dans Sigma Administration qu’un administrateur peut inviter une adresse de test, que le profil `agent` reçoit bien la fiche sélectionnée et que l’email d’invitation permet de définir le mot de passe. Un déploiement local du fichier Edge Function n’est pas une exécution : la fonction doit être publiée sur le projet Supabase pour que le formulaire fonctionne.

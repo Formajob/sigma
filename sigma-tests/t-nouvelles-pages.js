@@ -96,6 +96,13 @@ const { open, wait, check, state } = require('./harness');
     fixtures.MOCK = original;
   }
 
+  // Le RPC doit renvoyer les admins globaux et les comptes liés à des fiches PGV seulement.
+  {
+    const sql = require('fs').readFileSync('/home/user/sigma-build/sql-admin-utilisateurs.sql', 'utf8');
+    check('admin_users : filtre les fiches non-PGV', /a\.activity\s*=\s*'pgv'/.test(sql), true);
+    check('admin_users : garde les admins', /p\.role\s+in\s*\('admin',\s*'super_admin'\)/.test(sql), true);
+  }
+
   console.log(state.fails ? state.fails + ' ÉCHEC(S)' : 'NOUVELLES PAGES OK');
   process.exit(state.fails ? 1 : 0);
 })();

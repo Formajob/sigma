@@ -47,6 +47,17 @@ begin
     coalesce((to_jsonb(p) ->> 'active')::boolean, true) as active
   from auth.users u
   left join public.profiles p on p.id = u.id
+  where
+    -- Les admins globaux restent visibles dans Sigma.
+    p.role in ('admin', 'super_admin')
+    -- Les autres comptes ne sont affichés que s'ils sont liés à une fiche PGV.
+    -- Cela exclut les agents et superviseurs Americana, y compris s'ils sont
+    -- présents dans le même projet Supabase.
+    or exists (
+      select 1 from public.agents a
+       where a.id = p.agent_id
+         and (a.activity = 'pgv' or (a.activity is null and a.team ilike '%pgv%'))
+    )
   order by coalesce(nullif(p.full_name::text, ''), split_part(u.email::text, '@', 1));
 end;
 $$;
