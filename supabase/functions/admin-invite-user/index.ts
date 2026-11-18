@@ -94,6 +94,7 @@ Deno.serve(async (req: Request) => {
       full_name: fullName,
       role: "agent",
       agent_id: agent.id,
+      activity: "pgv",
       updated_at: new Date().toISOString(),
     }, { onConflict: "id" });
     if (profileError) {

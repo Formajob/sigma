@@ -100,7 +100,8 @@ const { open, wait, check, state } = require('./harness');
   {
     const sql = require('fs').readFileSync('/home/user/sigma-build/sql-admin-utilisateurs.sql', 'utf8');
     check('admin_users : filtre les fiches non-PGV', /a\.activity\s*=\s*'pgv'/.test(sql), true);
-    check('admin_users : garde les admins', /p\.role\s+in\s*\('admin',\s*'super_admin'\)/.test(sql), true);
+    check('admin_users : garde le compte admin qui consulte', /p\.id\s*=\s*auth\.uid\(\)/.test(sql), true);
+    check('admin_users : scoping PGV enregistré', /p\.activity\s*=\s*'pgv'/.test(sql), true);
   }
 
   console.log(state.fails ? state.fails + ' ÉCHEC(S)' : 'NOUVELLES PAGES OK');

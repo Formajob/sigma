@@ -6,6 +6,18 @@
 -- À exécuter dans Supabase → SQL Editor
 -- ============================================================
 
+-- Portée applicative du compte : un même Auth peut servir plusieurs activités.
+-- Elle évite de mélanger les comptes Americana et PGV dans les consoles.
+alter table public.profiles add column if not exists activity text;
+update public.profiles p
+   set activity = case
+     when a.activity is not null then a.activity
+     when a.team ilike '%pgv%' then 'pgv'
+     else p.activity
+   end
+  from public.agents a
+ where a.id = p.agent_id and p.activity is null;
+
 -- ------------------------------------------------------------
 -- 1. Lecture des comptes
 --    `active` est lu via to_jsonb : aucune erreur si la colonne
@@ -48,11 +60,10 @@ begin
   from auth.users u
   left join public.profiles p on p.id = u.id
   where
-    -- Les admins globaux restent visibles dans Sigma.
-    p.role in ('admin', 'super_admin')
-    -- Les autres comptes ne sont affichés que s'ils sont liés à une fiche PGV.
-    -- Cela exclut les agents et superviseurs Americana, y compris s'ils sont
-    -- présents dans le même projet Supabase.
+    -- Le compte de l'admin qui consulte reste affiché pour qu'il puisse gérer
+    -- sa propre ligne; les autres comptes sont filtrés par portée PGV.
+    p.id = auth.uid()
+    or p.activity = 'pgv'
     or exists (
       select 1 from public.agents a
        where a.id = p.agent_id
@@ -116,6 +127,7 @@ as $$
 declare
   v_role text;
   v_name text;
+  v_activity text;
   v_exists boolean;
 begin
   if auth.uid() is not null
@@ -138,22 +150,27 @@ begin
       raise exception 'Pour activer un nouvel accès, choisis d’abord une fiche agent.';
     end if;
     select coalesce(nullif(u.raw_user_meta_data ->> 'full_name', ''), a.full_name,
-                    split_part(coalesce(u.email, ''), '@', 1))
-      into v_name
+                    split_part(coalesce(u.email, ''), '@', 1)),
+           coalesce(a.activity, case when a.team ilike '%pgv%' then 'pgv' end)
+      into v_name, v_activity
       from auth.users u
       join public.agents a on a.id = p_agent
      where u.id = p_user;
     if not found then raise exception 'Utilisateur Supabase introuvable'; end if;
 
-    insert into public.profiles (id, full_name, role, agent_id)
-    values (p_user, v_name, 'agent'::public.app_role, p_agent);
+    insert into public.profiles (id, full_name, role, agent_id, activity)
+    values (p_user, v_name, 'agent'::public.app_role, p_agent, v_activity);
     return;
   end if;
 
   if v_role = 'agent' and p_agent is null then
     raise exception 'Un agent doit être rattaché à une fiche agent.';
   end if;
-  update public.profiles set agent_id = p_agent, updated_at = now() where id = p_user;
+  update public.profiles p
+     set agent_id = p_agent,
+         activity = coalesce((select a.activity from public.agents a where a.id = p_agent), p.activity),
+         updated_at = now()
+   where p.id = p_user;
 end;
 $$;
 

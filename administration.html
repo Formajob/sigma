@@ -51,11 +51,11 @@
                 <input class="f-input" id="adm-invite-name" autocomplete="name" required maxlength="120"></div>
               <div><label class="f-label" for="adm-invite-email">Email professionnel</label>
                 <input class="f-input" id="adm-invite-email" type="email" autocomplete="email" required maxlength="254"></div>
-              <div><label class="f-label" for="adm-invite-agent">Fiche agent</label>
+              <div><label class="f-label" for="adm-invite-agent">Agent PGV lié au compte</label>
                 <select class="f-select" id="adm-invite-agent" required><option value="">Choisir une fiche…</option></select></div>
               <div><button class="button button-primary" id="adm-invite-submit" type="submit">Envoyer l’invitation</button></div>
             </form>
-            <p class="f-note" style="margin:12px 0 0">Aucun mot de passe n’est saisi, envoyé par Sigma ou enregistré dans la table des profils.</p>
+            <p class="f-note" style="margin:12px 0 0">Choisis la fiche correspondant à la personne (ex. Elagbi Zineb · 203858). Cela rattache son compte à son agent PGV pour que ses vues et données soient limitées à cette fiche. Aucun mot de passe n’est saisi ou stocké par Sigma.</p>
           </div>
         </div>
 
@@ -70,7 +70,7 @@
           <div class="panel-body" style="padding:0">
             <div class="scroll-x"><table class="p-table">
               <thead><tr>
-                <th>Nom</th><th>Email</th><th>Rôle</th><th>Fiche agent</th>
+                <th>Nom</th><th>Email</th><th>Rôle</th><th>Agent PGV lié</th>
                 <th>Dernière connexion</th><th>Statut</th><th>Mot de passe</th>
               </tr></thead>
               <tbody id="adm-body"></tbody>
@@ -318,6 +318,9 @@
       var result = await db.functions.invoke('admin-invite-user', { body: payload });
       if (result.error) {
         var details = result.error.message || 'Invitation impossible';
+        if (/Failed to send a request to the Edge Function|fetch failed|networkerror/i.test(details)) {
+          details = 'La fonction Edge ne répond pas (CORS ou fonction non déployée). Déploie admin-invite-user avec --no-verify-jwt, puis réessaie.';
+        }
         if (result.error.context && result.error.context.json) {
           var body = await result.error.context.json().catch(function () { return null; });
           if (body && body.error) details = body.error;
