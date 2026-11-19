@@ -102,6 +102,9 @@ const { open, wait, check, state } = require('./harness');
     check('admin_users : filtre les fiches non-PGV', /a\.activity\s*=\s*'pgv'/.test(sql), true);
     check('admin_users : garde le compte admin qui consulte', /p\.id\s*=\s*auth\.uid\(\)/.test(sql), true);
     check('admin_users : scoping PGV enregistré', /p\.activity\s*=\s*'pgv'/.test(sql), true);
+    const authSql = require('fs').readFileSync('/home/user/sigma-build/sql-auth-trigger-agent-pgv.sql', 'utf8');
+    check('trigger Auth : reprend agent_id de l’invitation', /raw_user_meta_data\s*->>\s*'agent_id'/.test(authSql), true);
+    check('trigger Auth : lie le profil à un agent', /insert into public\.profiles \(id, full_name, role, agent_id, activity\)/i.test(authSql), true);
   }
 
   console.log(state.fails ? state.fails + ' ÉCHEC(S)' : 'NOUVELLES PAGES OK');

@@ -112,11 +112,13 @@ Le menu affiche **8 entrées** pour un agent, **9** pour un administrateur. Un s
 
 La page Administration permet désormais de saisir le nom, l’adresse email et la fiche agent, puis d’envoyer une invitation depuis Sigma. L’agent choisit lui-même son mot de passe via le lien email. Le mot de passe n’est jamais enregistré dans `profiles` ni transmis à la page.
 
-Cette action utilise la Supabase Edge Function `supabase/functions/admin-invite-user/index.ts`. Déploie-la depuis la racine du dépôt (après avoir copié le dossier `supabase/functions/`) :
+Cette action utilise la Supabase Edge Function `supabase/functions/admin-invite-user/index.ts`. Avant la première invitation, exécute `sql-admin-utilisateurs.sql`, puis `sql-auth-trigger-agent-pgv.sql` dans Supabase SQL Editor. L’erreur « Database error saving new user » signale typiquement que l’ancien trigger Auth créait un rôle `agent` sans `agent_id`, en conflit avec `profiles_agent_required`. Le nouveau trigger exige une fiche PGV transmise en metadata et crée directement le profil rattaché.
+
+Déploie ensuite la fonction depuis la racine du dépôt (après avoir copié `supabase/functions/`) :
 
 ```powershell
-supabase secrets set AUTH_REDIRECT_URL="https://TON-DOMAINE/login.html" --project-ref TON_PROJECT_REF
-supabase functions deploy admin-invite-user --no-verify-jwt --project-ref TON_PROJECT_REF
+npx --yes supabase secrets set AUTH_REDIRECT_URL="https://TON-DOMAINE/login.html" --project-ref TON_PROJECT_REF
+npx --yes supabase functions deploy admin-invite-user --no-verify-jwt --project-ref TON_PROJECT_REF
 ```
 
 Remplace le domaine et la référence du projet. Ajoute l’URL de redirection à la liste des Redirect URLs autorisées. `--no-verify-jwt` laisse passer la requête OPTIONS du navigateur; la fonction vérifie elle-même le JWT avec `getUser()` puis revalide côté serveur que le profil actif est `admin` ou `super_admin`. Ne retire pas ces contrôles. Les variables Supabase de runtime sont fournies à la fonction; la clé `service_role` doit rester exclusivement dans l’environnement Edge Function et ne doit jamais être copiée dans les fichiers du navigateur.

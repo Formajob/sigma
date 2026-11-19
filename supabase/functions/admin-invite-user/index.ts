@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
 
     const redirectTo = Deno.env.get("AUTH_REDIRECT_URL");
     const inviteOptions: { data: Record<string, string>; redirectTo?: string } = {
-      data: { full_name: fullName },
+      data: { full_name: fullName, agent_id: agent.id, activity: "pgv" },
     };
     if (redirectTo) inviteOptions.redirectTo = redirectTo;
 
