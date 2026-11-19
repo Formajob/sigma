@@ -103,14 +103,15 @@
     var authRes = await db.auth.getUser();
     if (authRes.error || !authRes.data.user) return null;
     var p = await db.from("profiles")
-      .select("id, role, full_name, agent_id, active, agents(id, full_name)")
+      .select("id, role, full_name, agent_id, activity, active, agents(id, full_name, activity)")
       .eq("id", authRes.data.user.id)
       .maybeSingle();
     if (p.error || !p.data) return null;
     return {
       email: authRes.data.user.email,
       role: String(p.data.role || "agent").trim().toLowerCase(),
-      client: "americana",
+      client: p.data.activity || null,
+      activity: p.data.activity || null,
       displayName: p.data.full_name || null,
       agentId: p.data.agent_id,
       agentName: p.data.agents ? p.data.agents.full_name : null,
@@ -119,7 +120,7 @@
   }
 
   // Garde de page : sans session, sans profil OU suspendu -> retour login
-  async function requireAuth(loginUrl) {
+  async function requireAuth(loginUrl, requiredActivity) {
     var profile = await getProfile();
     if (!profile) {
       window.location.href = loginUrl || "login.html";
@@ -129,6 +130,13 @@
       // Compte suspendu : on ferme la session et on renvoie au login avec motif.
       try { await signOut(); } catch (e) {}
       window.location.href = (loginUrl || "login.html") + "?msg=suspended";
+      return null;
+    }
+    // Refus par défaut : chaque déploiement indique son activité attendue.
+    // Un super_admin n'échappe pas à ce cloisonnement.
+    if (!requiredActivity || profile.activity !== requiredActivity) {
+      try { await signOut(); } catch (e) {}
+      window.location.href = (loginUrl || "login.html") + "?msg=activity";
       return null;
     }
     return profile;

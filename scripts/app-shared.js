@@ -12,7 +12,8 @@
         if (!window.__SIGMA_PROFILE) window.location.href = "login.html";
       }, 8000);
       try {
-        const profile = await window.sigmaSupabase.requireAuth("login.html");
+        const expectedActivity = window.__SIGMA_ACTIVITY || "americana";
+        const profile = await window.sigmaSupabase.requireAuth("login.html", expectedActivity);
         if (!profile) return null;          // redirection en cours : on reste masque
         window.__SIGMA_PROFILE = profile;
         clearTimeout(bailout);

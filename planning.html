@@ -60,6 +60,7 @@
 
 <script src="js/i18n.js"></script>
 <script>window.__SIGMA_PAGE = 'planning';</script>
+<script>window.__SIGMA_ACTIVITY = 'pgv';</script>
 <script src="js/supabase-config.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="scripts/app-shared.js"></script>
@@ -76,7 +77,7 @@
 
   var AGENTS = [], SHIFTS = [], ENTRIES = {}, WEEK = OPS.mondayOf(pgvData.iso());
   var DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  var ANCHOR_SATURDAY = '2026-11-21';   // samedi de référence = 1er agent de la rotation
+  var ANCHOR_SATURDAY = '2026-10-17';   // Amadou le 17/10 ; Hind le 10/10, Zineb le 24/10
 
   if (!isManager) {
     $('#btn-apply-week').disabled = true;
@@ -100,7 +101,8 @@
   var shiftByCode = {};
   SHIFTS.forEach(function (s) { shiftByCode[s.code] = s; });
   var WORK = SHIFTS.filter(function (s) { return s.is_work; });
-  var DEFAULT_CODE = WORK.length ? WORK[0].code : 'M';
+  var DEFAULT_CODE = shiftByCode.M ? 'M' : (WORK.length ? WORK[0].code : 'M');
+  var SAT_CODE = shiftByCode.SAT ? 'SAT' : DEFAULT_CODE;
 
   function dates() {
     var out = [];
@@ -192,7 +194,7 @@
     $('#week-hours').textContent = 'Semaine : ' + OPS.minutes(total) + ' planifiées';
 
     var sat = saturdayOfWeek();
-    $('#rotation-note').innerHTML = 'Rotation du samedi : <b>' + esc(sat ? sat.full_name : '—') +
+    $('#rotation-note').innerHTML = 'Rotation du samedi (14h–18h) : <b>' + esc(sat ? sat.full_name : '—') +
       '</b> le samedi ' + OPS.fmtDate(ds[5]) + '. Un seul agent travaille le samedi, les autres sont en repos. ' +
       'Le dimanche n’est jamais ouvré.';
   }
@@ -239,7 +241,7 @@
       ds.forEach(function (d, i) {
         var wd = OPS.parseISO(d).getDay();
         if (wd === 0) plan.push([a, d, 'OFF']);
-        else if (wd === 6) plan.push([a, d, (sat && sat.id === a.id) ? DEFAULT_CODE : 'OFF']);
+        else if (wd === 6) plan.push([a, d, (sat && sat.id === a.id) ? SAT_CODE : 'OFF']);
         else plan.push([a, d, DEFAULT_CODE]);
       });
     });
