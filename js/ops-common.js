@@ -101,12 +101,13 @@
   /* ---------- navigation ---------- */
   var NAV = [
     { key: 'dashboard', href: 'pgv-dashboard.html', icon: '▦', label: 'Vue d’ensemble' },
-    { key: 'calibrages', href: 'pgv-calibrages.html', icon: '◎', label: 'Calibrages' },
-    { key: 'documents', href: 'documents.html?activity=pgv', icon: '✎', label: 'Documentation' },
     { key: 'calendrier', href: 'calendrier.html?activity=pgv', icon: '▤', label: 'Calendrier' },
     { key: 'emails', href: 'emails.html?activity=pgv', icon: '✉', label: 'Emails' },
+    { key: 'rapports', href: 'rapports.html?activity=pgv', icon: '⇩', label: 'Rapports' },
     { key: 'attendance', href: 'attendance.html?activity=pgv', icon: '◔', label: 'Présence' },
-    { key: 'planning', href: 'planning.html?activity=pgv', icon: '◷', label: 'Planning' }
+    { key: 'planning', href: 'planning.html?activity=pgv', icon: '◷', label: 'Planning' },
+    { key: 'administration', href: 'administration.html', icon: '⚙', label: 'Administration',
+      roles: ['admin', 'super_admin'] }
   ];
 
   OPS.renderShell = function (opts) {
@@ -125,7 +126,7 @@
           '<span class="workspace-sub">Protégez-Vous · SAC</span></div>' +
         '<span class="nav-label">Espace de travail</span>' +
         '<nav class="side-nav" aria-label="Navigation principale">' +
-          NAV.map(function (n) {
+          NAV.filter(function (n) { return !n.roles || n.roles.indexOf(role) >= 0; }).map(function (n) {
             return '<a class="' + (n.key === active ? 'active' : '') + '" href="' + n.href + '">' +
               '<span class="nav-icon">' + n.icon + '</span>' + n.label + '</a>';
           }).join('') +
@@ -166,6 +167,10 @@
       OPS.renderShell({ active: opts.active, title: opts.title, profile: profile, actions: opts.actions });
       return { profile: profile, db: db, isManager: isManager, isAgent: profile.role === 'agent' };
     })();
+  };
+
+  OPS.navFor = function (role) {
+    return NAV.filter(function (n) { return !n.roles || n.roles.indexOf(role) >= 0; });
   };
 
   window.OPS = OPS;

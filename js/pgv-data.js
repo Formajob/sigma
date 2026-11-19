@@ -407,11 +407,10 @@
     return res.data || [];
   }
 
-  async function saveAgentActivityAgent(agentId, workDate, callsReceived, callsTreated, note) {
+  async function saveAgentActivityAgent(agentId, workDate, callsReceived, note) {
     var res = await db.from('agent_daily_activity').upsert({
       activity: ACTIVITY, work_date: workDate, agent_id: agentId,
       calls_received: Math.max(0, +callsReceived || 0),
-      calls_treated: Math.max(0, +callsTreated || 0),
       note: note || null,
       updated_at: new Date().toISOString()
     }, { onConflict: 'activity,work_date,agent_id' }).select().single();

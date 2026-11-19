@@ -109,11 +109,6 @@
                 <small>volume entrant reçu aujourd’hui</small>
               </div>
               <div class="act-field">
-                <label class="f-label" for="act-calls">Appels traités</label>
-                <input class="f-input" type="number" min="0" step="1" id="act-calls" value="0">
-                <small>appels pris en charge, hors emails</small>
-              </div>
-              <div class="act-field">
                 <label class="f-label" for="act-sac">Emails SAC traités</label>
                 <input class="f-input" type="number" min="0" step="1" id="act-sac" value="0">
                 <small>dossiers SAC clôturés</small>
@@ -140,7 +135,7 @@
           <div class="panel-head"><h2>Mon activité — 30 derniers jours</h2><small id="act-totals">—</small></div>
           <div class="panel-body" style="padding:0">
             <div class="scroll-x"><table class="p-table">
-              <thead><tr><th>Jour</th><th class="num">Appels reçus</th><th class="num">Appels traités</th><th class="num">SAC</th>
+              <thead><tr><th>Jour</th><th class="num">Appels reçus</th><th class="num">SAC</th>
                 <th class="num">Autres emails</th><th class="num">Total emails</th><th>Note</th></tr></thead>
               <tbody id="act-body"></tbody>
             </table></div>
@@ -604,7 +599,6 @@
       ACT_DAYS = {};
       acts.forEach(function (r) {
         ACT_DAYS[r.work_date] = ACT_DAYS[r.work_date] || {};
-        ACT_DAYS[r.work_date].calls = r.calls_treated;
         ACT_DAYS[r.work_date].callsReceived = r.calls_received;
         ACT_DAYS[r.work_date].callsNote = r.note;
       });
@@ -621,31 +615,29 @@
 
     var today = ACT_DAYS[TODAY] || {};
     $('#act-calls-received').value = today.callsReceived || 0;
-    $('#act-calls').value = today.calls || 0;
     $('#act-sac').value = today.sac || 0;
     $('#act-other').value = today.other || 0;
     $('#act-note').value = today.callsNote || today.mailNote || '';
-    $('#act-hint').textContent = today.calls || today.sac || today.other
-      ? 'Saisie déjà enregistrée aujourd’hui — tu peux la corriger.'
-      : 'Aucune saisie aujourd’hui.';
+    $('#act-hint').textContent = today.callsReceived || today.sac || today.other
+      ? 'Saisie du jour déjà enregistrée — les appels traités sont saisis par un responsable dans le tableau de bord.'
+      : 'Aucune saisie aujourd’hui. Les appels traités sont saisis par un responsable dans le tableau de bord.';
 
     var days = Object.keys(ACT_DAYS).sort().reverse();
-    var totCR = 0, totC = 0, totS = 0, totO = 0;
+    var totCR = 0, totS = 0, totO = 0;
     $('#act-body').innerHTML = days.length ? days.map(function (d) {
       var x = ACT_DAYS[d];
-      var c = x.calls || 0, sa = x.sac || 0, ot = x.other || 0;
-      totC += c; totS += sa; totO += ot;
+      var sa = x.sac || 0, ot = x.other || 0;
+      totS += sa; totO += ot;
       var cr = x.callsReceived || 0;
       totCR += cr;
       return '<tr><td class="name">' + OPS.fmtDate(d) + '</td>' +
         '<td class="num mono">' + cr + '</td>' +
-        '<td class="num mono">' + c + '</td>' +
         '<td class="num mono">' + sa + '</td>' +
         '<td class="num mono">' + ot + '</td>' +
         '<td class="num mono">' + (sa + ot) + '</td>' +
         '<td>' + esc(x.callsNote || x.mailNote || '—') + '</td></tr>';
-    }).join('') : '<tr><td colspan="7"><p class="empty-note">Pas encore d’activité enregistrée sur les 30 derniers jours.</p></td></tr>';
-    $('#act-totals').textContent = 'Total sur la période : ' + totCR + ' appels reçus · ' + totC + ' appels traités · ' + (totS + totO) + ' emails';
+    }).join('') : '<tr><td colspan="6"><p class="empty-note">Pas encore d’activité enregistrée sur les 30 derniers jours.</p></td></tr>';
+    $('#act-totals').textContent = 'Total sur la période : ' + totCR + ' appels reçus · ' + (totS + totO) + ' emails';
   }
 
   $('#act-save').addEventListener('click', async function () {
@@ -654,7 +646,7 @@
     var btn = this;
     btn.disabled = true;
     try {
-      await pgvData.saveAgentActivityAgent(agentId, TODAY, +$('#act-calls-received').value || 0, +$('#act-calls').value || 0, $('#act-note').value.trim());
+      await pgvData.saveAgentActivityAgent(agentId, TODAY, +$('#act-calls-received').value || 0, $('#act-note').value.trim());
       await pgvData.saveEmailAgentRow(TODAY, agentId, +$('#act-sac').value || 0, +$('#act-other').value || 0, $('#act-note').value.trim());
       OPS.toast('Saisie enregistrée');
       await loadActivity();

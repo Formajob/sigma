@@ -24,6 +24,8 @@
           <p>Calibrages et documentation de suivi, réunis sur un même mois.</p>
         </div>
         <div class="welcome-right">
+          <button class="button button-muted" id="new-calibration" hidden>＋ Calibrage</button>
+          <button class="button button-muted" id="new-document" hidden>＋ Documentation</button>
           <span class="tag" id="month-counts">—</span>
         </div>
       </div>
@@ -118,6 +120,7 @@
     $('#filter-agent').appendChild(o);
   });
   function name(id) { return agentById[id] ? agentById[id].full_name : 'Agent inconnu'; }
+  if (isManager) { $('#new-calibration').hidden = false; $('#new-document').hidden = false; }
 
   function monthBounds(ym) {
     var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
@@ -253,11 +256,15 @@
     var actions = $('#event-actions');
     actions.innerHTML = '';
     if (isManager) {
-      actions.innerHTML = '<button type="button" class="btn-sm" id="event-edit">Modifier</button>' +
+      actions.innerHTML = (CURRENT_EVENT.kind === 'doc' && CURRENT_EVENT.record.visibility === 'agent'
+        ? '<button type="button" class="btn-sm primary" id="event-send-agent">Envoyer à l’agent</button>' : '') +
+        '<button type="button" class="btn-sm" id="event-edit">Modifier</button>' +
         '<button type="button" class="btn-sm danger" id="event-delete">Supprimer</button>';
       actions.hidden = false;
       $('#event-edit').addEventListener('click', editCurrentEvent);
       $('#event-delete').addEventListener('click', deleteCurrentEvent);
+      var sendBtn = $('#event-send-agent');
+      if (sendBtn) sendBtn.addEventListener('click', sendDocumentToAgent);
     } else actions.hidden = true;
 
     if (CURRENT_EVENT.kind === 'cal') {
@@ -289,7 +296,7 @@
           esc(r ? r.result : 'N/A') + '</b>' + (r && r.reason ? ' — ' + esc(r.reason) : '') + '</p></div>';
       });
       html += '</div>' + (c.notes ? '<div class="detail-item" style="margin-top:10px"><small>Notes</small><p>' + esc(c.notes) + '</p></div>' : '') +
-        '<p style="margin-top:12px"><a href="pgv-calibrages.html">Ouvrir l’historique des calibrages</a></p></div>';
+        '';
       $('#event-body').innerHTML = html;
     } else {
       var d = CURRENT_EVENT.record;
@@ -301,13 +308,13 @@
           '<div><small>Date de rencontre</small><strong>' + OPS.fmtDate(d.meeting_date) + '</strong></div>' +
           '<div><small>Date de suivi</small><strong>' + (d.follow_up_date ? OPS.fmtDate(d.follow_up_date) : '—') + '</strong></div>' +
           '<div><small>ID d’appel</small><strong>' + esc(d.call_id || '—') + '</strong></div>' +
-          '<div><small>Visibilité</small><strong>' + (d.visibility === 'agent' ? 'Superviseur + agent' : 'Superviseur seulement') + '</strong></div>' +
+          '<div><small>Visibilité</small><strong>' + (d.visibility === 'agent' ? 'Admin + agent concerné' : 'Admin seulement') + '</strong></div>' +
         '</div><div class="detail-fiss">' +
           '<div><small>Faits</small><p>' + esc(d.facts || '—') + '</p></div>' +
           '<div><small>Impacts</small><p>' + esc(d.impacts || '—') + '</p></div>' +
           '<div><small>Solutions</small><p>' + esc(d.solutions || '—') + '</p></div>' +
           '<div><small>Suivi</small><p>' + esc(d.followup || '—') + '</p></div>' +
-        '</div><p style="margin-top:12px"><a href="documents.html?activity=pgv">Ouvrir dans la documentation</a></p></article>';
+        '</div></article>';
     }
     $('#event-modal').hidden = false;
     document.body.classList.add('modal-open');
@@ -316,9 +323,12 @@
   function editCurrentEvent() {
     if (!CURRENT_EVENT || !isManager) return;
     var e = CURRENT_EVENT, r = e.record;
+    $('#event-title').textContent = (r.id ? 'Modifier ' : 'Nouveau ') + (e.kind === 'cal' ? 'calibrage' : 'document de suivi');
+    $('#event-modal').hidden = false;
+    document.body.classList.add('modal-open');
     $('#event-actions').innerHTML = '<button type="button" class="btn-sm" id="event-edit-cancel">Annuler</button>' +
       '<button type="button" class="btn-sm primary" id="event-edit-save">Enregistrer</button>';
-    $('#event-edit-cancel').addEventListener('click', function () { renderDay([CURRENT_EVENT]); });
+    $('#event-edit-cancel').addEventListener('click', closeEvent);
     if (e.kind === 'doc') {
       var types = ['Rencontre','Feedback','Observation','Rapport de fait','Disciplinaire'];
       var agentsHtml = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
@@ -330,7 +340,7 @@
         '<div><label class="f-label">Date de rencontre</label><input type="date" id="ed-meeting" class="f-input" value="' + esc(r.meeting_date || '') + '"></div>' +
         '<div><label class="f-label">Date de suivi</label><input type="date" id="ed-follow" class="f-input" value="' + esc(r.follow_up_date || '') + '"></div>' +
         '<div><label class="f-label">ID d’appel</label><input id="ed-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
-        '<div><label class="f-label">Visibilité</label><select id="ed-visibility" class="f-select"><option value="supervisor"' + (r.visibility !== 'agent' ? ' selected' : '') + '>Superviseur seulement</option><option value="agent"' + (r.visibility === 'agent' ? ' selected' : '') + '>Superviseur + agent</option></select></div>' +
+        '<div><label class="f-label">Visibilité</label><select id="ed-visibility" class="f-select"><option value="supervisor"' + (r.visibility !== 'agent' ? ' selected' : '') + '>Admin seulement</option><option value="agent"' + (r.visibility === 'agent' ? ' selected' : '') + '>Admin + agent concerné</option></select></div>' +
         '</div><div class="f-row"><label class="f-label">Faits</label><textarea id="ed-facts" class="f-input" rows="3">' + esc(r.facts || '') + '</textarea>' +
         '<label class="f-label">Impacts</label><textarea id="ed-impacts" class="f-input" rows="3">' + esc(r.impacts || '') + '</textarea>' +
         '<label class="f-label">Solutions</label><textarea id="ed-solutions" class="f-input" rows="3">' + esc(r.solutions || '') + '</textarea>' +
@@ -338,13 +348,13 @@
       $('#event-edit-save').addEventListener('click', async function () {
         var b = this; b.disabled = true;
         try {
-          await pgvData.saveDocument({ id:r.id, type:$('#ed-type').value, object:$('#ed-object').value.trim(),
+          var savedDoc = await pgvData.saveDocument({ id:r.id || null, type:$('#ed-type').value, object:$('#ed-object').value.trim(),
             agentId:$('#ed-agent').value, status:$('#ed-status').value, meetingDate:$('#ed-meeting').value,
             followUpDate:$('#ed-follow').value || null, callId:$('#ed-call').value.trim() || null,
             visibility:$('#ed-visibility').value, facts:$('#ed-facts').value.trim(), impacts:$('#ed-impacts').value.trim(),
             solutions:$('#ed-solutions').value.trim(), followup:$('#ed-followup').value.trim() });
-          OPS.toast('Document mis à jour'); await load();
-          var fresh = DOCS.filter(function (x) { return x.id === r.id; })[0];
+          OPS.toast(r.id ? 'Document mis à jour' : 'Document créé'); await load();
+          var fresh = DOCS.filter(function (x) { return x.id === savedDoc.id; })[0];
           if (fresh) { CURRENT_EVENT = { kind:'doc', id:fresh.id, date:fresh.meeting_date, agentId:fresh.agent_id, record:fresh }; renderDay([CURRENT_EVENT]); }
           else closeEvent();
         } catch (err) { OPS.toast(err.message || 'Modification refusée', 'error'); }
@@ -382,12 +392,13 @@
           if (missing >= 0) throw new Error('Motif requis pour ' + window.PGV_GRID[missing].code + '.');
           var elements = window.PGV_GRID.map(function (g) { return elementByCode[g.code]; });
           if (elements.some(function (x) { return !x; })) throw new Error('La grille PGV n’est pas complète en base.');
-          await pgvData.updateCalibration(r.id, { agentId:$('#ec-agent').value, status:$('#ec-status').value,
+          var calibrationRow = { agentId:$('#ec-agent').value, status:$('#ec-status').value,
             callDate:$('#ec-call-date').value, date:$('#ec-date').value, callId:$('#ec-call').value.trim(),
             evaluator:$('#ec-evaluator').value.trim(), evaluator_kind:r.evaluator || 'Autre', language:r.language || 'Français',
-            notes:$('#ec-notes').value.trim(), values:vals, reasons:reasons, elements:elements });
-          OPS.toast('Calibrage mis à jour'); await load();
-          var fresh = CAL.filter(function (x) { return x.id === r.id; })[0];
+            notes:$('#ec-notes').value.trim(), values:vals, reasons:reasons, elements:elements };
+          var savedCal = r.id ? await pgvData.updateCalibration(r.id, calibrationRow) : await pgvData.saveCalibration(calibrationRow);
+          OPS.toast(r.id ? 'Calibrage mis à jour' : 'Calibrage créé'); await load();
+          var fresh = CAL.filter(function (x) { return x.id === savedCal.id; })[0];
           if (fresh) { CURRENT_EVENT = { kind:'cal', id:fresh.id, date:fresh.calibration_date, agentId:fresh.agent_id, record:fresh }; renderDay([CURRENT_EVENT]); }
           else closeEvent();
         } catch (err) { OPS.toast(err.message || 'Modification refusée', 'error'); }
@@ -395,6 +406,25 @@
       });
     }
   }
+
+  function openCreateCalibration() {
+    if (!isManager) return;
+    var date = SELECTED || today;
+    CURRENT_EVENT = { kind:'cal', record:{ id:null, agent_id:AGENTS[0] && AGENTS[0].id, status:'Terminé',
+      call_date:date, calibration_date:date, evaluator:'', evaluator_name:'', evaluator_kind:'Autre',
+      language:'Français', notes:'', calibration_results:[] } };
+    editCurrentEvent();
+  }
+  function openCreateDocument() {
+    if (!isManager) return;
+    var date = SELECTED || today;
+    CURRENT_EVENT = { kind:'doc', record:{ id:null, doc_type:'Rencontre', object:'', agent_id:AGENTS[0] && AGENTS[0].id,
+      status:'Planifié', meeting_date:date, follow_up_date:null, call_id:'', visibility:'supervisor',
+      facts:'', impacts:'', solutions:'', followup:'' } };
+    editCurrentEvent();
+  }
+  $('#new-calibration').addEventListener('click', openCreateCalibration);
+  $('#new-document').addEventListener('click', openCreateDocument);
 
   async function deleteCurrentEvent() {
     if (!CURRENT_EVENT || !isManager) return;
@@ -407,10 +437,38 @@
     } catch (err) { OPS.toast(err.message || 'Suppression refusée', 'error'); }
   }
 
+  async function sendDocumentToAgent() {
+    if (!CURRENT_EVENT || CURRENT_EVENT.kind !== 'doc' || CURRENT_EVENT.record.visibility !== 'agent' || !isManager) return;
+    var button = $('#event-send-agent');
+    if (!confirm('Envoyer cette documentation à ' + name(CURRENT_EVENT.record.agent_id) + ' ?')) return;
+    button.disabled = true;
+    button.textContent = 'Envoi…';
+    try {
+      var client = await window.sigmaSupabase.getClient();
+      var result = await client.functions.invoke('pgv-send-agent-document', {
+        body: { document_id: CURRENT_EVENT.record.id }
+      });
+      if (result.error) {
+        var detail = result.error.message || 'Fonction email indisponible';
+        if (result.error.context && result.error.context.json) {
+          var body = await result.error.context.json().catch(function () { return null; });
+          if (body && body.error) detail = body.error;
+        }
+        throw new Error(detail);
+      }
+      OPS.toast('Documentation envoyée à l’agent');
+      button.textContent = 'Envoyé';
+    } catch (err) {
+      OPS.toast(err.message || 'Envoi impossible', 'error');
+      button.textContent = 'Réessayer l’envoi';
+      button.disabled = false;
+    }
+  }
+
   function closeEvent() { $('#event-modal').hidden = true; document.body.classList.remove('modal-open'); }
   $('#event-close').addEventListener('click', closeEvent);
-  $('#event-modal').addEventListener('click', function (e) { if (e.target === $('#event-modal')) closeEvent(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#event-modal').hidden) closeEvent(); });
+  // Pas de fermeture par clic extérieur ni par Échap : seul le bouton Fermer
+  // (ou Annuler dans le formulaire d'édition) ferme explicitement la modale.
 
   /* ---------------- navigation ---------------- */
   function shiftMonth(n) {

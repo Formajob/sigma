@@ -25,9 +25,8 @@
     <span class="nav-label">Espace de travail</span>
     <nav class="side-nav" aria-label="Navigation principale">
       <a class="active" href="pgv-dashboard.html"><span class="nav-icon">▦</span>Vue d’ensemble</a>
-      <a href="pgv-calibrages.html"><span class="nav-icon">◎</span>Calibrages</a>
-      <a href="documents.html?activity=pgv"><span class="nav-icon">✎</span>Documentation</a>
       <a href="calendrier.html?activity=pgv"><span class="nav-icon">▤</span>Calendrier</a>
+      <a href="rapports.html?activity=pgv"><span class="nav-icon">⇩</span>Rapports</a>
       <a href="emails.html?activity=pgv"><span class="nav-icon">✉</span>Emails</a>
       <a href="attendance.html?activity=pgv"><span class="nav-icon">◔</span>Présence</a>
       <a href="planning.html?activity=pgv"><span class="nav-icon">◷</span>Planning</a>
@@ -50,7 +49,7 @@
       <div class="top-actions">
         <span class="welcome-date" id="today-label"></span>
         <a class="button button-muted" id="admin-link" href="administration.html" hidden>Administration</a>
-        <a class="button button-primary" href="pgv-calibrages.html">＋ Nouveau calibrage</a>
+        <a class="button button-primary" href="calendrier.html?activity=pgv">Ouvrir le calendrier</a>
       </div>
     </header>
 
@@ -83,7 +82,7 @@
         <div class="me-actions">
           <a class="button button-muted" href="attendance.html?activity=pgv">Pointer ma journée</a>
           <a class="button button-muted" href="attendance.html?activity=pgv#activite">Saisir appels &amp; emails</a>
-          <a class="button button-primary" href="pgv-calibrages.html">Voir mes calibrages</a>
+          <a class="button button-primary" href="calendrier.html?activity=pgv">Voir le calendrier</a>
         </div>
       </div>
 
@@ -96,6 +95,15 @@
           <button class="btn-sm" id="dash-month-now">Ce mois</button>
         </div>
       </div>
+
+      <section class="panel" id="calls-month-entry" style="margin:14px 0" hidden>
+        <div class="panel-head"><h2>Saisie mensuelle des appels traités</h2><small id="calls-entry-month">—</small></div>
+        <div class="panel-body">
+          <p class="f-note" style="margin:0 0 12px">Saisie réservée aux responsables. Chaque valeur enregistrée remplace le total du mois pour cet agent (elle ne s’ajoute pas à l’ancienne).</p>
+          <div class="table-wrap scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Appels traités ce mois</th></tr></thead><tbody id="calls-entry-body"></tbody></table></div>
+          <div class="act-foot" style="margin-top:12px"><span class="f-note" id="calls-entry-hint">—</span><button class="button button-primary" id="calls-entry-save">Enregistrer les volumes du mois</button></div>
+        </div>
+      </section>
 
       <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Score moyen</span><span class="kpi-icon">◈</span></div><strong class="kpi-value" id="k-score">—</strong><span class="kpi-foot" id="k-score-foot">Aucun calibrage sur la période</span></article>
@@ -172,7 +180,7 @@
 (async function () {
   'use strict';
 
-  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [], CALL_ROWS = [], EMAIL_ROWS = [];
+  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [], CALL_ROWS = [], CALL_MONTH_ROWS = [], EMAIL_ROWS = [];
   var migrationMissing = false;
 
   function $(s) { return document.querySelector(s); }
@@ -232,7 +240,7 @@
     function hm(d) { return d ? new Date(d).toLocaleTimeString('fr-MA', { hour:'2-digit', minute:'2-digit' }) : '—'; }
     var todayISO = iso(new Date());
 
-    var myEvents = [], myPlan = null, myAct = { calls: 0, sac: 0, other: 0 };
+    var myEvents = [], myPlan = null, myAct = { callsReceived: 0, calls: 0, sac: 0, other: 0 };
     var myCal = [];
     try {
       var evR = await db.from('attendance_events')
@@ -243,8 +251,11 @@
         .select('shift_code').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
       myPlan = plR.data || null;
       var acR = await db.from('agent_daily_activity')
-        .select('calls_received, calls_treated').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
-      if (acR.data) { myAct.callsReceived = acR.data.calls_received || 0; myAct.calls = acR.data.calls_treated || 0; }
+        .select('calls_received').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
+      if (acR.data) myAct.callsReceived = acR.data.calls_received || 0;
+      var mcR = await db.from('agent_monthly_activity').select('calls_treated').eq('activity', 'pgv')
+        .eq('agent_id', PROFILE.agentId).eq('month_start', iso(from)).maybeSingle();
+      if (mcR.data) myAct.calls = mcR.data.calls_treated || 0;
       var emR = await db.from('email_agent_daily')
         .select('treated_sac, treated_other').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
       if (emR.data) { myAct.sac = emR.data.treated_sac || 0; myAct.other = emR.data.treated_other || 0; }
@@ -271,7 +282,7 @@
 
     var tiles = [
       { l: 'Appels reçus', v: myAct.callsReceived, f: 'aujourd’hui' },
-      { l: 'Appels traités', v: myAct.calls, f: 'aujourd’hui' },
+      { l: 'Appels traités', v: myAct.calls, f: periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' }) },
       { l: 'Emails traités', v: totalEmails, f: myAct.sac + ' SAC · ' + myAct.other + ' autres' },
       { l: 'Calibrages du mois', v: calN + ' / ' + objC, f: 'objectif mensuel' },
       { l: 'Présence', v: firstIn ? hm(firstIn) : '—', f: state.toLowerCase() }
@@ -328,16 +339,22 @@
     RESULTS = rRes.data || [];
   }
 
-  // Volumes du mois : les appels sont saisis par agent/jour dans Présence > Activité;
-  // les emails traités sont lus depuis leur répartition par agent.
+  // Appels reçus : saisie quotidienne par l'équipe. Appels traités :
+  // saisie unique du total mensuel par un responsable (upsert/remplacement).
   async function loadVolumeStats(startISO, endISO) {
     try {
       var cr = await db.from('agent_daily_activity')
-        .select('agent_id, work_date, calls_received, calls_treated').eq('activity', 'pgv')
+        .select('agent_id, work_date, calls_received').eq('activity', 'pgv')
         .gte('work_date', startISO).lte('work_date', endISO);
       if (cr.error) throw cr.error;
       CALL_ROWS = (cr.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
     } catch (e) { CALL_ROWS = []; }
+    try {
+      var mr = await db.from('agent_monthly_activity')
+        .select('agent_id, month_start, calls_treated').eq('activity', 'pgv').eq('month_start', startISO);
+      if (mr.error) throw mr.error;
+      CALL_MONTH_ROWS = (mr.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
+    } catch (e) { CALL_MONTH_ROWS = []; }
     try {
       var er = await db.from('email_agent_daily')
         .select('agent_id, work_date, treated_sac, treated_other').eq('activity', 'pgv')
@@ -345,7 +362,45 @@
       if (er.error) throw er.error;
       EMAIL_ROWS = (er.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
     } catch (e) { EMAIL_ROWS = []; }
+    if (IS_CALL_MANAGER) renderCallsEntry();
   }
+
+  var IS_CALL_MANAGER = ['superviseur','admin','super_admin'].indexOf(String(PROFILE.role || '').trim().toLowerCase()) >= 0;
+  if (IS_CALL_MANAGER) $('#calls-month-entry').hidden = false;
+
+  function renderCallsEntry() {
+    if (!IS_CALL_MANAGER) return;
+    $('#calls-entry-month').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' });
+    var map = {};
+    CALL_MONTH_ROWS.forEach(function (r) { map[r.agent_id] = Number(r.calls_treated) || 0; });
+    $('#calls-entry-body').innerHTML = AGENTS.map(function (a) {
+      var exists = Object.prototype.hasOwnProperty.call(map, a.id);
+      return '<tr><td class="name">' + esc(a.full_name) + '</td><td class="num"><input class="f-input calls-month-value" data-agent-id="' + esc(a.id) + '" type="number" min="0" step="1" required inputmode="numeric" aria-label="Appels traités pour ' + esc(a.full_name) + '" value="' + (exists ? map[a.id] : '') + '" style="max-width:220px;margin-left:auto"></td></tr>';
+    }).join('');
+    $('#calls-entry-hint').textContent = CALL_MONTH_ROWS.length
+      ? 'Une valeur existe déjà pour ce mois : Enregistrer la remplacera.'
+      : 'Saisis le total du mois pour chaque agent; aucun cumul automatique.';
+  }
+
+  $('#calls-entry-save').addEventListener('click', async function () {
+    if (!IS_CALL_MANAGER) return;
+    var inputs = Array.prototype.slice.call(document.querySelectorAll('.calls-month-value'));
+    var values = inputs.map(function (input) { return { agentId:input.getAttribute('data-agent-id'), value:input.value.trim() }; });
+    if (values.length !== AGENTS.length || values.some(function (x) { return x.value === '' || !/^\d+$/.test(x.value); })) {
+      OPS.toast('Saisis un nombre entier positif ou zéro pour chaque agent.', 'error'); return;
+    }
+    var button = this; button.disabled = true;
+    try {
+      var rows = values.map(function (x) { return { activity:'pgv', month_start:iso(from), agent_id:x.agentId, calls_treated:Number(x.value), updated_at:new Date().toISOString() }; });
+      var saved = await db.from('agent_monthly_activity').upsert(rows, { onConflict:'activity,month_start,agent_id' });
+      if (saved.error) throw saved.error;
+      OPS.toast('Volumes mensuels remplacés et enregistrés.');
+      await loadVolumeStats(iso(from), iso(to));
+      render();
+    } catch (err) { OPS.toast(err.message || 'Enregistrement refusé', 'error'); }
+    finally { button.disabled = false; }
+  });
+
   await loadVolumeStats(iso(from), iso(to));
 
   // Mon espace : à jour après les données
@@ -408,7 +463,8 @@
 
     var volume = {};
     AGENTS.forEach(function (a) { volume[a.id] = { callsReceived:0, calls:0, sac:0, other:0 }; });
-    CALL_ROWS.forEach(function (r) { if (volume[r.agent_id]) { volume[r.agent_id].callsReceived += Number(r.calls_received) || 0; volume[r.agent_id].calls += Number(r.calls_treated) || 0; } });
+    CALL_ROWS.forEach(function (r) { if (volume[r.agent_id]) volume[r.agent_id].callsReceived += Number(r.calls_received) || 0; });
+    CALL_MONTH_ROWS.forEach(function (r) { if (volume[r.agent_id]) volume[r.agent_id].calls = Number(r.calls_treated) || 0; });
     EMAIL_ROWS.forEach(function (r) { if (volume[r.agent_id]) { volume[r.agent_id].sac += Number(r.treated_sac) || 0; volume[r.agent_id].other += Number(r.treated_other) || 0; } });
     var totals = { callsReceived:0, calls:0, sac:0, other:0 };
     var volumeRows = AGENTS.map(function (a) {
@@ -421,7 +477,7 @@
     $('#volume-calls').textContent = totals.calls;
     $('#volume-emails-sac').textContent = totals.sac;
     $('#volume-emails-other').textContent = totals.other;
-    $('#volume-caption').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' }) + ' · appels saisis par agent/jour; emails selon le tour de service';
+    $('#volume-caption').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' }) + ' · appels traités saisis par un responsable; appels reçus cumulés par jour';
     $('#volume-body').innerHTML = volumeRows.length ? volumeRows.join('') : '<tr><td colspan="6"><p class="empty-note">Aucun agent pour cette vue.</p></td></tr>';
 
     // Étapes SAC
@@ -554,6 +610,7 @@
       return IS_MANAGER ? AGENTS.some(function (a) { return a.id === c.agent_id; }) : c.agent_id === PROFILE.agentId;
     });
     await loadVolumeStats(iso(from), iso(to));
+    await renderMe();
     RESULTS = [];
     if (CAL.length) {
       var r = await db.from('calibration_results').select('calibration_id, element_id, result, reason')

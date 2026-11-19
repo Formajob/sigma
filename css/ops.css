@@ -455,3 +455,19 @@ body.modal-open{overflow:hidden}
 .at-badge.out{background:#EEF1F8;color:#3A4E86}
 @media(max-width:1000px){.attendance-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.attendance-cards{grid-template-columns:1fr}.at-daybar strong{width:100%}}
+
+/* Calendrier PGV : fiche et formulaire assez larges pour les détails complets. */
+#event-modal{padding:clamp(8px,2vw,24px);align-items:center}
+#event-modal .ops-modal-card{width:min(1120px,96vw);max-width:1120px;max-height:94vh;padding:clamp(18px,2.6vw,32px);overflow:auto;overscroll-behavior:contain}
+#event-modal .detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#event-modal .detail-fiss{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#event-modal .detail-fiss p{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+#event-modal .detail-fiss small,#event-modal .detail-grid small{font-size:10px}
+#event-modal .detail-grid strong{font-size:13px}
+#event-modal .cal-dayitem{padding:18px}
+#event-modal .cal-daylist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#event-modal .f-label{font-size:11px}
+#event-modal .f-input,#event-modal .f-select{min-height:40px;font-size:13px}
+#event-modal textarea.f-input{min-height:90px}
+@media(max-width:760px){#event-modal .detail-grid,#event-modal .detail-fiss,#event-modal .cal-daylist{grid-template-columns:1fr}}
+#event-modal .ops-modal-card>div:first-child{position:sticky;top:-1px;z-index:3;padding:4px 0 14px;background:#fff}
