@@ -377,11 +377,28 @@
         var el = elementByCode[g.code], old = el && resultMap[el.id];
         var val = old ? old.result : 'N/A';
         form += '<div class="cal-dayitem"><b>' + esc(g.code) + ' · ' + esc(g.label) + '</b>' +
-          '<div class="f-row c2"><select class="f-select" data-cal-result="' + i + '">' + ['Oui','Non','N/A'].map(function (x) { return '<option' + (x === val ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
-          '<input class="f-input" data-cal-reason="' + i + '" placeholder="Motif si Non" value="' + esc(old ? old.reason || '' : '') + '"></div></div>';
+          '<div class="cal-answer-row"><div class="cal-answer-set" role="group" aria-label="Réponse ' + esc(g.code + ' · ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
+          ['Oui','Non','N/A'].map(function (x) { return '<button type="button" class="cal-answer-option' + (x === val ? ' selected-' + (x === 'Oui' ? 'oui' : x === 'Non' ? 'non' : 'na') : '') + '" data-cal-answer="' + i + '" data-value="' + x + '" aria-pressed="' + (x === val ? 'true' : 'false') + '">' + x + '</button>'; }).join('') + '</div>' +
+          '<div class="cal-reason-wrap" data-cal-reason-wrap="' + i + '"' + (val === 'Non' ? '' : ' hidden') + '><input class="f-input" data-cal-reason="' + i + '" aria-label="Motif si Non pour ' + esc(g.code) + '" placeholder="Motif si Non" value="' + esc(old ? old.reason || '' : '') + '"></div></div></div>';
       });
       form += '</div>';
       $('#event-body').innerHTML = form;
+      $('#event-body').querySelectorAll('[data-cal-answer]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var group = button.closest('[data-cal-result]'), value = button.getAttribute('data-value');
+          group.setAttribute('data-selected', value);
+          group.querySelectorAll('[data-cal-answer]').forEach(function (option) {
+            var selected = option.getAttribute('data-value') === value;
+            option.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            option.classList.toggle('selected-oui', selected && value === 'Oui');
+            option.classList.toggle('selected-non', selected && value === 'Non');
+            option.classList.toggle('selected-na', selected && value === 'N/A');
+          });
+          var reason = $('#event-body').querySelector('[data-cal-reason-wrap="' + group.getAttribute('data-cal-result') + '"]');
+          reason.hidden = value !== 'Non';
+          if (value === 'Non') reason.querySelector('input').focus();
+        });
+      });
       $('#event-edit-save').addEventListener('click', async function () {
         if (ELEMENTS.length < window.PGV_GRID.length) { OPS.toast('Grille indisponible; impossible de modifier les réponses.', 'error'); return; }
         var b = this; b.disabled = true;

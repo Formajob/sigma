@@ -96,15 +96,6 @@
         </div>
       </div>
 
-      <section class="panel" id="calls-month-entry" style="margin:14px 0" hidden>
-        <div class="panel-head"><h2>Saisie mensuelle des appels traités</h2><small id="calls-entry-month">—</small></div>
-        <div class="panel-body">
-          <p class="f-note" style="margin:0 0 12px">Saisie réservée aux responsables. Chaque valeur enregistrée remplace le total du mois pour cet agent (elle ne s’ajoute pas à l’ancienne).</p>
-          <div class="table-wrap scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Appels traités ce mois</th></tr></thead><tbody id="calls-entry-body"></tbody></table></div>
-          <div class="act-foot" style="margin-top:12px"><span class="f-note" id="calls-entry-hint">—</span><button class="button button-primary" id="calls-entry-save">Enregistrer les volumes du mois</button></div>
-        </div>
-      </section>
-
       <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Score moyen</span><span class="kpi-icon">◈</span></div><strong class="kpi-value" id="k-score">—</strong><span class="kpi-foot" id="k-score-foot">Aucun calibrage sur la période</span></article>
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Conformité</span><span class="kpi-icon">✓</span></div><strong class="kpi-value" id="k-conf">—</strong><span class="kpi-foot" id="k-conf-foot">Score ≥ 85 % et aucun élément critique</span></article>
@@ -161,6 +152,15 @@
           <div class="panel-body" id="recents"></div>
         </div>
       </div>
+
+      <section class="panel" id="calls-month-entry" style="margin:14px 0" hidden>
+        <div class="panel-head"><h2>Saisie mensuelle des appels traités</h2><small id="calls-entry-month">—</small></div>
+        <div class="panel-body">
+          <p class="f-note" style="margin:0 0 12px">Saisie réservée aux responsables. Chaque valeur enregistrée remplace le total du mois pour cet agent (elle ne s’ajoute pas à l’ancienne).</p>
+          <div class="table-wrap scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Appels traités ce mois</th></tr></thead><tbody id="calls-entry-body"></tbody></table></div>
+          <div class="act-foot" style="margin-top:12px"><span class="f-note" id="calls-entry-hint">—</span><button class="button button-primary" id="calls-entry-save">Enregistrer les volumes du mois</button></div>
+        </div>
+      </section>
 
       <p style="margin:22px 0 0;color:#A6A19A;font-size:9px;text-align:center">
         Sigma · ACX Maroc — grille PGV v2.0 · 26 éléments, 57 points de poids · score pondéré Oui ÷ (Oui + Non)

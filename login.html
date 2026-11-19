@@ -159,16 +159,19 @@
         document.querySelector('.card-heading p').textContent = 'Le lien a été reconnu. Choisissez un mot de passe pour votre compte.';
         document.getElementById('new-password').focus();
       }
-      // Supabase renvoie les liens recovery vers login.html avec une session et
-      // PASSWORD_RECOVERY. Le formulaire de connexion seul ne permet pas de
-      // définir le mot de passe : afficher le formulaire dédié.
+      // Capturer le callback AVANT d'initialiser Supabase : detectSessionInUrl
+      // peut consommer/effacer le fragment (#access_token…&type=recovery)
+      // pendant l'initialisation, avant l'abonnement auth.onAuthStateChange.
+      const recoveryReturnAtLoad = isRecoveryReturn();
+      if (recoveryReturnAtLoad) showRecoveryForm();
+      // Le formulaire dédié doit rester affiché même si le SDK nettoie ensuite l'URL.
       window.sigmaSupabase.getClient().then((db) => {
         db.auth.onAuthStateChange((event) => {
-          if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && isRecoveryReturn())) showRecoveryForm();
+          if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && (recoveryReturnAtLoad || isRecoveryReturn()))) showRecoveryForm();
         });
-        if (isRecoveryReturn()) showRecoveryForm();
+        if (recoveryReturnAtLoad || isRecoveryReturn()) showRecoveryForm();
       }).catch(() => {
-        if (isRecoveryReturn()) showRecoveryForm();
+        if (recoveryReturnAtLoad || isRecoveryReturn()) showRecoveryForm();
       });
 
       recoveryForm.addEventListener('submit', async (event) => {
