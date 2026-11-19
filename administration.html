@@ -278,7 +278,7 @@
         b.disabled = true;
         try {
           var r = await db.auth.resetPasswordForEmail(u.email, {
-            redirectTo: location.origin + '/login.html'
+            redirectTo: location.origin + '/login.html?client=pgv'
           });
           if (r && r.error) throw r.error;
           OPS.toast('Demande de lien acceptée pour ' + u.email + '. Demande à l’agent de vérifier aussi ses courriers indésirables.');

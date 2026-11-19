@@ -61,6 +61,17 @@
           <p class="login-status" id="login-status" role="alert" hidden></p>
         </form>
 
+        <form class="credentials" id="password-recovery-form" hidden>
+          <div class="credentials-head"><strong>Choisir un mot de passe</strong><span class="selected-client">Lien sécurisé</span></div>
+          <p style="margin:0 0 12px;color:#778387;font-size:10px;line-height:1.6">Choisissez votre mot de passe pour activer l’accès à Sigma.</p>
+          <div class="form-grid">
+            <div class="form-field"><label for="new-password">Nouveau mot de passe</label><input class="password-input" id="new-password" type="password" autocomplete="new-password" minlength="8" required></div>
+            <div class="form-field"><label for="confirm-password">Confirmer le mot de passe</label><input class="password-input" id="confirm-password" type="password" autocomplete="new-password" minlength="8" required></div>
+          </div>
+          <div class="credentials-actions"><button class="sign-in-button" id="recovery-submit" type="submit">Enregistrer le mot de passe</button></div>
+          <p class="login-status" id="recovery-status" role="alert" hidden></p>
+        </form>
+
         <div id="space-choice" hidden>
           <div class="client-heading"><strong>Votre espace client</strong><span>Sélectionnez votre espace</span></div>
           <div class="client-grid" role="group" aria-label="Choisir un espace client">
@@ -84,6 +95,9 @@
       const credentialsForm = document.getElementById('credentials-form');
       const loginStatus = document.getElementById('login-status');
       const submitBtn = credentialsForm.querySelector('.sign-in-button');
+      const recoveryForm = document.getElementById('password-recovery-form');
+      const recoveryStatus = document.getElementById('recovery-status');
+      const recoverySubmit = document.getElementById('recovery-submit');
 
       // Définition des cibles de redirection après connexion (pages générées).
       // - ?page=dashboard|calendrier|rapports|equipe|configuration|administration
@@ -131,6 +145,79 @@
 
       const spaceChoice = document.getElementById('space-choice');
 
+      function isRecoveryReturn() {
+        const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+        const query = new URLSearchParams(window.location.search);
+        const type = hash.get('type') || query.get('type');
+        return ['recovery', 'invite', 'signup'].includes(type) || query.has('code');
+      }
+      function showRecoveryForm() {
+        credentialsForm.hidden = true;
+        spaceChoice.hidden = true;
+        recoveryForm.hidden = false;
+        document.querySelector('.card-heading h2').textContent = 'Définir votre mot de passe.';
+        document.querySelector('.card-heading p').textContent = 'Le lien a été reconnu. Choisissez un mot de passe pour votre compte.';
+        document.getElementById('new-password').focus();
+      }
+      // Supabase renvoie les liens recovery vers login.html avec une session et
+      // PASSWORD_RECOVERY. Le formulaire de connexion seul ne permet pas de
+      // définir le mot de passe : afficher le formulaire dédié.
+      window.sigmaSupabase.getClient().then((db) => {
+        db.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && isRecoveryReturn())) showRecoveryForm();
+        });
+        if (isRecoveryReturn()) showRecoveryForm();
+      }).catch(() => {
+        if (isRecoveryReturn()) showRecoveryForm();
+      });
+
+      recoveryForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        recoveryStatus.hidden = true;
+        const password = document.getElementById('new-password').value;
+        const confirm = document.getElementById('confirm-password').value;
+        if (password.length < 8) {
+          recoveryStatus.textContent = 'Choisissez un mot de passe d’au moins 8 caractères.';
+          recoveryStatus.hidden = false;
+          return;
+        }
+        if (password !== confirm) {
+          recoveryStatus.textContent = 'Les deux mots de passe ne correspondent pas.';
+          recoveryStatus.hidden = false;
+          return;
+        }
+        recoverySubmit.disabled = true;
+        recoverySubmit.textContent = 'Enregistrement…';
+        try {
+          const db = await window.sigmaSupabase.getClient();
+          const session = await db.auth.getSession();
+          if (!session.data.session) throw new Error('Lien invalide ou expiré. Demandez un nouveau lien sécurisé à l’administrateur.');
+          const updated = await db.auth.updateUser({ password });
+          if (updated.error) throw updated.error;
+          const email = updated.data.user && updated.data.user.email;
+          await db.auth.signOut();
+          const cleanQuery = new URLSearchParams(window.location.search);
+          cleanQuery.delete('code');
+          cleanQuery.delete('type');
+          window.history.replaceState(null, '', window.location.pathname + (cleanQuery.toString() ? '?' + cleanQuery.toString() : ''));
+          recoveryForm.hidden = true;
+          credentialsForm.hidden = false;
+          if (email) document.getElementById('email').value = email;
+          document.getElementById('password').value = '';
+          document.querySelector('.card-heading h2').textContent = 'Mot de passe défini.';
+          document.querySelector('.card-heading p').textContent = 'Connectez-vous avec votre nouveau mot de passe.';
+          loginStatus.classList.add('success');
+          loginStatus.textContent = 'Mot de passe enregistré. Vous pouvez maintenant vous connecter.';
+          loginStatus.hidden = false;
+        } catch (err) {
+          recoveryStatus.textContent = err.message || 'Impossible de définir le mot de passe. Demandez un nouveau lien.';
+          recoveryStatus.hidden = false;
+        } finally {
+          recoverySubmit.disabled = false;
+          recoverySubmit.textContent = 'Enregistrer le mot de passe';
+        }
+      });
+
       // Arrivée avec motif (?msg=suspended) : compte bloqué par requireAuth.
       if (new URLSearchParams(window.location.search).get('msg') === 'suspended') {
         loginStatus.textContent = 'Accès suspendu. Contactez votre superviseur pour réactiver votre compte.';
@@ -159,14 +246,22 @@
             loginStatus.hidden = false;
             return;
           }
-          // Connexion réussie. Activité déjà choisie (?client=) : on entre directement.
-          if (activeClient) {
-            window.location.href = activeClient.target;
+          // Le compte est rattaché à une seule activité; aucune sélection côté
+          // navigateur ne peut élargir son périmètre.
+          const requestedActivity = requestedClient === 'pgv' || requestedClient === 'americana' ? requestedClient : null;
+          if (!profile.activity || !['pgv', 'americana'].includes(profile.activity)) {
+            await window.sigmaSupabase.signOut();
+            loginStatus.textContent = 'Compte sans activité autorisée. Contactez un administrateur.';
+            loginStatus.hidden = false;
             return;
           }
-          // Sinon : on masque le formulaire et on propose le choix de l'espace.
-          credentialsForm.hidden = true;
-          spaceChoice.hidden = false;
+          if (requestedActivity && requestedActivity !== profile.activity) {
+            await window.sigmaSupabase.signOut();
+            loginStatus.textContent = 'Ce compte est limité à ' + (profile.activity === 'pgv' ? 'PGV' : 'Americana') + '. Choisissez le bon accès Sigma.';
+            loginStatus.hidden = false;
+            return;
+          }
+          window.location.href = profile.activity === 'pgv' ? 'pgv-dashboard.html' : targetPage;
         } catch (err) {
           loginStatus.textContent = 'Identifiants incorrects ou compte inactif. Réessayez.';
           loginStatus.hidden = false;
