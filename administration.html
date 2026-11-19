@@ -55,7 +55,7 @@
                 <select class="f-select" id="adm-invite-agent" required><option value="">Choisir une fiche…</option></select></div>
               <div><button class="button button-primary" id="adm-invite-submit" type="submit">Envoyer l’invitation</button></div>
             </form>
-            <p class="f-note" style="margin:12px 0 0">Choisis la fiche correspondant à la personne (ex. Elagbi Zineb · 203858). Cela rattache son compte à son agent PGV pour que ses vues et données soient limitées à cette fiche. Aucun mot de passe n’est saisi ou stocké par Sigma.</p>
+            <p class="f-note" style="margin:12px 0 0">Choisis la fiche correspondant à la personne (ex. Elagbi Zineb · 203858). Aucun mot de passe n’est saisi ou stocké par Sigma. Si le mail d’invitation n’arrive pas, vérifier les indésirables puis utiliser « Renvoyer le lien » dans la liste des comptes; en cas de limite d’envoi, configurer le SMTP du projet Supabase.</p>
           </div>
         </div>
 
@@ -217,7 +217,7 @@
         '<td class="mono" style="font-size:8px">' + last + '</td>' +
         '<td><button class="btn-sm adm-active" data-user="' + u.id + '" data-active="' + active + '">' +
           (active ? '<span class="p-pill ok">Actif</span>' : '<span class="p-pill grey">Inactif</span>') + '</button></td>' +
-        '<td><button class="btn-sm adm-reset" data-user="' + u.id + '" data-email="' + esc(u.email || '') + '">Réinitialiser</button></td>' +
+        '<td><button class="btn-sm adm-reset" data-user="' + u.id + '" data-email="' + esc(u.email || '') + '">Renvoyer le lien</button></td>' +
       '</tr>';
     }).join('') : '<tr><td colspan="7"><p class="empty-note">Aucun compte pour cette recherche.</p></td></tr>';
 
@@ -273,14 +273,14 @@
         var id = b.getAttribute('data-user');
         var email = b.getAttribute('data-email');
         var u = USERS.filter(function (x) { return x.id === id; })[0];
-        if (!confirm('Envoyer un lien de réinitialisation à ' + (email || u.email) + ' ?')) return;
+        if (!confirm('Envoyer un lien sécurisé pour choisir ou réinitialiser le mot de passe à ' + (email || u.email) + ' ?')) return;
         b.disabled = true;
         try {
           var r = await db.auth.resetPasswordForEmail(u.email, {
             redirectTo: location.origin + '/login.html'
           });
           if (r && r.error) throw r.error;
-          OPS.toast('Lien envoyé à ' + u.email);
+          OPS.toast('Demande de lien acceptée pour ' + u.email + '. Demande à l’agent de vérifier aussi ses courriers indésirables.');
         } catch (e) {
           var msg = (e && e.message) || String(e);
           if (/rate|limit|429/i.test(msg)) {
@@ -328,7 +328,7 @@
         throw new Error(details);
       }
       $('#adm-invite-form').reset();
-      OPS.toast('Invitation envoyée. L’agent définira son mot de passe via le lien reçu.');
+      OPS.toast('Invitation créée. Demande à l’agent de vérifier sa boîte de réception et ses indésirables.');
       await loadAll();
     } catch (e) {
       OPS.toast((e && e.message) || 'Invitation impossible. Vérifie le déploiement de la fonction admin-invite-user.', 'error');

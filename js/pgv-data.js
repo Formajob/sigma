@@ -69,7 +69,7 @@
   async function loadCalibrationsFull(from, to) {
     var res = await db.from('calibrations')
       .select('id, agent_id, call_id, call_date, calibration_date, status, activity, channel, ' +
-              'evaluator_name, notes, calibration_results(element_id, result, reason)')
+              'evaluator_name, evaluator, language, notes, calibration_results(element_id, result, reason)')
       .eq('activity', ACTIVITY)
       .gte('calibration_date', from)
       .lte('calibration_date', to)
@@ -100,6 +100,34 @@
   }
 
   /* ---------------- écriture calibrage ---------------- */
+  async function updateCalibration(id, row) {
+    var calRes = await db.from('calibrations').update({
+      agent_id: row.agentId,
+      call_id: row.callId || null,
+      call_date: row.callDate || row.date,
+      calibration_date: row.date,
+      status: row.status || 'Terminé',
+      language: row.language || 'Français',
+      evaluator: row.evaluator_kind || 'Autre',
+      evaluator_name: row.evaluator || null,
+      notes: row.notes || null
+    }).eq('id', id).eq('activity', ACTIVITY).select().single();
+    if (calRes.error) raise(calRes.error, 'calibrations');
+
+    var rows = (row.elements || []).map(function (el, i) {
+      var v = (row.values || [])[i] || 'N/A';
+      return {
+        calibration_id: id, element_id: el.id, result: v,
+        reason: (v === 'Non' && row.reasons && row.reasons[i]) ? row.reasons[i] : null
+      };
+    });
+    if (rows.length) {
+      var result = await db.from('calibration_results').upsert(rows, { onConflict: 'calibration_id,element_id' });
+      if (result.error) raise(result.error, 'calibration_results');
+    }
+    return calRes.data;
+  }
+
   async function saveCalibration(row) {
     // row = { agentId, callId, callDate, date, status, evaluator, notes, values[], reasons[], elements[] }
     var user = null;
@@ -371,7 +399,7 @@
   /* ---------------- activité quotidienne de l'agent (appels) ---------------- */
   async function loadAgentActivity(from, to, agentId) {
     var q = db.from('agent_daily_activity')
-      .select('id, work_date, agent_id, calls_treated, note')
+      .select('id, work_date, agent_id, calls_received, calls_treated, note')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
     if (agentId) q = q.eq('agent_id', agentId);
     var res = await q.order('work_date');
@@ -379,10 +407,11 @@
     return res.data || [];
   }
 
-  async function saveAgentActivityAgent(agentId, workDate, calls, note) {
+  async function saveAgentActivityAgent(agentId, workDate, callsReceived, callsTreated, note) {
     var res = await db.from('agent_daily_activity').upsert({
       activity: ACTIVITY, work_date: workDate, agent_id: agentId,
-      calls_treated: Math.max(0, +calls || 0),
+      calls_received: Math.max(0, +callsReceived || 0),
+      calls_treated: Math.max(0, +callsTreated || 0),
       note: note || null,
       updated_at: new Date().toISOString()
     }, { onConflict: 'activity,work_date,agent_id' }).select().single();
@@ -472,6 +501,7 @@
     loadCalibrationsFull: loadCalibrationsFull,
     loadResults: loadResults,
     saveCalibration: saveCalibration,
+    updateCalibration: updateCalibration,
     deleteCalibration: deleteCalibration,
     loadDocuments: loadDocuments,
     saveDocument: saveDocument,

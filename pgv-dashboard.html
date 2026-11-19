@@ -31,6 +31,7 @@
       <a href="emails.html?activity=pgv"><span class="nav-icon">✉</span>Emails</a>
       <a href="attendance.html?activity=pgv"><span class="nav-icon">◔</span>Présence</a>
       <a href="planning.html?activity=pgv"><span class="nav-icon">◷</span>Planning</a>
+      <a href="administration.html" id="admin-nav-link" hidden><span class="nav-icon">⚙</span>Administration</a>
     </nav>
 
     <div class="sidebar-bottom">
@@ -103,6 +104,22 @@
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Couverture d’écoute</span><span class="kpi-icon">◎</span></div><strong class="kpi-value" id="k-cov">—</strong><span class="kpi-foot" id="k-cov-foot">Calibrages ÷ attendus du mois</span></article>
       </div>
 
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head"><h2>Appels &amp; emails traités</h2><small id="volume-caption">Cumul du mois affiché · données saisies</small></div>
+        <div class="panel-body">
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px">
+            <article class="kpi"><div class="kpi-top"><span class="kpi-label">Appels reçus</span></div><strong class="kpi-value" id="volume-calls-received">0</strong><span class="kpi-foot">somme des saisies du mois</span></article>
+            <article class="kpi"><div class="kpi-top"><span class="kpi-label">Appels traités</span></div><strong class="kpi-value" id="volume-calls">0</strong><span class="kpi-foot">somme des saisies du mois</span></article>
+            <article class="kpi"><div class="kpi-top"><span class="kpi-label">Emails SAC traités</span></div><strong class="kpi-value" id="volume-emails-sac">0</strong><span class="kpi-foot">somme des saisies du mois</span></article>
+            <article class="kpi"><div class="kpi-top"><span class="kpi-label">Emails autres traités</span></div><strong class="kpi-value" id="volume-emails-other">0</strong><span class="kpi-foot">somme des saisies du mois</span></article>
+          </div>
+          <div class="table-wrap scroll-x"><table class="p-table">
+            <thead><tr><th>Agent</th><th class="num">Appels reçus</th><th class="num">Appels traités</th><th class="num">Emails SAC</th><th class="num">Emails autres</th><th class="num">Emails total</th></tr></thead>
+            <tbody id="volume-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="p-grid2" style="margin-top:14px">
         <div class="panel">
           <div class="panel-head"><h2>Conformité par étape du parcours SAC</h2><small>Poids des « Oui » par étape</small></div>
@@ -154,7 +171,7 @@
 (async function () {
   'use strict';
 
-  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [];
+  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [], CALL_ROWS = [], EMAIL_ROWS = [];
   var migrationMissing = false;
 
   function $(s) { return document.querySelector(s); }
@@ -192,7 +209,7 @@
   // ---------- 1b. Mon espace : identité, pointage, activité, calibrages ----------
   var IS_ADMIN = ['admin', 'super_admin'].indexOf(PROFILE.role) >= 0;
   var IS_MANAGER = ['superviseur', 'admin', 'super_admin', 'qualite'].indexOf(PROFILE.role) >= 0;
-  if (IS_ADMIN) $('#admin-link').hidden = false;
+  if (IS_ADMIN) { $('#admin-link').hidden = false; $('#admin-nav-link').hidden = false; }
 
   async function renderMe() {
     // Les tuiles et raccourcis de pointage ne sont que pour le rôle Agent.
@@ -225,8 +242,8 @@
         .select('shift_code').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
       myPlan = plR.data || null;
       var acR = await db.from('agent_daily_activity')
-        .select('calls_treated').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
-      if (acR.data) myAct.calls = acR.data.calls_treated || 0;
+        .select('calls_received, calls_treated').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
+      if (acR.data) { myAct.callsReceived = acR.data.calls_received || 0; myAct.calls = acR.data.calls_treated || 0; }
       var emR = await db.from('email_agent_daily')
         .select('treated_sac, treated_other').eq('activity', 'pgv').eq('agent_id', PROFILE.agentId).eq('work_date', todayISO).maybeSingle();
       if (emR.data) { myAct.sac = emR.data.treated_sac || 0; myAct.other = emR.data.treated_other || 0; }
@@ -252,7 +269,8 @@
     var totalEmails = myAct.sac + myAct.other;
 
     var tiles = [
-      { l: 'Appels saisis', v: myAct.calls, f: 'aujourd’hui' },
+      { l: 'Appels reçus', v: myAct.callsReceived, f: 'aujourd’hui' },
+      { l: 'Appels traités', v: myAct.calls, f: 'aujourd’hui' },
       { l: 'Emails traités', v: totalEmails, f: myAct.sac + ' SAC · ' + myAct.other + ' autres' },
       { l: 'Calibrages du mois', v: calN + ' / ' + objC, f: 'objectif mensuel' },
       { l: 'Présence', v: firstIn ? hm(firstIn) : '—', f: state.toLowerCase() }
@@ -308,6 +326,26 @@
       .in('calibration_id', CAL.map(function (c) { return c.id; }));
     RESULTS = rRes.data || [];
   }
+
+  // Volumes du mois : les appels sont saisis par agent/jour dans Présence > Activité;
+  // les emails traités sont lus depuis leur répartition par agent.
+  async function loadVolumeStats(startISO, endISO) {
+    try {
+      var cr = await db.from('agent_daily_activity')
+        .select('agent_id, work_date, calls_received, calls_treated').eq('activity', 'pgv')
+        .gte('work_date', startISO).lte('work_date', endISO);
+      if (cr.error) throw cr.error;
+      CALL_ROWS = (cr.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
+    } catch (e) { CALL_ROWS = []; }
+    try {
+      var er = await db.from('email_agent_daily')
+        .select('agent_id, work_date, treated_sac, treated_other').eq('activity', 'pgv')
+        .gte('work_date', startISO).lte('work_date', endISO);
+      if (er.error) throw er.error;
+      EMAIL_ROWS = (er.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
+    } catch (e) { EMAIL_ROWS = []; }
+  }
+  await loadVolumeStats(iso(from), iso(to));
 
   // Mon espace : à jour après les données
   await renderMe();
@@ -366,6 +404,24 @@
     var attendus = Math.max(AGENTS.length, 1) * window.PGV_OBJECTIFS.calibragesParMois;
     $('#k-cov').textContent = nbCal ? pct(nbCal, attendus) + ' %' : '—';
     $('#k-cov-foot').textContent = nbCal ? nbCal + ' / ' + attendus + ' attendus' : 'Calibrages ÷ attendus du mois';
+
+    var volume = {};
+    AGENTS.forEach(function (a) { volume[a.id] = { callsReceived:0, calls:0, sac:0, other:0 }; });
+    CALL_ROWS.forEach(function (r) { if (volume[r.agent_id]) { volume[r.agent_id].callsReceived += Number(r.calls_received) || 0; volume[r.agent_id].calls += Number(r.calls_treated) || 0; } });
+    EMAIL_ROWS.forEach(function (r) { if (volume[r.agent_id]) { volume[r.agent_id].sac += Number(r.treated_sac) || 0; volume[r.agent_id].other += Number(r.treated_other) || 0; } });
+    var totals = { callsReceived:0, calls:0, sac:0, other:0 };
+    var volumeRows = AGENTS.map(function (a) {
+      var v = volume[a.id] || { callsReceived:0, calls:0, sac:0, other:0 };
+      totals.callsReceived += v.callsReceived; totals.calls += v.calls; totals.sac += v.sac; totals.other += v.other;
+      return '<tr><td class="name">' + esc(a.full_name) + '</td><td class="num">' + v.callsReceived + '</td><td class="num">' + v.calls + '</td>' +
+        '<td class="num">' + v.sac + '</td><td class="num">' + v.other + '</td><td class="num">' + (v.sac + v.other) + '</td></tr>';
+    });
+    $('#volume-calls-received').textContent = totals.callsReceived;
+    $('#volume-calls').textContent = totals.calls;
+    $('#volume-emails-sac').textContent = totals.sac;
+    $('#volume-emails-other').textContent = totals.other;
+    $('#volume-caption').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' }) + ' · appels saisis par agent/jour; emails selon le tour de service';
+    $('#volume-body').innerHTML = volumeRows.length ? volumeRows.join('') : '<tr><td colspan="6"><p class="empty-note">Aucun agent pour cette vue.</p></td></tr>';
 
     // Étapes SAC
     var steps = [];
@@ -496,6 +552,7 @@
       if (c.activity && c.activity !== 'pgv') return false;
       return IS_MANAGER ? AGENTS.some(function (a) { return a.id === c.agent_id; }) : c.agent_id === PROFILE.agentId;
     });
+    await loadVolumeStats(iso(from), iso(to));
     RESULTS = [];
     if (CAL.length) {
       var r = await db.from('calibration_results').select('calibration_id, element_id, result, reason')

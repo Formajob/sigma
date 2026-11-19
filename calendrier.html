@@ -73,6 +73,7 @@
       <h2 id="event-title" style="margin:0;font:600 19px var(--serif)">Détail</h2>
       <button type="button" class="btn-sm" id="event-close">Fermer</button>
     </div>
+    <div id="event-actions" hidden style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px"></div>
     <div id="event-body"></div>
   </div>
 </div>
@@ -93,8 +94,8 @@
   if (!session) return;
   var isManager = session.isManager, profile = session.profile;
 
-  var AGENTS = [], agentById = {};
-  var CAL = [], DOCS = [];
+  var AGENTS = [], agentById = {}, ELEMENTS = [], elementById = {}, elementByCode = {};
+  var CAL = [], DOCS = [], CURRENT_EVENT = null;
   var today = pgvData.iso();
   var MONTH = today.slice(0, 7);           // YYYY-MM
   var SELECTED = null;
@@ -102,6 +103,8 @@
   try {
     await pgvData.init();
     AGENTS = await pgvData.loadAgents();
+    try { ELEMENTS = await pgvData.loadElements(); } catch (e) { ELEMENTS = []; }
+    ELEMENTS.forEach(function (x) { elementById[x.id] = x; elementByCode[x.code] = x; });
   } catch (e) {
     OPS.banner('Chargement impossible', esc(e.message), 'error');
     return;
@@ -239,45 +242,168 @@
   function renderDay(list) {
     $('#event-title').textContent = (list.length ? (list[0].kind === 'cal' ? 'Calibrage' : list[0].record.doc_type) : 'Événements') + ' · ' + OPS.fmtDateLong(SELECTED);
     if (!list.length) {
+      CURRENT_EVENT = null;
       $('#event-body').innerHTML = '<p class="empty-note">Rien ce jour-là.</p>';
+      $('#event-actions').hidden = true;
       return;
     }
-    list.sort(function (a, b) {
-      return (a.kind === 'cal' ? 0 : 1) - (b.kind === 'cal' ? 0 : 1);
-    });
-    $('#event-body').innerHTML = '<div class="cal-daylist">' + list.map(function (e) {
-      if (e.kind === 'cal') {
-        var c = e.record;
-        var rows = c.calibration_results || [];
-        var oui = rows.filter(function (r) { return r.result === 'Oui'; }).length;
-        var total = rows.filter(function (r) { return r.result !== 'N/A'; }).length;
-        var pct = total ? Math.round(oui / total * 100) : null;
-        var bas = rows.filter(function (r) { return r.result === 'Non'; }).length;
-        return '<article class="cal-dayitem">' +
-          '<header><span class="doc-tag doc-rencontre" style="background:#FDF2EC;color:#A34D22">Calibrage</span>' +
-            '<span class="p-pill ' + (c.status === 'Terminé' ? 'ok' : 'warn') + '">' + esc(c.status) + '</span></header>' +
-          '<p><b>' + esc(name(c.agent_id)) + '</b>' +
-            (c.call_id ? ' · appel ' + esc(c.call_id) : '') +
-            (pct != null ? ' · score <b>' + pct + ' %</b>' : '') +
-            (bas ? ' · ' + bas + ' point(s) en écart' : '') +
-            (c.evaluator_name ? ' · évalué par ' + esc(c.evaluator_name) : '') + '</p>' +
-          '<p style="margin-top:6px"><a href="pgv-calibrages.html">Voir dans les calibrages</a></p>' +
-        '</article>';
-      }
-      var d = e.record;
-      return '<article class="cal-dayitem">' +
-        '<header><span class="doc-tag doc-' + slug(d.doc_type) + '">' + esc(d.doc_type) + '</span>' +
-          '<span class="p-pill ' + (d.status === 'Terminé' ? 'ok' : d.status === 'Annulé' ? 'grey' : 'warn') + '">' +
-          esc(d.status) + '</span></header>' +
-        '<p><b>' + esc(name(d.agent_id)) + '</b> · ' + esc(d.object || '') +
-          (d.follow_up_date ? ' · suivi le ' + OPS.fmtDate(d.follow_up_date) : '') + '</p>' +
-        (d.facts ? '<p style="margin-top:6px;color:#3E4C52">' + esc(String(d.facts).slice(0, 220)) +
-          (String(d.facts).length > 220 ? '…' : '') + '</p>' : '') +
-        '<p style="margin-top:6px"><a href="documents.html?activity=pgv">Ouvrir dans la documentation</a></p>' +
-      '</article>';
-    }).join('') + '</div>';
+    list.sort(function (a, b) { return (a.kind === 'cal' ? 0 : 1) - (b.kind === 'cal' ? 0 : 1); });
+    CURRENT_EVENT = list[0];
+    var actions = $('#event-actions');
+    actions.innerHTML = '';
+    if (isManager) {
+      actions.innerHTML = '<button type="button" class="btn-sm" id="event-edit">Modifier</button>' +
+        '<button type="button" class="btn-sm danger" id="event-delete">Supprimer</button>';
+      actions.hidden = false;
+      $('#event-edit').addEventListener('click', editCurrentEvent);
+      $('#event-delete').addEventListener('click', deleteCurrentEvent);
+    } else actions.hidden = true;
+
+    if (CURRENT_EVENT.kind === 'cal') {
+      var c = CURRENT_EVENT.record;
+      var resultMap = {};
+      (c.calibration_results || []).forEach(function (r) { resultMap[r.element_id] = r; });
+      var vals = window.PGV_GRID.map(function (g) {
+        var el = elementByCode[g.code], r = el && resultMap[el.id];
+        return r ? r.result : 'N/A';
+      });
+      var score = window.pgvScore ? window.pgvScore(vals) : null;
+      var noCount = vals.filter(function (v) { return v === 'Non'; }).length;
+      var html = '<div class="cal-dayitem"><header><span class="doc-tag doc-rencontre" style="background:#FDF2EC;color:#A34D22">Calibrage</span>' +
+        '<span class="p-pill ' + (c.status === 'Terminé' ? 'ok' : 'warn') + '">' + esc(c.status || '—') + '</span></header>' +
+        '<div class="detail-grid">' +
+          '<div><small>Agent</small><strong>' + esc(name(c.agent_id)) + '</strong></div>' +
+          '<div><small>ID d’appel</small><strong>' + esc(c.call_id || '—') + '</strong></div>' +
+          '<div><small>Date de l’appel</small><strong>' + OPS.fmtDate(c.call_date) + '</strong></div>' +
+          '<div><small>Date du calibrage</small><strong>' + OPS.fmtDate(c.calibration_date) + '</strong></div>' +
+          '<div><small>Évaluateur</small><strong>' + esc(c.evaluator_name || '—') + '</strong></div>' +
+          '<div><small>Score pondéré</small><strong>' + (score && score.complet ? score.pct + ' %' : 'Incomplet') + '</strong></div>' +
+          '<div><small>Points en écart</small><strong>' + noCount + '</strong></div>' +
+          '<div><small>Canal</small><strong>' + esc(c.channel || 'Appel') + '</strong></div>' +
+        '</div>' +
+        '<h3 style="margin:14px 0 8px">Détail des critères</h3><div class="detail-fiss">';
+      window.PGV_GRID.forEach(function (g) {
+        var el = elementByCode[g.code], r = el && resultMap[el.id];
+        html += '<div><small>' + esc(g.code) + ' · ' + esc(g.label) + ' · ' + esc(g.cat) + '</small><p><b>' +
+          esc(r ? r.result : 'N/A') + '</b>' + (r && r.reason ? ' — ' + esc(r.reason) : '') + '</p></div>';
+      });
+      html += '</div>' + (c.notes ? '<div class="detail-item" style="margin-top:10px"><small>Notes</small><p>' + esc(c.notes) + '</p></div>' : '') +
+        '<p style="margin-top:12px"><a href="pgv-calibrages.html">Ouvrir l’historique des calibrages</a></p></div>';
+      $('#event-body').innerHTML = html;
+    } else {
+      var d = CURRENT_EVENT.record;
+      $('#event-body').innerHTML = '<article class="cal-dayitem"><header><span class="doc-tag doc-' + slug(d.doc_type) + '">' + esc(d.doc_type) + '</span>' +
+        '<span class="p-pill ' + (d.status === 'Terminé' ? 'ok' : d.status === 'Annulé' ? 'grey' : 'warn') + '">' + esc(d.status || '—') + '</span></header>' +
+        '<div class="detail-grid">' +
+          '<div><small>Agent</small><strong>' + esc(name(d.agent_id)) + '</strong></div>' +
+          '<div><small>Objet</small><strong>' + esc(d.object || '—') + '</strong></div>' +
+          '<div><small>Date de rencontre</small><strong>' + OPS.fmtDate(d.meeting_date) + '</strong></div>' +
+          '<div><small>Date de suivi</small><strong>' + (d.follow_up_date ? OPS.fmtDate(d.follow_up_date) : '—') + '</strong></div>' +
+          '<div><small>ID d’appel</small><strong>' + esc(d.call_id || '—') + '</strong></div>' +
+          '<div><small>Visibilité</small><strong>' + (d.visibility === 'agent' ? 'Superviseur + agent' : 'Superviseur seulement') + '</strong></div>' +
+        '</div><div class="detail-fiss">' +
+          '<div><small>Faits</small><p>' + esc(d.facts || '—') + '</p></div>' +
+          '<div><small>Impacts</small><p>' + esc(d.impacts || '—') + '</p></div>' +
+          '<div><small>Solutions</small><p>' + esc(d.solutions || '—') + '</p></div>' +
+          '<div><small>Suivi</small><p>' + esc(d.followup || '—') + '</p></div>' +
+        '</div><p style="margin-top:12px"><a href="documents.html?activity=pgv">Ouvrir dans la documentation</a></p></article>';
+    }
     $('#event-modal').hidden = false;
     document.body.classList.add('modal-open');
+  }
+
+  function editCurrentEvent() {
+    if (!CURRENT_EVENT || !isManager) return;
+    var e = CURRENT_EVENT, r = e.record;
+    $('#event-actions').innerHTML = '<button type="button" class="btn-sm" id="event-edit-cancel">Annuler</button>' +
+      '<button type="button" class="btn-sm primary" id="event-edit-save">Enregistrer</button>';
+    $('#event-edit-cancel').addEventListener('click', function () { renderDay([CURRENT_EVENT]); });
+    if (e.kind === 'doc') {
+      var types = ['Rencontre','Feedback','Observation','Rapport de fait','Disciplinaire'];
+      var agentsHtml = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
+      $('#event-body').innerHTML = '<div class="f-row c2">' +
+        '<div><label class="f-label">Type</label><select id="ed-type" class="f-select">' + types.map(function (t) { return '<option' + (t === r.doc_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>' +
+        '<div><label class="f-label">Objet</label><input id="ed-object" class="f-input" value="' + esc(r.object || '') + '"></div>' +
+        '<div><label class="f-label">Agent PGV</label><select id="ed-agent" class="f-select">' + agentsHtml + '</select></div>' +
+        '<div><label class="f-label">Statut</label><select id="ed-status" class="f-select">' + ['Planifié','Terminé','Annulé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+        '<div><label class="f-label">Date de rencontre</label><input type="date" id="ed-meeting" class="f-input" value="' + esc(r.meeting_date || '') + '"></div>' +
+        '<div><label class="f-label">Date de suivi</label><input type="date" id="ed-follow" class="f-input" value="' + esc(r.follow_up_date || '') + '"></div>' +
+        '<div><label class="f-label">ID d’appel</label><input id="ed-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
+        '<div><label class="f-label">Visibilité</label><select id="ed-visibility" class="f-select"><option value="supervisor"' + (r.visibility !== 'agent' ? ' selected' : '') + '>Superviseur seulement</option><option value="agent"' + (r.visibility === 'agent' ? ' selected' : '') + '>Superviseur + agent</option></select></div>' +
+        '</div><div class="f-row"><label class="f-label">Faits</label><textarea id="ed-facts" class="f-input" rows="3">' + esc(r.facts || '') + '</textarea>' +
+        '<label class="f-label">Impacts</label><textarea id="ed-impacts" class="f-input" rows="3">' + esc(r.impacts || '') + '</textarea>' +
+        '<label class="f-label">Solutions</label><textarea id="ed-solutions" class="f-input" rows="3">' + esc(r.solutions || '') + '</textarea>' +
+        '<label class="f-label">Suivi</label><textarea id="ed-followup" class="f-input" rows="3">' + esc(r.followup || '') + '</textarea></div>';
+      $('#event-edit-save').addEventListener('click', async function () {
+        var b = this; b.disabled = true;
+        try {
+          await pgvData.saveDocument({ id:r.id, type:$('#ed-type').value, object:$('#ed-object').value.trim(),
+            agentId:$('#ed-agent').value, status:$('#ed-status').value, meetingDate:$('#ed-meeting').value,
+            followUpDate:$('#ed-follow').value || null, callId:$('#ed-call').value.trim() || null,
+            visibility:$('#ed-visibility').value, facts:$('#ed-facts').value.trim(), impacts:$('#ed-impacts').value.trim(),
+            solutions:$('#ed-solutions').value.trim(), followup:$('#ed-followup').value.trim() });
+          OPS.toast('Document mis à jour'); await load();
+          var fresh = DOCS.filter(function (x) { return x.id === r.id; })[0];
+          if (fresh) { CURRENT_EVENT = { kind:'doc', id:fresh.id, date:fresh.meeting_date, agentId:fresh.agent_id, record:fresh }; renderDay([CURRENT_EVENT]); }
+          else closeEvent();
+        } catch (err) { OPS.toast(err.message || 'Modification refusée', 'error'); }
+        finally { b.disabled = false; }
+      });
+    } else {
+      var resultMap = {};
+      (r.calibration_results || []).forEach(function (x) { resultMap[x.element_id] = x; });
+      var agentOpts = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
+      var form = '<div class="f-row c2">' +
+        '<div><label class="f-label">Agent PGV</label><select id="ec-agent" class="f-select">' + agentOpts + '</select></div>' +
+        '<div><label class="f-label">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+        '<div><label class="f-label">Date de l’appel</label><input type="date" id="ec-call-date" class="f-input" value="' + esc(r.call_date || '') + '"></div>' +
+        '<div><label class="f-label">Date du calibrage</label><input type="date" id="ec-date" class="f-input" value="' + esc(r.calibration_date || '') + '"></div>' +
+        '<div><label class="f-label">ID d’appel</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
+        '<div><label class="f-label">Évaluateur</label><input id="ec-evaluator" class="f-input" value="' + esc(r.evaluator_name || '') + '"></div>' +
+        '</div><div class="f-row"><label class="f-label">Notes</label><textarea id="ec-notes" class="f-input" rows="2">' + esc(r.notes || '') + '</textarea></div>';
+      form += '<div class="cal-daylist">';
+      window.PGV_GRID.forEach(function (g, i) {
+        var el = elementByCode[g.code], old = el && resultMap[el.id];
+        var val = old ? old.result : 'N/A';
+        form += '<div class="cal-dayitem"><b>' + esc(g.code) + ' · ' + esc(g.label) + '</b>' +
+          '<div class="f-row c2"><select class="f-select" data-cal-result="' + i + '">' + ['Oui','Non','N/A'].map(function (x) { return '<option' + (x === val ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
+          '<input class="f-input" data-cal-reason="' + i + '" placeholder="Motif si Non" value="' + esc(old ? old.reason || '' : '') + '"></div></div>';
+      });
+      form += '</div>';
+      $('#event-body').innerHTML = form;
+      $('#event-edit-save').addEventListener('click', async function () {
+        if (ELEMENTS.length < window.PGV_GRID.length) { OPS.toast('Grille indisponible; impossible de modifier les réponses.', 'error'); return; }
+        var b = this; b.disabled = true;
+        try {
+          var vals = window.PGV_GRID.map(function (_, i) { return $('[data-cal-result="' + i + '"]').value; });
+          var reasons = window.PGV_GRID.map(function (_, i) { return $('[data-cal-reason="' + i + '"]').value.trim(); });
+          var missing = vals.findIndex(function (v, i) { return v === 'Non' && !reasons[i]; });
+          if (missing >= 0) throw new Error('Motif requis pour ' + window.PGV_GRID[missing].code + '.');
+          var elements = window.PGV_GRID.map(function (g) { return elementByCode[g.code]; });
+          if (elements.some(function (x) { return !x; })) throw new Error('La grille PGV n’est pas complète en base.');
+          await pgvData.updateCalibration(r.id, { agentId:$('#ec-agent').value, status:$('#ec-status').value,
+            callDate:$('#ec-call-date').value, date:$('#ec-date').value, callId:$('#ec-call').value.trim(),
+            evaluator:$('#ec-evaluator').value.trim(), evaluator_kind:r.evaluator || 'Autre', language:r.language || 'Français',
+            notes:$('#ec-notes').value.trim(), values:vals, reasons:reasons, elements:elements });
+          OPS.toast('Calibrage mis à jour'); await load();
+          var fresh = CAL.filter(function (x) { return x.id === r.id; })[0];
+          if (fresh) { CURRENT_EVENT = { kind:'cal', id:fresh.id, date:fresh.calibration_date, agentId:fresh.agent_id, record:fresh }; renderDay([CURRENT_EVENT]); }
+          else closeEvent();
+        } catch (err) { OPS.toast(err.message || 'Modification refusée', 'error'); }
+        finally { b.disabled = false; }
+      });
+    }
+  }
+
+  async function deleteCurrentEvent() {
+    if (!CURRENT_EVENT || !isManager) return;
+    var e = CURRENT_EVENT;
+    if (!confirm('Supprimer définitivement ' + (e.kind === 'cal' ? 'ce calibrage ?' : 'ce document ?'))) return;
+    try {
+      if (e.kind === 'cal') await pgvData.deleteCalibration(e.id);
+      else await pgvData.deleteDocument(e.id);
+      OPS.toast('Élément supprimé'); closeEvent(); await load();
+    } catch (err) { OPS.toast(err.message || 'Suppression refusée', 'error'); }
   }
 
   function closeEvent() { $('#event-modal').hidden = true; document.body.classList.remove('modal-open'); }

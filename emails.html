@@ -103,11 +103,6 @@
       <div><label class="f-label" for="d-sac">Dont SAC</label><input class="f-input" type="number" min="0" id="d-sac" value="0"></div>
       <div><label class="f-label" for="d-done">Traités SAC</label><input class="f-input" type="number" min="0" id="d-done" value="0"></div>
     </div>
-    <div class="f-row c3">
-      <div><label class="f-label" for="d-spam">Spam</label><input class="f-input" type="number" min="0" id="d-spam" value="0"></div>
-      <div><label class="f-label" for="d-pub">Publicité</label><input class="f-input" type="number" min="0" id="d-pub" value="0"></div>
-      <div><label class="f-label" for="d-autre">Autre département</label><input class="f-input" type="number" min="0" id="d-autre" value="0"></div>
-    </div>
     <div class="f-row">
       <div><label class="f-label" for="d-note">Note</label><input class="f-input" id="d-note" placeholder="optionnel"></div>
     </div>
@@ -332,9 +327,6 @@
     $('#d-total').value = rec ? rec.received_total : 0;
     $('#d-sac').value = rec ? rec.received_sac : 0;
     $('#d-done').value = rec ? rec.treated_sac : 0;
-    $('#d-spam').value = rec ? rec.non_sac_spam : 0;
-    $('#d-pub').value = rec ? rec.non_sac_pub : 0;
-    $('#d-autre').value = rec ? rec.non_sac_autre_departement : 0;
     $('#d-note').value = rec ? (rec.note || '') : '';
     $('#dlg-warn').hidden = true;
     dlg.hidden = false;
@@ -343,17 +335,15 @@
 
   function check() {
     var t = +$('#d-total').value || 0, s = +$('#d-sac').value || 0;
-    var sp = +$('#d-spam').value || 0, pu = +$('#d-pub').value || 0, au = +$('#d-autre').value || 0;
     var done = +$('#d-done').value || 0;
     var w = [];
     if (s > t) w.push('Les emails SAC dépassent le total reçu.');
-    if (sp + pu + au > t) w.push('La somme des catégories non-SAC dépasse le total.');
     if (done > s) w.push('Les emails traités dépassent les emails SAC reçus.');
     var el = $('#dlg-warn');
     if (w.length) { el.hidden = false; el.textContent = w.join(' '); } else { el.hidden = true; }
     return !w.length;
   }
-  ['#d-total', '#d-sac', '#d-spam', '#d-pub', '#d-autre', '#d-done'].forEach(function (s) {
+  ['#d-total', '#d-sac', '#d-done'].forEach(function (s) {
     $(s).addEventListener('input', check);
   });
 
@@ -382,9 +372,12 @@
         duty_agent_id: $('#d-duty').value || null,
         received_total: +$('#d-total').value || 0,
         received_sac: +$('#d-sac').value || 0,
-        non_sac_spam: +$('#d-spam').value || 0,
-        non_sac_pub: +$('#d-pub').value || 0,
-        non_sac_autre_departement: +$('#d-autre').value || 0,
+        // Les anciennes colonnes ne sont plus saisies. On préserve les valeurs
+        // déjà stockées et laisse les nouvelles journées à zéro.
+        non_sac_spam: ((dayMap()[dateISO] || {}).non_sac_spam) || 0,
+        non_sac_pub: ((dayMap()[dateISO] || {}).non_sac_pub) || 0,
+        non_sac_autre_departement: ((dayMap()[dateISO] || {}).non_sac_autre_departement) || 0,
+        non_sac_autre: ((dayMap()[dateISO] || {}).non_sac_autre) || 0,
         treated_sac: +$('#d-done').value || 0,
         note: $('#d-note').value.trim()
       });

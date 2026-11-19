@@ -104,9 +104,14 @@
             </div>
             <div class="act-grid">
               <div class="act-field">
+                <label class="f-label" for="act-calls-received">Appels reçus</label>
+                <input class="f-input" type="number" min="0" step="1" id="act-calls-received" value="0">
+                <small>volume entrant reçu aujourd’hui</small>
+              </div>
+              <div class="act-field">
                 <label class="f-label" for="act-calls">Appels traités</label>
                 <input class="f-input" type="number" min="0" step="1" id="act-calls" value="0">
-                <small>ton décompte du jour, hors emails</small>
+                <small>appels pris en charge, hors emails</small>
               </div>
               <div class="act-field">
                 <label class="f-label" for="act-sac">Emails SAC traités</label>
@@ -135,7 +140,7 @@
           <div class="panel-head"><h2>Mon activité — 30 derniers jours</h2><small id="act-totals">—</small></div>
           <div class="panel-body" style="padding:0">
             <div class="scroll-x"><table class="p-table">
-              <thead><tr><th>Jour</th><th class="num">Appels</th><th class="num">SAC</th>
+              <thead><tr><th>Jour</th><th class="num">Appels reçus</th><th class="num">Appels traités</th><th class="num">SAC</th>
                 <th class="num">Autres emails</th><th class="num">Total emails</th><th>Note</th></tr></thead>
               <tbody id="act-body"></tbody>
             </table></div>
@@ -208,7 +213,7 @@
     var plan = PLANNING[agentId];
     var sh = plan ? SHIFT[plan.shift_code] : null;
 
-    var firstIn = null, lastOut = null, presence = 0, open = null;
+    var firstIn = null, lastOut = null, presence = 0, open = null, stateSince = null;
     var breaks = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0, rencontre: 0, reunion: 0 };
     var breakCounts = { pause: 0, lunch: 0, sortie: 0, coaching: 0, formation: 0, technique: 0, rencontre: 0, reunion: 0 };
     var breakOpen = null, breakOpenType = null;
@@ -216,13 +221,14 @@
 
     ev.forEach(function (e) {
       var t = new Date(e.occurred_at).getTime();
-      if (e.event_type === 'in') { if (open == null) open = t; firstIn = firstIn || t; sessions++; }
-      else if (e.event_type === 'out') { if (open != null) { presence += (t - open); open = null; } lastOut = t; }
-      else if (e.event_type === 'break_start') { breakOpen = t; breakOpenType = e.break_type || 'pause'; breakCounts[breakOpenType] = (breakCounts[breakOpenType] || 0) + 1; }
+      if (e.event_type === 'in') { if (open == null) open = t; firstIn = firstIn || t; sessions++; stateSince = t; }
+      else if (e.event_type === 'out') { if (open != null) { presence += (t - open); open = null; } lastOut = t; stateSince = t; }
+      else if (e.event_type === 'break_start') { breakOpen = t; breakOpenType = e.break_type || 'pause'; stateSince = t; breakCounts[breakOpenType] = (breakCounts[breakOpenType] || 0) + 1; }
       else if (e.event_type === 'break_end') {
         if (breakOpen != null) { breaks[breakOpenType] += (t - breakOpen); }
         if (open != null) { presence -= (t - breakOpen); }
         breakOpen = null; breakOpenType = null;
+        if (open != null) stateSince = t;
       }
     });
 
@@ -246,7 +252,10 @@
       var late = start ? Math.round((now - start) / 60000) : 0;
       status = late > 15 ? 'absent' : late > 5 ? 'late' : 'waiting';
       if (late <= 0) status = 'waiting';
+      if (start) stateSince = start;
     }
+    var stateDurationMin = (stateSince != null && ['off', 'unplanned'].indexOf(status) < 0)
+      ? Math.max(0, Math.round((now - stateSince) / 60000)) : 0;
 
     return {
       agentId: agentId, shift: sh, plan: plan,
@@ -261,7 +270,7 @@
       },
       openBreak: breakOpen != null ? breakOpenType : null,
       openBreakMin: openBreakMin,
-      net: net, status: status, sessions: sessions,
+      net: net, status: status, statusDurationMin: stateDurationMin, stateSince: stateSince, sessions: sessions,
       date: dayISO, breakCounts: breakCounts,
       lateMin: (firstIn && sh && sh.is_work) ? Math.max(0, Math.round((firstIn - shiftStart(sh, dayISO)) / 60000)) : 0
     };
@@ -362,7 +371,7 @@
         '<div class="attendance-card-metrics">' +
           '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
           '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
-          '<div><small>Temps net' + (VIEW_DAY === TODAY ? ' live' : '') + '</small><b>' + (d.net ? OPS.minutes(d.net) : '0 min') + '</b></div>' +
+          '<div><small>Durée du statut · ' + esc(st[0]) + '</small><b data-state-duration= + esc(d.agentId) + >' + OPS.minutes(d.statusDurationMin) + '</b></div>' +
           '<div><small>Pauses</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + d.breaksMin.pause + ' / 30 min</b></div>' +
           '<div><small>Lunch</small><b>' + (d.breakCounts.lunch || 0) + ' prise(s) · ' + d.breaksMin.lunch + ' / 60 min</b></div>' +
           '<div><small>Sorties temp.</small><b>' + (d.breakCounts.sortie || 0) + ' prises · ' + d.breaksMin.sortie + ' / 5 min max.</b></div>' +
@@ -595,6 +604,7 @@
       acts.forEach(function (r) {
         ACT_DAYS[r.work_date] = ACT_DAYS[r.work_date] || {};
         ACT_DAYS[r.work_date].calls = r.calls_treated;
+        ACT_DAYS[r.work_date].callsReceived = r.calls_received;
         ACT_DAYS[r.work_date].callsNote = r.note;
       });
       mine.forEach(function (r) {
@@ -609,6 +619,7 @@
     }
 
     var today = ACT_DAYS[TODAY] || {};
+    $('#act-calls-received').value = today.callsReceived || 0;
     $('#act-calls').value = today.calls || 0;
     $('#act-sac').value = today.sac || 0;
     $('#act-other').value = today.other || 0;
@@ -618,19 +629,22 @@
       : 'Aucune saisie aujourd’hui.';
 
     var days = Object.keys(ACT_DAYS).sort().reverse();
-    var totC = 0, totS = 0, totO = 0;
+    var totCR = 0, totC = 0, totS = 0, totO = 0;
     $('#act-body').innerHTML = days.length ? days.map(function (d) {
       var x = ACT_DAYS[d];
       var c = x.calls || 0, sa = x.sac || 0, ot = x.other || 0;
       totC += c; totS += sa; totO += ot;
+      var cr = x.callsReceived || 0;
+      totCR += cr;
       return '<tr><td class="name">' + OPS.fmtDate(d) + '</td>' +
+        '<td class="num mono">' + cr + '</td>' +
         '<td class="num mono">' + c + '</td>' +
         '<td class="num mono">' + sa + '</td>' +
         '<td class="num mono">' + ot + '</td>' +
         '<td class="num mono">' + (sa + ot) + '</td>' +
         '<td>' + esc(x.callsNote || x.mailNote || '—') + '</td></tr>';
-    }).join('') : '<tr><td colspan="6"><p class="empty-note">Pas encore d’activité enregistrée sur les 30 derniers jours.</p></td></tr>';
-    $('#act-totals').textContent = 'Total sur la période : ' + totC + ' appels · ' + (totS + totO) + ' emails';
+    }).join('') : '<tr><td colspan="7"><p class="empty-note">Pas encore d’activité enregistrée sur les 30 derniers jours.</p></td></tr>';
+    $('#act-totals').textContent = 'Total sur la période : ' + totCR + ' appels reçus · ' + totC + ' appels traités · ' + (totS + totO) + ' emails';
   }
 
   $('#act-save').addEventListener('click', async function () {
@@ -639,7 +653,7 @@
     var btn = this;
     btn.disabled = true;
     try {
-      await pgvData.saveAgentActivityAgent(agentId, TODAY, +$('#act-calls').value || 0, $('#act-note').value.trim());
+      await pgvData.saveAgentActivityAgent(agentId, TODAY, +$('#act-calls-received').value || 0, +$('#act-calls').value || 0, $('#act-note').value.trim());
       await pgvData.saveEmailAgentRow(TODAY, agentId, +$('#act-sac').value || 0, +$('#act-other').value || 0, $('#act-note').value.trim());
       OPS.toast('Saisie enregistrée');
       await loadActivity();
@@ -665,6 +679,12 @@
 
   function tick() {
     $('#clock').textContent = new Date().toLocaleTimeString('fr-MA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    if (currentTab === 'live') AGENTS.forEach(function (a) {
+      var el = document.querySelector('[data-state-duration="' + a.id + '"]');
+      if (!el) return;
+      var d = computeDay(a.id, VIEW_DAY);
+      el.textContent = OPS.minutes(d.statusDurationMin);
+    });
   }
   tick(); setInterval(tick, 1000);
 

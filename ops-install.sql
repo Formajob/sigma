@@ -199,14 +199,19 @@ create index if not exists volumes_activity_idx      on public.call_volumes (act
 insert into public.agents (activity, full_name, staff_id, job_role, team, service, active)
 select v.activity, v.full_name, v.staff_id, v.job_role, v.team, v.service, v.active
 from (values
-  ('pgv','Amadou AliBa', '209217','Agent support','SAC PGV','Traitement appels & emails',true),
-  ('pgv','Elagbi Zineb','203858','Agent support','SAC PGV','Traitement appels & emails',true),
-  ('pgv','Miri Hind',   '204186','Agent support','SAC PGV','Traitement appels & emails',true)
+  ('pgv','Amadou AliBa', '209217','Agent SAC','SAC PGV','Traitement appels & emails',true),
+  ('pgv','Elagbi Zineb','203858','Agent SAC','SAC PGV','Traitement appels & emails',true),
+  ('pgv','Miri Hind',   '204186','Agent SAC','SAC PGV','Traitement appels & emails',true)
 ) as v(activity, full_name, staff_id, job_role, team, service, active)
 where not exists (
   select 1 from public.agents a
   where a.activity = v.activity and a.staff_id = v.staff_id
 );
+
+-- Corrige le job_role des fiches PGV déjà présentes.
+update public.agents
+   set job_role = 'Agent SAC'
+ where activity = 'pgv' and staff_id in ('209217', '203858', '204186');
 
 -- emails, seulement si la colonne existe
 do $$
