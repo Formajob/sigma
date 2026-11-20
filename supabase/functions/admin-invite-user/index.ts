@@ -71,11 +71,24 @@ Deno.serve(async (req: Request) => {
       return reply(400, { error: "La fiche agent PGV est introuvable ou inactive." });
     }
 
-    const redirectTo = Deno.env.get("AUTH_REDIRECT_URL");
-    const inviteOptions: { data: Record<string, string>; redirectTo?: string } = {
+    // Marque explicitement le callback : si le client email ou le SDK Supabase
+    // retire le fragment d'auth (type=invite), login.html affiche quand même
+    // le formulaire « Choisir un mot de passe » pour les invitations PGV.
+    const redirectBase = Deno.env.get("AUTH_REDIRECT_URL") || "https://sigma.acx.ma/login.html?client=pgv";
+    let inviteRedirect: string;
+    try {
+      const callback = new URL(redirectBase);
+      if (!callback.pathname || callback.pathname === "/") callback.pathname = "/login.html";
+      callback.searchParams.set("client", "pgv");
+      callback.searchParams.set("flow", "invite");
+      inviteRedirect = callback.toString();
+    } catch {
+      return reply(500, { error: "AUTH_REDIRECT_URL doit être une URL complète et valide." });
+    }
+    const inviteOptions: { data: Record<string, string>; redirectTo: string } = {
       data: { full_name: fullName, agent_id: agent.id, activity: "pgv" },
+      redirectTo: inviteRedirect,
     };
-    if (redirectTo) inviteOptions.redirectTo = redirectTo;
 
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin
       .inviteUserByEmail(email, inviteOptions);

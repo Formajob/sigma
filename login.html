@@ -149,7 +149,8 @@
         const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
         const query = new URLSearchParams(window.location.search);
         const type = hash.get('type') || query.get('type');
-        return ['recovery', 'invite', 'signup'].includes(type) || query.has('code');
+        const flow = (query.get('flow') || '').toLowerCase();
+        return ['recovery', 'invite', 'signup'].includes(type) || ['invite', 'recovery', 'set-password'].includes(flow) || query.has('code');
       }
       function showRecoveryForm() {
         credentialsForm.hidden = true;
@@ -202,6 +203,7 @@
           const cleanQuery = new URLSearchParams(window.location.search);
           cleanQuery.delete('code');
           cleanQuery.delete('type');
+          cleanQuery.delete('flow');
           window.history.replaceState(null, '', window.location.pathname + (cleanQuery.toString() ? '?' + cleanQuery.toString() : ''));
           recoveryForm.hidden = true;
           credentialsForm.hidden = false;
