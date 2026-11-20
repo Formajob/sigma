@@ -29,14 +29,14 @@
       </div>
 
       <div class="at-tabs" role="tablist">
-        <button class="at-tab active" data-tab="live" role="tab">Temps réel</button>
+        <button class="at-tab" data-tab="live" role="tab">Temps réel</button>
         <button class="at-tab" data-tab="me" role="tab">Ma journée</button>
         <button class="at-tab" data-tab="week" role="tab">Semaine</button>
         <button class="at-tab" data-tab="activity" role="tab">Activité</button>
       </div>
 
       <!-- ================= TEMPS RÉEL ================= -->
-      <section id="tab-live">
+      <section id="tab-live" hidden>
         <div class="at-daybar">
           <strong>Présences du jour</strong>
           <label for="live-day">Choisir une date passée</label>
@@ -62,26 +62,35 @@
 
       <!-- ================= MA JOURNÉE ================= -->
       <section id="tab-me" hidden>
-        <div class="panel"><div class="panel-body">
-          <div class="f-row" id="me-picker" style="max-width:340px" hidden>
-            <div><label class="f-label" for="me-agent">Pointer pour</label>
-              <select class="f-select" id="me-agent"></select></div>
-          </div>
-          <div class="at-actions" id="me-actions">
-            <button class="at-btn primary" id="b-in">Je commence ma journée <small id="b-in-time"></small></button>
-            <button class="at-btn" id="b-out">Je termine ma journée <small id="b-out-time"></small></button>
-            <div class="at-break-menu" id="b-breaks">
-              <button data-break="pause">Pause 15</button>
-              <button data-break="lunch">Lunch 60</button>
-              <button data-break="sortie">Sortie temp. 5</button>
-              <button data-break="rencontre">Rencontre 30</button>
-              <button data-break="reunion">Réunion 30</button>
+        <div class="at-agent-app">
+          <section class="at-status-hero" id="me-status-card" aria-live="polite">
+            <div class="at-status-heading"><span class="at-status-kicker">MON STATUT ACTUEL</span><span class="at-badge off" id="me-status-badge">—</span></div>
+            <div class="at-status-main"><div><h2 id="me-status-title">Chargement…</h2><p id="me-status-shift">—</p></div>
+              <div class="at-status-timer"><small>Durée de ce statut</small><strong id="me-status-timer">00:00:00</strong><span id="me-status-since">Depuis —</span></div>
             </div>
-            <button class="at-btn" id="b-resume">Je reprends <small id="b-resume-time"></small></button>
-          </div>
-          <p class="f-note" id="me-shift">—</p>
-          <div class="at-summary" id="me-summary"></div>
-        </div></div>
+            <div class="at-status-limit" id="me-status-limit" hidden><div><span id="me-status-limit-label">Temps autorisé</span><b id="me-status-limit-time">—</b></div><span class="at-status-meter"><i id="me-status-meter-fill"></i></span></div>
+          </section>
+          <div class="at-status-alert" id="me-status-alert" role="status" aria-live="assertive" hidden></div>
+          <div class="panel at-my-panel"><div class="panel-body">
+            <div class="f-row" id="me-picker" style="max-width:340px" hidden>
+              <div><label class="f-label" for="me-agent">Pointer pour</label><select class="f-select" id="me-agent"></select></div>
+            </div>
+            <p class="f-note" id="me-shift">—</p>
+            <div class="at-actions" id="me-actions">
+              <button class="at-btn primary" id="b-in"><span>Commencer ma journée</span><small id="b-in-time"></small></button>
+              <button class="at-btn stop" id="b-out"><span>Terminer ma journée</span><small id="b-out-time"></small></button>
+              <div class="at-break-menu" id="b-breaks">
+                <button type="button" data-break="pause"><span>Pause</span><small></small></button>
+                <button type="button" data-break="lunch"><span>Lunch</span><small></small></button>
+                <button type="button" data-break="sortie"><span>Sortie temporaire</span><small></small></button>
+                <button type="button" data-break="rencontre"><span>Rencontre</span><small></small></button>
+                <button type="button" data-break="reunion"><span>Réunion</span><small></small></button>
+              </div>
+              <button class="at-btn" id="b-resume"><span>Je reprends le travail</span><small id="b-resume-time"></small></button>
+            </div>
+            <div class="at-summary" id="me-summary"></div>
+          </div></div>
+        </div>
       </section>
 
       <!-- ================= SEMAINE ================= -->
@@ -168,7 +177,18 @@
 
   var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], BREAKS = {}, ACKS = {};
   var myAgentId = profile.agentId || null;
-  var currentTab = 'live', filterStatus = null;
+  var currentTab = isManager ? 'live' : 'me', filterStatus = null;
+  if (isManager) {
+    $('#tab-live').hidden = false;
+    document.querySelector('.at-tab[data-tab="live"]').classList.add('active');
+  }
+  if (!isManager) {
+    var liveTabButton = document.querySelector('.at-tab[data-tab="live"]');
+    if (liveTabButton) liveTabButton.hidden = true;
+    $('#tab-live').hidden = true;
+    $('#tab-me').hidden = false;
+    $$('.at-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'me'); });
+  }
 
   try {
     await pgvData.init();
@@ -183,8 +203,8 @@
   }
   SHIFTS.forEach(function (s) { SHIFT[s.code] = s; });
 
-  var showPicker = isManager || !myAgentId;
-  if (!myAgentId) myAgentId = AGENTS.length ? AGENTS[0].id : null;
+  var showPicker = isManager;
+  if (!myAgentId && isManager) myAgentId = AGENTS.length ? AGENTS[0].id : null;
 
   /* ---------------- chargement ---------------- */
   async function loadDay() {
@@ -250,8 +270,9 @@
       if (late <= 0) status = 'waiting';
       if (start) stateSince = start;
     }
-    var stateDurationMin = (stateSince != null && ['off', 'unplanned'].indexOf(status) < 0)
-      ? Math.max(0, Math.round((now - stateSince) / 60000)) : 0;
+    var stateDurationSec = (stateSince != null && ['off', 'unplanned'].indexOf(status) < 0)
+      ? Math.max(0, Math.floor((now - stateSince) / 1000)) : 0;
+    var stateDurationMin = Math.floor(stateDurationSec / 60);
 
     return {
       agentId: agentId, shift: sh, plan: plan,
@@ -266,7 +287,8 @@
       },
       openBreak: breakOpen != null ? breakOpenType : null,
       openBreakMin: openBreakMin,
-      net: net, status: status, statusDurationMin: stateDurationMin, stateSince: stateSince, sessions: sessions,
+      openBreakSec: breakOpen != null ? Math.max(0, Math.floor((now - breakOpen) / 1000)) : 0,
+      net: net, status: status, statusDurationMin: stateDurationMin, statusDurationSec: stateDurationSec, stateSince: stateSince, sessions: sessions,
       date: dayISO, breakCounts: breakCounts,
       lateMin: (firstIn && sh && sh.is_work) ? Math.max(0, Math.round((firstIn - shiftStart(sh, dayISO)) / 60000)) : 0
     };
@@ -298,6 +320,22 @@
     unplanned: ['Hors planning', 'off'], waiting: ['Attendu', 'off']
   };
 
+  var BREAK_LABEL = { pause:'Pause', lunch:'Lunch', sortie:'Sortie temporaire', rencontre:'Rencontre', reunion:'Réunion', coaching:'Coaching', formation:'Formation', technique:'Technique' };
+
+  function breakLimitNotice(day) {
+    if (!day.openBreak) return null;
+    var setting = BREAKS[day.openBreak] || {}, max = +setting.max_minutes || 0;
+    if (!max) return null;
+    var maxSec = max * 60, elapsed = day.openBreakSec || 0;
+    var margin = Math.min(120, Math.max(30, maxSec * 0.2));
+    var title = BREAK_LABEL[day.openBreak] || day.openBreak;
+    if (elapsed >= maxSec) return { state:'over', code:'break_over_active', limit:max, elapsed:elapsed,
+      message:title + ' : limite de ' + max + ' min dépassée.' };
+    if (elapsed > 0 && elapsed >= Math.max(1, maxSec - margin)) return { state:'near', code:'break_near', limit:max, elapsed:elapsed,
+      message:title + ' : approche de la limite (' + max + ' min).' };
+    return null;
+  }
+
   /* ---------------- alertes ---------------- */
   function alertsFor(day) {
     var out = [];
@@ -312,9 +350,10 @@
     if (day.status === 'late') out.push({ code: 'late_checkin', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé — shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
     if (day.status === 'absent') out.push({ code: 'no_checkin', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> est absent : shift commencé depuis ' + Math.round((now - start) / 60000) + ' min.' });
     if (day.openBreak) {
-      var droit = (BREAKS[day.openBreak] || {}).max_minutes || 15;
-      if (day.openBreakMin > droit + 5) out.push({ code: 'break_over', kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + day.openBreak + ' dépassée (' + day.openBreakMin + ' min / ' + droit + ').' });
-      if (day.openBreakMin > 120) out.push({ code: 'break_open_long', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> : pause ouverte depuis ' + OPS.minutes(day.openBreakMin) + '.' });
+      var breakNotice = breakLimitNotice(day);
+      if (breakNotice) out.push({ code:breakNotice.code, kind:breakNotice.state === 'over' ? 'danger' : 'warn',
+        text:'<b>' + esc(a.full_name) + '</b> · ' + esc(breakNotice.message) });
+      if (!breakNotice && day.openBreakMin > 120) out.push({ code:'break_open_long', kind:'danger', text:'<b>' + esc(a.full_name) + '</b> : statut ouvert depuis ' + OPS.minutes(day.openBreakMin) + '.' });
     }
     ['pause', 'lunch', 'sortie', 'rencontre', 'reunion'].forEach(function (k) {
       var setting = BREAKS[k] || {}, max = setting.max_minutes;
@@ -367,7 +406,7 @@
         '<div class="attendance-card-metrics">' +
           '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
           '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
-          '<div><small>Durée du statut · ' + esc(st[0]) + '</small><b data-state-duration= + esc(d.agentId) + >' + OPS.minutes(d.statusDurationMin) + '</b></div>' +
+          '<div><small>Durée du statut · ' + esc(st[0]) + '</small><b data-state-duration="' + esc(d.agentId) + '">' + OPS.minutes(d.statusDurationMin) + '</b></div>' +
           '<div><small>Pauses</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + d.breaksMin.pause + ' / 30 min</b></div>' +
           '<div><small>Lunch</small><b>' + (d.breakCounts.lunch || 0) + ' prise(s) · ' + d.breaksMin.lunch + ' / 60 min</b></div>' +
           '<div><small>Sorties temp.</small><b>' + (d.breakCounts.sortie || 0) + ' prises · ' + d.breaksMin.sortie + ' / 5 min max.</b></div>' +
@@ -456,6 +495,56 @@
 
   /* ---------------- ma journée ---------------- */
   var myDay = null;
+  function formatStatusDuration(seconds) {
+    seconds = Math.max(0, Math.floor(seconds || 0));
+    var h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
+    return [h,m,s].map(function (n) { return n < 10 ? '0' + n : String(n); }).join(':');
+  }
+  function renderMyStatus(d) {
+    var label = STATUS_LABEL[d.status] || ['—','off'];
+    var card = $('#me-status-card'), badge = $('#me-status-badge');
+    card.className = 'at-status-hero state-' + label[1];
+    badge.className = 'at-badge ' + label[1];
+    badge.textContent = label[0];
+    $('#me-status-title').textContent = label[0];
+    $('#me-status-timer').textContent = formatStatusDuration(d.statusDurationSec);
+    $('#me-status-since').textContent = d.stateSince ? 'Depuis ' + OPS.fmtTime(new Date(d.stateSince)) : 'Aucun statut actif';
+    $('#me-status-shift').textContent = d.shift && d.shift.is_work
+      ? 'Shift ' + d.shift.code + ' · ' + d.shift.start_time.slice(0,5) + '–' + d.shift.end_time.slice(0,5)
+      : (d.plan ? 'Planning : ' + d.plan.shift_code : 'Aucun shift planifié');
+
+    var limit = $('#me-status-limit');
+    if (d.openBreak && (BREAKS[d.openBreak] || {}).max_minutes) {
+      var max = BREAKS[d.openBreak].max_minutes, elapsed = d.openBreakSec || 0;
+      limit.hidden = false;
+      $('#me-status-limit-label').textContent = 'Limite · ' + (BREAK_LABEL[d.openBreak] || d.openBreak);
+      $('#me-status-limit-time').textContent = Math.floor(elapsed / 60) + ' / ' + max + ' min';
+      $('#me-status-meter-fill').style.width = Math.min(100, Math.round(elapsed / (max * 60) * 100)) + '%';
+      limit.classList.toggle('near', elapsed >= Math.max(1, max * 60 - Math.min(120, Math.max(30, max * 60 * .2))) && elapsed < max * 60);
+      limit.classList.toggle('over', elapsed >= max * 60);
+    } else {
+      limit.hidden = true; limit.classList.remove('near','over');
+    }
+
+    var notice = breakLimitNotice(d), alertBox = $('#me-status-alert'), alertClass = '', alertMarkup = '';
+    if (notice) {
+      alertClass = 'at-status-alert ' + notice.state;
+      alertMarkup = '<span class="at-status-alert-icon">' + (notice.state === 'over' ? '!' : '⏱') + '</span><span><strong>' +
+        (notice.state === 'over' ? 'Dépassement commencé' : 'Limite bientôt atteinte') + '</strong><small>' + esc(notice.message) + '</small></span>';
+    } else if (d.status === 'late' || d.status === 'absent') {
+      alertClass = 'at-status-alert near';
+      alertMarkup = '<span class="at-status-alert-icon">!</span><span><strong>' + (d.status === 'absent' ? 'Pointage attendu' : 'Vous êtes en retard') + '</strong><small>Pensez à démarrer votre journée.</small></span>';
+    }
+    if (alertMarkup) {
+      if (alertBox.hidden || alertBox.className !== alertClass || alertBox.innerHTML !== alertMarkup) {
+        alertBox.className = alertClass; alertBox.innerHTML = alertMarkup;
+      }
+      alertBox.hidden = false;
+    } else {
+      alertBox.hidden = true;
+      if (alertBox.innerHTML) alertBox.innerHTML = '';
+    }
+  }
   /* sélecteur d'agent : superviseur, ou profil sans agent lié */
   if (showPicker && AGENTS.length) {
     var sel = $('#me-agent');
@@ -469,25 +558,42 @@
 
   function renderMe() {
     if (!myAgentId) {
-      $('#me-shift').textContent = 'Aucun agent associé à ton profil : la page Équipe doit lier ton compte.';
+      $('#me-shift').textContent = 'Aucun agent associé à ton profil : contacte un responsable pour rattacher ton compte.';
+      $('#me-status-title').textContent = 'Profil agent incomplet';
+      $('#me-status-timer').textContent = '—';
+      $('#me-status-since').textContent = 'Aucun agent rattaché';
+      $('#b-in').disabled = true; $('#b-out').disabled = true; $('#b-resume').disabled = true;
+      $$('#b-breaks button').forEach(function (b) { b.disabled = true; });
       return;
     }
     var me = AGENTS.filter(function (a) { return a.id === myAgentId; })[0];
     myDay = computeDay(myAgentId, VIEW_DAY);
     var d = myDay;
     var ev = EVENTS.filter(function (e) { return e.agent_id === myAgentId; });
+    renderMyStatus(d);
 
-    $('#at-sub').textContent = me ? ('Journée de ' + me.full_name + ' — arrivées, départs et pauses.') : '—';
+    $('#at-sub').textContent = me ? ('Votre journée · ' + me.full_name) : '—';
 
     var inBtn = $('#b-in'), outBtn = $('#b-out'), resumeBtn = $('#b-resume');
     var last = ev.length ? ev[ev.length - 1] : null;
-    var onBreak = !!last && last.event_type === 'break_start';
+    var onBreak = !!d.openBreak;
     var inService = !!last && (last.event_type === 'in' || last.event_type === 'break_end');
 
-    inBtn.disabled = VIEW_DAY !== TODAY || inService || onBreak;          // déjà en poste
-    outBtn.disabled = VIEW_DAY !== TODAY || !inService;                    // fin possible seulement en poste
-    resumeBtn.disabled = VIEW_DAY !== TODAY || !onBreak;                   // reprise seulement en pause
-    $$('#b-breaks button').forEach(function (b) { b.disabled = VIEW_DAY !== TODAY || !inService; });
+    inBtn.disabled = VIEW_DAY !== TODAY || inService || onBreak;
+    outBtn.disabled = VIEW_DAY !== TODAY || (!inService && !onBreak);
+    resumeBtn.disabled = VIEW_DAY !== TODAY || !onBreak;
+    $('#b-out-time').textContent = onBreak ? 'clôture la pause aussi' : '';
+    $('#b-resume-time').textContent = onBreak ? formatStatusDuration(d.statusDurationSec) : '';
+    $('#b-in-time').textContent = !inService && !onBreak && d.shift && d.shift.start_time ? 'Shift ' + d.shift.start_time.slice(0,5) : '';
+    $$('#b-breaks button').forEach(function (b) {
+      var type = b.getAttribute('data-break'), active = onBreak && d.openBreak === type;
+      var allowed = !!(BREAKS[type] || {}).max_minutes;
+      b.disabled = VIEW_DAY !== TODAY || !(inService || onBreak) || active || !allowed;
+      b.classList.toggle('selected', active);
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      var small = b.querySelector('small');
+      if (small) small.textContent = ((BREAKS[type] || {}).max_minutes || '—') + ' min' + (active ? ' · en cours' : ' max');
+    });
 
     $('#me-shift').innerHTML = d.shift && d.shift.is_work
       ? 'Shift prévu : <b>' + d.shift.code + ' · ' + d.shift.start_time.slice(0, 5) + '–' + d.shift.end_time.slice(0, 5) + '</b>'
@@ -507,9 +613,15 @@
 
   async function post(type, breakType) {
     try {
+      var switchingBreak = type === 'break_start' && myDay && myDay.openBreak;
+      if (switchingBreak && myDay.openBreak === breakType) return;
+      if ((type === 'out' || switchingBreak) && myDay && myDay.openBreak) {
+        await pgvData.addEvent(myAgentId, 'break_end', null, TODAY, 'agent');
+      }
       await pgvData.addEvent(myAgentId, type, breakType, TODAY, 'agent');
       OPS.toast(type === 'in' ? 'Journée démarrée' : type === 'out' ? 'Journée terminée' :
-        type === 'break_start' ? 'Pause enregistrée' : 'Reprise enregistrée');
+        switchingBreak ? 'Statut changé · ' + (BREAK_LABEL[breakType] || breakType) :
+        type === 'break_start' ? (BREAK_LABEL[breakType] || 'Pause') + ' démarrée' : 'Reprise enregistrée');
       await loadDay();
     } catch (e) { OPS.toast(e.message, 'error'); }
   }
@@ -659,6 +771,7 @@
   /* ---------------- onglets + horloge ---------------- */
   $$('.at-tab').forEach(function (t) {
     t.addEventListener('click', function () {
+      if (!isManager && t.getAttribute('data-tab') === 'live') return;
       currentTab = t.getAttribute('data-tab');
       $$('.at-tab').forEach(function (x) { x.classList.toggle('active', x === t); });
       $('#tab-live').hidden = currentTab !== 'live';
@@ -678,6 +791,10 @@
       var d = computeDay(a.id, VIEW_DAY);
       el.textContent = OPS.minutes(d.statusDurationMin);
     });
+    if (currentTab === 'me' && myAgentId) {
+      myDay = computeDay(myAgentId, VIEW_DAY);
+      renderMyStatus(myDay);
+    }
   }
   tick(); setInterval(tick, 1000);
 
@@ -690,7 +807,7 @@
   $('#live-today').addEventListener('click', function () { VIEW_DAY = TODAY; $('#live-day').value = TODAY; loadDay(); });
 
   await loadDay();
-  setInterval(function () { if (currentTab === 'live') loadDay(); }, 30000);
+  setInterval(function () { if (currentTab === 'live' || (currentTab === 'me' && !isManager)) loadDay(); }, 30000);
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

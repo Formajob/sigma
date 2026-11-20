@@ -121,7 +121,7 @@
 
       <div class="p-grid2" style="margin-top:14px">
         <div class="panel">
-          <div class="panel-head"><h2>Conformité par étape du parcours SAC</h2><small>Poids des « Oui » par étape</small></div>
+          <div class="panel-head"><h2>Conformité par typologie</h2><small>Poids des « Oui » par type logique</small></div>
           <div class="panel-body"><div class="p-steps" id="steps"></div></div>
         </div>
         <div class="panel">
@@ -163,7 +163,7 @@
       </section>
 
       <p style="margin:22px 0 0;color:#A6A19A;font-size:9px;text-align:center">
-        Sigma · ACX Maroc — grille PGV v2.0 · 26 éléments, 57 points de poids · score pondéré Oui ÷ (Oui + Non)
+        Sigma · ACX Maroc — grille PGV synthétisée · 11 critères, 57 points de poids · score pondéré Oui ÷ (Oui + Non)
       </p>
     </div>
   </main>
@@ -483,8 +483,8 @@
 
     // Étapes SAC
     var steps = [];
-    for (var s = 1; s <= 6; s++) steps.push({ n:s, name:window.PGV_STEPS[s], oui:0, eval:0, count:0 });
-    window.PGV_GRID.forEach(function (g) { if (g.step >= 1 && g.step <= 6) steps[g.step - 1].count++; });
+    for (var s = 1; s <= 3; s++) steps.push({ n:s, name:window.PGV_STEPS[s], oui:0, eval:0, count:0 });
+    window.PGV_GRID.forEach(function (g) { if (g.step >= 1 && g.step <= 3) steps[g.step - 1].count++; });
     CAL.forEach(function (c) {
       var values = new Array(window.PGV_GRID.length).fill('');
       RESULTS.filter(function (r) { return r.calibration_id === c.id; }).forEach(function (r) {
@@ -531,7 +531,7 @@
       var f = famTot[k], p = f.eval ? Math.round(f.oui / f.eval * 100) : null;
       return '<div class="p-fam-row"><div class="p-fam-top"><strong>' + esc(window.PGV_FAMILIES[k].name) + '</strong>' +
         '<span>' + f.n + ' éléments · ' + f.poids + ' pts</span><b>' + (p == null ? '—' : p + ' %') + '</b></div>' +
-        '<div class="p-fam-track"><div class="p-fam-fill' + (k === 'CTB' ? ' nc' : '') + '" style="width:' + (p || 0) + '%"></div></div></div>';
+        '<div class="p-fam-track"><div class="p-fam-fill' + (k === 'traitement' ? ' nc' : '') + '" style="width:' + (p || 0) + '%"></div></div></div>';
     }).join('');
 
     // Agents

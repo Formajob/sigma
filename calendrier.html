@@ -273,7 +273,7 @@
       (c.calibration_results || []).forEach(function (r) { resultMap[r.element_id] = r; });
       var vals = window.PGV_GRID.map(function (g) {
         var el = elementByCode[g.code], r = el && resultMap[el.id];
-        return r ? r.result : 'N/A';
+        return r ? r.result : '';
       });
       var score = window.pgvScore ? window.pgvScore(vals) : null;
       var noCount = vals.filter(function (v) { return v === 'Non'; }).length;
@@ -290,13 +290,13 @@
           '<div><small>Canal</small><strong>' + esc(c.channel || 'Appel') + '</strong></div>' +
         '</div>' +
         '<h3 style="margin:14px 0 8px">Détail des critères</h3><div class="cal-detail-families">';
-      var detailTitles = { CTB:'Traitement client', CTC:'Relation client', NC:'Savoir-être' };
-      ['CTB','CTC','NC'].forEach(function (cat) {
+      var detailTitles = { accueil:'Accueil & compréhension', traitement:'Traitement & résolution', posture:'Communication & posture' };
+      ['accueil','traitement','posture'].forEach(function (cat) {
         html += '<section class="cal-detail-family"><h4>' + esc(detailTitles[cat]) + '</h4><div class="cal-detail-rows">';
         window.PGV_GRID.filter(function (g) { return g.cat === cat; }).forEach(function (g) {
           var el = elementByCode[g.code], r = el && resultMap[el.id];
           html += '<article><div><strong>' + esc(g.label) + '</strong><p>' + esc(g.critere) + '</p></div><div class="cal-detail-result"><b>' +
-            esc(r ? r.result : 'N/A') + '</b>' + (r && r.reason ? '<small>' + esc(r.reason) + '</small>' : '') + '</div></article>';
+            esc(r ? r.result : '—') + '</b>' + (r && r.reason ? '<small>' + esc(r.reason) + '</small>' : '') + '</div></article>';
         });
         html += '</div></section>';
       });
@@ -371,7 +371,9 @@
       var resultMap = {};
       (r.calibration_results || []).forEach(function (x) { resultMap[x.element_id] = x; });
       var agentOpts = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
-      var typology = { CTB:'Traitement client', CTC:'Relation client', NC:'Savoir-être' };
+      var typology = {};
+      Object.keys(window.PGV_FAMILIES).forEach(function (key) { typology[key] = window.PGV_FAMILIES[key].name; });
+      var categoryOrder = ['accueil','traitement','posture'];
       var values = window.PGV_GRID.map(function (g) {
         var el = elementByCode[g.code], old = el && resultMap[el.id];
         return old ? old.result : '';
@@ -385,7 +387,7 @@
           '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
           '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
         '</div><div class="cal-question-list">';
-      ['CTB','CTC','NC'].forEach(function (cat) {
+      categoryOrder.forEach(function (cat) {
         var items = window.PGV_GRID.map(function (g, i) { return { g:g, i:i }; }).filter(function (x) { return x.g.cat === cat; });
         form += '<section class="cal-question-family"><h3 class="cal-question-family-title">' + esc(typology[cat]) + '</h3>';
         items.forEach(function (x) {
@@ -403,7 +405,7 @@
       form += '</div></div><aside class="cal-editor-side"><section class="panel cal-score-panel"><div class="panel-body">' +
         '<h3 class="cal-score-title">Score de l’appel</h3><div class="cal-score-value"><strong id="ec-score">0</strong><span>%</span></div>' +
         '<div id="ec-level" class="p-pill grey" style="margin-top:8px">Grille incomplète</div><div id="ec-critical" class="cal-score-warning" hidden></div>' +
-        '<div id="ec-progress" class="cal-score-progress">0 / 26 critères renseignés</div><div id="ec-family-scores" class="cal-family-scores"></div>' +
+        '<div id="ec-progress" class="cal-score-progress">0 / 11 critères renseignés</div><div id="ec-family-scores" class="cal-family-scores"></div>' +
         '</div></section><section class="panel cal-score-extra"><div class="panel-body">' +
           '<div class="f-row"><div><label class="f-label" for="ec-evaluator">Évaluateur</label><input class="f-input" id="ec-evaluator" value="' + esc(r.evaluator_name || '') + '" placeholder="Ton nom"></div></div>' +
           '<label class="cal-followup-check"><input type="checkbox" id="ec-create-doc"><span>Créer une documentation de suivi</span></label>' +
@@ -432,7 +434,7 @@
           critical.hidden = false;
           critical.textContent = 'Critères critiques en « Non » : ' + criticalNames.join(' · ') + ' — le calibrage est non conforme quel que soit le score.';
         } else critical.hidden = true;
-        $('#ec-family-scores').innerHTML = ['CTB','CTC','NC'].map(function (cat) {
+        $('#ec-family-scores').innerHTML = categoryOrder.map(function (cat) {
           var familyScore = score.fam[cat], pct = familyScore.pct;
           return '<div class="cal-family-score"><div><span>' + esc(typology[cat]) + '</span><b>' + (pct == null ? '—' : pct + ' %') + '</b></div><span class="cal-family-track"><i style="width:' + (pct || 0) + '%"></i></span></div>';
         }).join('');

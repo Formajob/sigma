@@ -1,132 +1,78 @@
 /* ============================================================
-   Sigma — Grille d'évaluation PGV (Protégez-Vous)
-   v2.0 · 26 éléments · 3 familles · pondérés 1 à 3 · 6 critiques
-   Changements v2 (demande du 16/11) :
-     · V.A.T.R.E : 5 éléments regroupés en UN SEUL (NC-01)
-     · retrait : « Maîtrise de la langue du client »,
-                 « Demande qualifiée dans la bonne typologie »,
-                 « Dossier consulté dans Darwin pendant l’appel »
-     · ajout   : « Note ajoutée au dossier quand il n’en existe pas » (CTB-06)
-   Compatible qa_category (CTB / CTC / NC) — n'exécute rien, expose window.*
+   Sigma — Grille PGV synthétisée
+   11 critères · 3 typologies · total historique préservé : 57 points
+   legacyCodes liste les anciens critères fusionnés; sert à l'audit/migration.
    ============================================================ */
 (function () {
   'use strict';
 
-  var PGV_GRID = [
-    /* ---------------- CTB · Traitement & conformité (10) ---------------- */
-    { code:'CTB-01', cat:'CTB', step:2, weight:3, critical:true,  na:false,
-      label:'Identité vérifiée avant le dossier',
-      critere:'Nom du client + un second élément (n° d’abonné, adresse, date de naissance ou e-mail) contrôlés avant d’ouvrir le dossier ou de communiquer une donnée.' },
-    { code:'CTB-04', cat:'CTB', step:4, weight:3, critical:true,  na:false,
-      label:'Information exacte et vérifiée',
-      critere:'Réponse conforme à Darwin ou à la procédure écrite ; aucune information donnée de mémoire.' },
-    { code:'CTB-05', cat:'CTB', step:4, weight:3, critical:false, na:false,
-      label:'Procédure appliquée jusqu’au bout',
-      critere:'Toutes les étapes de la procédure sont exécutées ; aucun traitement partiel laissé à la charge du client.' },
-    { code:'CTB-06', cat:'CTB', step:4, weight:3, critical:true,  na:false,
-      label:'Aucun engagement hors mandat',
-      critere:'Aucun geste commercial, remboursement, délai ou exception promis sans autorisation ni base procédurale.' },
-    { code:'CTB-07', cat:'CTB', step:4, weight:2, critical:false, na:false,
-      label:'Actions saisies dans Darwin en direct',
-      critere:'Mise à jour, note, modification ou commande enregistrées pendant l’appel, pas après.' },
-    { code:'CTB-12', cat:'CTB', step:4, weight:2, critical:false, na:true,
-      label:'Note ajoutée au dossier quand il n’en existe pas',
-      critere:'Si le dossier ne contient encore aucune note de l’échange, une note est créée pendant l’appel : objet de la demande, action réalisée, suite et échéance si besoin. N/A si le dossier était déjà correctement annoté.' },
-    { code:'CTB-08', cat:'CTB', step:5, weight:2, critical:false, na:true,
-      label:'Escalade déclenchée à bon escient',
-      critere:'Cas transmis quand il le faut, au bon service, avec un motif explicite et vérifiable.' },
-    { code:'CTB-09', cat:'CTB', step:5, weight:2, critical:false, na:false,
-      label:'Suite et délai communiqués',
-      critere:'Le client sait ce qui se passe ensuite, quand, et par quel canal ; l’engagement est tracé.' },
-    { code:'CTB-10', cat:'CTB', step:6, weight:1, critical:false, na:false,
-      label:'Dossier clôturé et statut à jour',
-      critere:'Statut finalisé dans Darwin ; note de suivi créée si un suivi est nécessaire.' },
-    { code:'CTB-11', cat:'CTB', step:0, weight:3, critical:true,  na:false,
-      label:'Confidentialité respectée',
-      critere:'Aucune donnée communiquée à un tiers non authentifié ; aucune donnée sensible énoncée à voix haute sans nécessité.' },
-
-    /* ---------------- CTC · Relation client (10) ---------------- */
-    { code:'CTC-01', cat:'CTC', step:1, weight:1, critical:false, na:false,
-      label:'Décroché et formule d’accueil',
-      critere:'Décroché en trois sonneries maximum ; formule complète : entreprise, bonjour, prénom de l’agent.' },
-    { code:'CTC-02', cat:'CTC', step:1, weight:2, critical:false, na:false,
-      label:'Client écouté jusqu’au bout',
-      critere:'Le client expose sa demande en entier avant toute réponse, relance ou interruption.' },
-    { code:'CTC-03', cat:'CTC', step:3, weight:2, critical:false, na:false,
-      label:'Reformulation de la demande',
-      critere:'La demande est reformulée ou synthétisée, puis validée par le client avant traitement.' },
-    { code:'CTC-04', cat:'CTC', step:4, weight:2, critical:false, na:false,
-      label:'Réponse à la question posée',
-      critere:'Réponse exacte à ce qui est demandé : ni réponse à côté, ni digression, ni question évitée.' },
-    { code:'CTC-05', cat:'CTC', step:4, weight:2, critical:false, na:false,
-      label:'Explication claire et sans jargon',
-      critere:'Vocabulaire du client ; aucun terme interne (Darwin, back-office, SAC) employé sans être traduit.' },
-    { code:'CTC-06', cat:'CTC', step:4, weight:3, critical:false, na:true,
-      label:'Gestion de la réclamation',
-      critere:'La gêne est reconnue sans justification défensive ; le problème est reformulé ; une solution ou une alternative datée est proposée.' },
-    { code:'CTC-07', cat:'CTC', step:4, weight:2, critical:false, na:true,
-      label:'Mise en attente conforme',
-      critere:'Accord demandé, raison donnée, retour dans le délai annoncé, remerciement au retour.' },
-    { code:'CTC-08', cat:'CTC', step:5, weight:1, critical:false, na:true,
-      label:'Transfert annoncé et présenté',
-      critere:'Transfert annoncé, raison expliquée, service ou nom du destinataire donné au client.' },
-    { code:'CTC-09', cat:'CTC', step:6, weight:2, critical:false, na:false,
-      label:'Clôture complète',
-      critere:'Récapitulatif, prochaine étape, ouverture à une autre demande, formule de politesse ; le client raccroche le premier.' },
-    { code:'CTC-10', cat:'CTC', step:0, weight:1, critical:false, na:false,
-      label:'Nom du client utilisé',
-      critere:'Nom employé au moins deux fois dans l’échange, correctement prononcé.' },
-
-    /* ---------------- NC · Savoir être (6) ---------------- */
-    { code:'NC-01', cat:'NC', step:0, weight:3, critical:false, na:false,
-      label:'V.A.T.R.E',
-      critere:'Les cinq qualités vocales jugées ensemble, en un seul verdict : Volume audible et stable · Articulation sans syllabe avalée · Ton professionnel et chaleureux · Rythme adapté au client · Énergie constante du décroché à la clôture. Un seul « Non » suffit à faire tomber l’élément.' },
-    { code:'NC-06', cat:'NC', step:0, weight:2, critical:false, na:false,
-      label:'Professionnalisme',
-      critere:'Vocabulaire soigné : pas d’argot, de familiarité, ni de tics de langage (« beh », « machin », « voilà »).' },
-    { code:'NC-07', cat:'NC', step:0, weight:2, critical:false, na:false,
-      label:'Écoute active',
-      critere:'Signaux d’écoute, reprises, aucune interruption, réponse à ce qui n’est pas dit explicitement.' },
-    { code:'NC-08', cat:'NC', step:0, weight:2, critical:false, na:false,
-      label:'Empathie',
-      critere:'L’émotion est nommée et reconnue ; le discours s’adapte au client inquiet, pressé ou agacé.' },
-    { code:'NC-09', cat:'NC', step:0, weight:3, critical:true,  na:false,
-      label:'Contrôle émotionnel',
-      critere:'Reste calme face à l’agressivité : pas d’ironie, de ton sec, de soupir audible ni de riposte.' },
-    { code:'NC-10', cat:'NC', step:0, weight:3, critical:true,  na:false,
-      label:'Neutralité et respect',
-      critere:'Aucun jugement, aucune discrimination, aucun commentaire personnel, politique ou religieux.' }
-  ];
-
   var PGV_FAMILIES = {
-    CTB: { name:'CTB · Traitement & conformité', short:'Traitement',  note:'Le parcours SAC : identification, traitement, escalade, clôture — et les règles qu’on ne transige pas.' },
-    CTC: { name:'CTC · Relation client',         short:'Relation',    note:'Ce que le client vit et comprend : accueil, reformulation, clarté, réclamation, clôture.' },
-    NC:  { name:'NC · Savoir être',              short:'Savoir être', note:'La manière de le dire : V.A.T.R.E, professionnalisme, écoute active, empathie, maîtrise de soi.' }
+    accueil: { name:'Accueil & compréhension', short:'Accueil & compréhension', note:'Accueil, écoute, compréhension et sécurisation de l’échange.' },
+    traitement: { name:'Traitement & résolution', short:'Traitement & résolution', note:'Exactitude, conformité, traitement, traçabilité et résolution de la demande.' },
+    posture: { name:'Communication & posture', short:'Communication & posture', note:'Qualité de communication, posture professionnelle et respect du client.' }
   };
 
+  var PGV_GRID = [
+    // Accueil & compréhension — 14 points
+    { code:'PGV-01', legacyCodes:['CTC-01','CTC-10'], cat:'accueil', step:1, weight:2, critical:false, na:false,
+      label:'Accueil personnalisé',
+      critere:'Décroché dans le délai attendu, formule d’accueil complète et professionnelle; le nom du client est utilisé à bon escient.' },
+    { code:'PGV-02', legacyCodes:['CTC-02','CTC-03','NC-07'], cat:'accueil', step:1, weight:6, critical:false, na:false,
+      label:'Écoute active et reformulation',
+      critere:'Laisser le client exposer sa demande sans l’interrompre, montrer une écoute active, reformuler ou synthétiser puis faire confirmer la compréhension.' },
+    { code:'PGV-03', legacyCodes:['CTB-01','CTB-11'], cat:'accueil', step:1, weight:6, critical:true, na:false,
+      label:'Identification et confidentialité',
+      critere:'Vérifier l’identité avant d’accéder au dossier ou de communiquer une donnée; protéger les informations et ne rien révéler à un tiers non authentifié.' },
+
+    // Traitement & résolution — 32 points
+    { code:'PGV-04', legacyCodes:['CTB-04','CTC-04','CTC-05'], cat:'traitement', step:2, weight:7, critical:true, na:false,
+      label:'Réponse exacte, pertinente et claire',
+      critere:'Répondre à la demande avec une information vérifiée et conforme à la procédure, de façon claire, sans jargon ni digression.' },
+    { code:'PGV-05', legacyCodes:['CTB-05','CTB-06'], cat:'traitement', step:2, weight:6, critical:true, na:false,
+      label:'Procédure respectée et engagement autorisé',
+      critere:'Appliquer toutes les étapes de la procédure, sans laisser un traitement partiel au client ni promettre un geste, délai ou exception hors mandat.' },
+    { code:'PGV-06', legacyCodes:['CTB-07','CTB-12','CTB-10'], cat:'traitement', step:2, weight:5, critical:false, na:true,
+      label:'Dossier tracé et mis à jour',
+      critere:'Saisir les actions et le statut dans l’outil pendant l’appel; ajouter une note utile au dossier et clôturer correctement. N/A si aucune mise à jour ni note n’est requise.' },
+    { code:'PGV-07', legacyCodes:['CTC-06','NC-08'], cat:'traitement', step:2, weight:5, critical:false, na:false,
+      label:'Réclamation traitée avec empathie',
+      critere:'Reconnaître la gêne ou l’émotion du client sans posture défensive, reformuler le problème et proposer une solution ou une alternative adaptée.' },
+    { code:'PGV-08', legacyCodes:['CTB-08','CTC-07','CTC-08'], cat:'traitement', step:2, weight:5, critical:false, na:true,
+      label:'Attente, transfert et escalade maîtrisés',
+      critere:'Demander l’accord et expliquer une mise en attente; annoncer et présenter tout transfert; escalader au bon service avec un motif explicite. N/A si aucun de ces cas ne se présente.' },
+    { code:'PGV-09', legacyCodes:['CTB-09','CTC-09'], cat:'traitement', step:2, weight:4, critical:false, na:false,
+      label:'Suite annoncée et clôture complète',
+      critere:'Récapituler le résultat, préciser la prochaine étape, son délai et son canal, vérifier si le client a une autre demande puis conclure avec une formule de politesse.' },
+
+    // Communication & posture — 11 points
+    { code:'PGV-10', legacyCodes:['NC-01','NC-06'], cat:'posture', step:3, weight:5, critical:false, na:false,
+      label:'Communication orale professionnelle',
+      critere:'Voix audible et stable, articulation et rythme adaptés, ton chaleureux et professionnel, vocabulaire soigné sans argot ni tics de langage.' },
+    { code:'PGV-11', legacyCodes:['NC-09','NC-10'], cat:'posture', step:3, weight:6, critical:true, na:false,
+      label:'Maîtrise de soi, neutralité et respect',
+      critere:'Rester calme face à la tension; ne pas ironiser, juger ou discriminer; respecter le client et garder une posture neutre.' }
+  ];
+
   var PGV_OBJECTIFS = {
-    scoreCible: 85,
-    conformiteExigee: true,
-    calibragesParMois: 4,
-    ecoutesCroiseesParMois: 1,
-    progressionCible: 3
+    scoreCible:85,
+    conformiteExigee:true,
+    calibragesParMois:4,
+    ecoutesCroiseesParMois:1,
+    progressionCible:3
   };
 
   var PGV_STEPS = {
-    0: 'Transverse',
-    1: '1 · Réception',
-    2: '2 · Identification',
-    3: '3 · Qualification',
-    4: '4 · Traitement',
-    5: '5 · Escalade',
-    6: '6 · Clôture'
+    0:'Transverse',
+    1:'Accueil & compréhension',
+    2:'Traitement & résolution',
+    3:'Communication & posture'
   };
 
   function pgvScore(values) {
     var oui = 0, evalue = 0, repondu = 0, critKO = [];
     var fam = {}, steps = {};
     Object.keys(PGV_FAMILIES).forEach(function (k) { fam[k] = { oui:0, evalue:0, pct:null }; });
-    for (var s = 0; s <= 6; s++) steps[s] = { oui:0, evalue:0, pct:null };
+    for (var s = 0; s <= 3; s++) steps[s] = { oui:0, evalue:0, pct:null };
 
     PGV_GRID.forEach(function (g, i) {
       var v = values[i], w = g.weight;
@@ -136,8 +82,7 @@
         steps[g.step].oui += w; steps[g.step].evalue += w;
       } else if (v === 'Non') {
         evalue += w; repondu++;
-        fam[g.cat].evalue += w;
-        steps[g.step].evalue += w;
+        fam[g.cat].evalue += w; steps[g.step].evalue += w;
         if (g.critical) critKO.push(g.code);
       } else if (v === 'N/A') {
         repondu++;
@@ -147,7 +92,7 @@
     Object.keys(fam).forEach(function (k) {
       var f = fam[k]; f.pct = f.evalue ? Math.round(f.oui / f.evalue * 100) : null;
     });
-    for (var i = 0; i <= 6; i++) {
+    for (var i = 0; i <= 3; i++) {
       var st = steps[i]; st.pct = st.evalue ? Math.round(st.oui / st.evalue * 100) : null;
     }
 
@@ -161,9 +106,9 @@
       pct >= 70 ? 'consolider' : 'critique';
 
     return {
-      pct: pct, fam: fam, steps: steps, complet: complet,
-      critKO: critKO, nonConforme: critKO.length > 0, niveau: niveau,
-      totalPoints: evalue, obtenuPoints: oui, restants: PGV_GRID.length - repondu
+      pct:pct, fam:fam, steps:steps, complet:complet,
+      critKO:critKO, nonConforme:critKO.length > 0, niveau:niveau,
+      totalPoints:evalue, obtenuPoints:oui, restants:PGV_GRID.length - repondu
     };
   }
 
@@ -172,21 +117,12 @@
   window.PGV_OBJECTIFS = PGV_OBJECTIFS;
   window.PGV_STEPS = PGV_STEPS;
   window.pgvScore = pgvScore;
-
   window.pgvElementCountByFamily = function () {
     var c = {}; Object.keys(PGV_FAMILIES).forEach(function (k) { c[k] = 0; });
     PGV_GRID.forEach(function (g) { c[g.cat]++; }); return c;
   };
   window.pgvElementCountByStep = function () {
-    var c = {}; for (var s = 0; s <= 6; s++) c[s] = 0;
-    PGV_GRID.forEach(function (g) { c[g.step]++; }); return c;
-  };
-  window.pgvWeightByFamily = function () {
-    var w = {}; Object.keys(PGV_FAMILIES).forEach(function (k) { w[k] = 0; });
-    PGV_GRID.forEach(function (g) { w[g.cat] += g.weight; }); return w;
-  };
-  window.pgvWeightByStep = function () {
-    var w = {}; for (var s = 0; s <= 6; s++) w[s] = 0;
-    PGV_GRID.forEach(function (g) { w[g.step] += g.weight; }); return w;
+    var c = {}; Object.keys(PGV_STEPS).forEach(function (k) { c[k] = 0; });
+    PGV_GRID.forEach(function (g) { c[g.step] = (c[g.step] || 0) + 1; }); return c;
   };
 })();
