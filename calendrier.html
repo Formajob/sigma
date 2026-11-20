@@ -289,11 +289,16 @@
           '<div><small>Points en écart</small><strong>' + noCount + '</strong></div>' +
           '<div><small>Canal</small><strong>' + esc(c.channel || 'Appel') + '</strong></div>' +
         '</div>' +
-        '<h3 style="margin:14px 0 8px">Détail des critères</h3><div class="detail-fiss">';
-      window.PGV_GRID.forEach(function (g) {
-        var el = elementByCode[g.code], r = el && resultMap[el.id];
-        html += '<div><small>' + esc(g.code) + ' · ' + esc(g.label) + ' · ' + esc(g.cat) + '</small><p><b>' +
-          esc(r ? r.result : 'N/A') + '</b>' + (r && r.reason ? ' — ' + esc(r.reason) : '') + '</p></div>';
+        '<h3 style="margin:14px 0 8px">Détail des critères</h3><div class="cal-detail-families">';
+      var detailTitles = { CTB:'Traitement client', CTC:'Relation client', NC:'Savoir-être' };
+      ['CTB','CTC','NC'].forEach(function (cat) {
+        html += '<section class="cal-detail-family"><h4>' + esc(detailTitles[cat]) + '</h4><div class="cal-detail-rows">';
+        window.PGV_GRID.filter(function (g) { return g.cat === cat; }).forEach(function (g) {
+          var el = elementByCode[g.code], r = el && resultMap[el.id];
+          html += '<article><div><strong>' + esc(g.label) + '</strong><p>' + esc(g.critere) + '</p></div><div class="cal-detail-result"><b>' +
+            esc(r ? r.result : 'N/A') + '</b>' + (r && r.reason ? '<small>' + esc(r.reason) + '</small>' : '') + '</div></article>';
+        });
+        html += '</div></section>';
       });
       html += '</div>' + (c.notes ? '<div class="detail-item" style="margin-top:10px"><small>Notes</small><p>' + esc(c.notes) + '</p></div>' : '') +
         '';
@@ -361,32 +366,83 @@
         finally { b.disabled = false; }
       });
     } else {
+      // Grille d'évaluation identique à l'ancien formulaire Calibrages :
+      // critères regroupés par typologie, réponses radio et score live à droite.
       var resultMap = {};
       (r.calibration_results || []).forEach(function (x) { resultMap[x.element_id] = x; });
       var agentOpts = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
-      var form = '<div class="f-row c2">' +
-        '<div><label class="f-label">Agent PGV</label><select id="ec-agent" class="f-select">' + agentOpts + '</select></div>' +
-        '<div><label class="f-label">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
-        '<div><label class="f-label">Date de l’appel</label><input type="date" id="ec-call-date" class="f-input" value="' + esc(r.call_date || '') + '"></div>' +
-        '<div><label class="f-label">Date du calibrage</label><input type="date" id="ec-date" class="f-input" value="' + esc(r.calibration_date || '') + '"></div>' +
-        '<div><label class="f-label">ID d’appel</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
-        '<div><label class="f-label">Évaluateur</label><input id="ec-evaluator" class="f-input" value="' + esc(r.evaluator_name || '') + '"></div>' +
-        '</div><div class="f-row"><label class="f-label">Notes</label><textarea id="ec-notes" class="f-input" rows="2">' + esc(r.notes || '') + '</textarea></div>';
-      form += '<div class="cal-daylist">';
-      window.PGV_GRID.forEach(function (g, i) {
+      var typology = { CTB:'Traitement client', CTC:'Relation client', NC:'Savoir-être' };
+      var values = window.PGV_GRID.map(function (g) {
         var el = elementByCode[g.code], old = el && resultMap[el.id];
-        var val = old ? old.result : 'N/A';
-        form += '<div class="cal-dayitem"><b>' + esc(g.code) + ' · ' + esc(g.label) + '</b>' +
-          '<div class="cal-answer-row"><div class="cal-answer-set" role="group" aria-label="Réponse ' + esc(g.code + ' · ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
-          ['Oui','Non','N/A'].map(function (x) { return '<button type="button" class="cal-answer-option' + (x === val ? ' selected-' + (x === 'Oui' ? 'oui' : x === 'Non' ? 'non' : 'na') : '') + '" data-cal-answer="' + i + '" data-value="' + x + '" aria-pressed="' + (x === val ? 'true' : 'false') + '">' + x + '</button>'; }).join('') + '</div>' +
-          '<div class="cal-reason-wrap" data-cal-reason-wrap="' + i + '"' + (val === 'Non' ? '' : ' hidden') + '><input class="f-input" data-cal-reason="' + i + '" aria-label="Motif si Non pour ' + esc(g.code) + '" placeholder="Motif si Non" value="' + esc(old ? old.reason || '' : '') + '"></div></div></div>';
+        return old ? old.result : '';
       });
-      form += '</div>';
+      var form = '<div class="cal-editor-layout"><div class="cal-editor-main">' +
+        '<div class="cal-editor-meta f-row c2">' +
+          '<div><label class="f-label" for="ec-agent">Agent évalué</label><select id="ec-agent" class="f-select">' + agentOpts + '</select></div>' +
+          '<div><label class="f-label" for="ec-date">Date du calibrage</label><input type="date" id="ec-date" class="f-input" value="' + esc(r.calibration_date || '') + '"></div>' +
+          '<div><label class="f-label" for="ec-call-date">Date de l’appel</label><input type="date" id="ec-call-date" class="f-input" value="' + esc(r.call_date || '') + '"></div>' +
+          '<div><label class="f-label" for="ec-call">N° d’appel / ticket</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
+          '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+          '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
+        '</div><div class="cal-question-list">';
+      ['CTB','CTC','NC'].forEach(function (cat) {
+        var items = window.PGV_GRID.map(function (g, i) { return { g:g, i:i }; }).filter(function (x) { return x.g.cat === cat; });
+        form += '<section class="cal-question-family"><h3 class="cal-question-family-title">' + esc(typology[cat]) + '</h3>';
+        items.forEach(function (x) {
+          var g = x.g, i = x.i, el = elementByCode[g.code], old = el && resultMap[el.id], val = values[i];
+          var naDisabled = (!g.na || (el && el.na_allowed === false)) && val !== 'N/A' ? ' disabled' : '';
+          form += '<article class="cal-editor-question"><div class="cal-editor-question-copy"><strong>' + esc(g.label) + '</strong><p>' + esc(g.critere) + '</p></div>' +
+            '<div class="cal-editor-answer"><div class="cal-answer-set" role="group" aria-label="' + esc(typology[cat] + ' — ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
+            ['Oui','Non','N/A'].map(function (answer) {
+              var active = answer === val, state = answer === 'Oui' ? 'oui' : answer === 'Non' ? 'non' : 'na';
+              return '<button type="button" class="cal-answer-option' + (active ? ' selected-' + state : '') + '" data-cal-answer="' + i + '" data-value="' + answer + '" aria-pressed="' + (active ? 'true' : 'false') + '"' + (answer === 'N/A' ? naDisabled : '') + '>' + answer + '</button>';
+            }).join('') + '</div><div class="cal-reason-wrap" data-cal-reason-wrap="' + i + '"' + (val === 'Non' ? '' : ' hidden') + '><input class="f-input" data-cal-reason="' + i + '" aria-label="Motif obligatoire pour ' + esc(g.label) + '" placeholder="Motif obligatoire pour un « Non »" value="' + esc(old ? old.reason || '' : '') + '"></div></div></article>';
+        });
+        form += '</section>';
+      });
+      form += '</div></div><aside class="cal-editor-side"><section class="panel cal-score-panel"><div class="panel-body">' +
+        '<h3 class="cal-score-title">Score de l’appel</h3><div class="cal-score-value"><strong id="ec-score">0</strong><span>%</span></div>' +
+        '<div id="ec-level" class="p-pill grey" style="margin-top:8px">Grille incomplète</div><div id="ec-critical" class="cal-score-warning" hidden></div>' +
+        '<div id="ec-progress" class="cal-score-progress">0 / 26 critères renseignés</div><div id="ec-family-scores" class="cal-family-scores"></div>' +
+        '</div></section><section class="panel cal-score-extra"><div class="panel-body">' +
+          '<div class="f-row"><div><label class="f-label" for="ec-evaluator">Évaluateur</label><input class="f-input" id="ec-evaluator" value="' + esc(r.evaluator_name || '') + '" placeholder="Ton nom"></div></div>' +
+          '<label class="cal-followup-check"><input type="checkbox" id="ec-create-doc"><span>Créer une documentation de suivi</span></label>' +
+          '<p class="f-note" style="margin:6px 0 0">Rencontre planifiée avec l’agent et points non maîtrisés du calibrage.</p>' +
+          '<div id="ec-doc-fields" hidden><div class="f-row c2" style="margin-top:12px"><div><label class="f-label" for="ec-doc-meet">Date de rencontre</label><input class="f-input" type="date" id="ec-doc-meet" value="' + esc(r.calibration_date || '') + '"></div><div><label class="f-label" for="ec-doc-next">Échéance de suivi</label><input class="f-input" type="date" id="ec-doc-next"></div></div></div>' +
+          '<button type="button" class="button button-primary" id="event-edit-save" style="width:100%;margin-top:14px">Enregistrer le calibrage</button>' +
+          '<p class="f-note" style="margin:8px 0 0">Le résultat est enregistré dans l’espace PGV.</p>' +
+        '</div></section></aside></div>';
+      $('#event-actions').innerHTML = '<button type="button" class="btn-sm" id="event-edit-cancel">Annuler</button>';
+      $('#event-actions #event-edit-cancel').addEventListener('click', closeEvent);
       $('#event-body').innerHTML = form;
+      $('#ec-create-doc').addEventListener('change', function () { $('#ec-doc-fields').hidden = !this.checked; });
+
+      function renderCalScore() {
+        var score = window.pgvScore(values);
+        $('#ec-score').textContent = score.pct;
+        var levels = { excellent:['Excellent','ok'], conforme:['Conforme','ok'], consolider:['À consolider','warn'], critique:['Sous le seuil','bad'], nc:['Non conforme','bad'], incomplet:['Grille incomplète','grey'] };
+        var level = levels[score.niveau];
+        $('#ec-level').textContent = level[0];
+        $('#ec-level').className = 'p-pill ' + level[1];
+        $('#ec-progress').textContent = (window.PGV_GRID.length - score.restants) + ' / ' + window.PGV_GRID.length + ' critères renseignés' +
+          (score.restants ? ' · ' + score.restants + ' restant' + (score.restants > 1 ? 's' : '') : '');
+        var critical = $('#ec-critical');
+        if (score.critKO.length) {
+          var criticalNames = window.PGV_GRID.filter(function (g) { return score.critKO.indexOf(g.code) >= 0; }).map(function (g) { return g.label; });
+          critical.hidden = false;
+          critical.textContent = 'Critères critiques en « Non » : ' + criticalNames.join(' · ') + ' — le calibrage est non conforme quel que soit le score.';
+        } else critical.hidden = true;
+        $('#ec-family-scores').innerHTML = ['CTB','CTC','NC'].map(function (cat) {
+          var familyScore = score.fam[cat], pct = familyScore.pct;
+          return '<div class="cal-family-score"><div><span>' + esc(typology[cat]) + '</span><b>' + (pct == null ? '—' : pct + ' %') + '</b></div><span class="cal-family-track"><i style="width:' + (pct || 0) + '%"></i></span></div>';
+        }).join('');
+      }
       $('#event-body').querySelectorAll('[data-cal-answer]').forEach(function (button) {
         button.addEventListener('click', function () {
-          var group = button.closest('[data-cal-result]'), value = button.getAttribute('data-value');
+          var group = button.closest('[data-cal-result]'), index = Number(group.getAttribute('data-cal-result'));
+          var value = button.getAttribute('data-value');
           group.setAttribute('data-selected', value);
+          values[index] = value;
           group.querySelectorAll('[data-cal-answer]').forEach(function (option) {
             var selected = option.getAttribute('data-value') === value;
             option.setAttribute('aria-pressed', selected ? 'true' : 'false');
@@ -394,32 +450,56 @@
             option.classList.toggle('selected-non', selected && value === 'Non');
             option.classList.toggle('selected-na', selected && value === 'N/A');
           });
-          var reason = $('#event-body').querySelector('[data-cal-reason-wrap="' + group.getAttribute('data-cal-result') + '"]');
-          reason.hidden = value !== 'Non';
-          if (value === 'Non') reason.querySelector('input').focus();
+          var reasonWrap = $('#event-body').querySelector('[data-cal-reason-wrap="' + index + '"]');
+          reasonWrap.hidden = value !== 'Non';
+          if (value === 'Non') reasonWrap.querySelector('input').focus();
+          else reasonWrap.querySelector('input').value = '';
+          renderCalScore();
         });
       });
+      renderCalScore();
       $('#event-edit-save').addEventListener('click', async function () {
         if (ELEMENTS.length < window.PGV_GRID.length) { OPS.toast('Grille indisponible; impossible de modifier les réponses.', 'error'); return; }
-        var b = this; b.disabled = true;
+        var b = this; b.disabled = true; b.textContent = 'Enregistrement…';
         try {
-          var vals = window.PGV_GRID.map(function (_, i) { return $('[data-cal-result="' + i + '"]').value; });
-          var reasons = window.PGV_GRID.map(function (_, i) { return $('[data-cal-reason="' + i + '"]').value.trim(); });
-          var missing = vals.findIndex(function (v, i) { return v === 'Non' && !reasons[i]; });
-          if (missing >= 0) throw new Error('Motif requis pour ' + window.PGV_GRID[missing].code + '.');
+          var score = window.pgvScore(values);
+          if (score.restants) throw new Error('Complète les ' + score.restants + ' critère(s) restant(s).');
+          var reasons = window.PGV_GRID.map(function (_, i) { var input = $('[data-cal-reason="' + i + '"]'); return input ? input.value.trim() : ''; });
+          var invalidNa = window.PGV_GRID.findIndex(function (g, i) { var element = elementByCode[g.code]; return values[i] === 'N/A' && (!g.na || !element || element.na_allowed === false); });
+          if (invalidNa >= 0) throw new Error('N/A n’est pas autorisé pour « ' + window.PGV_GRID[invalidNa].label + ' ».');
+          var missing = values.findIndex(function (v, i) { return v === 'Non' && !reasons[i]; });
+          if (missing >= 0) throw new Error('Motif obligatoire pour « ' + window.PGV_GRID[missing].label + ' ».');
           var elements = window.PGV_GRID.map(function (g) { return elementByCode[g.code]; });
           if (elements.some(function (x) { return !x; })) throw new Error('La grille PGV n’est pas complète en base.');
-          var calibrationRow = { agentId:$('#ec-agent').value, status:$('#ec-status').value,
+          var agentId = $('#ec-agent').value;
+          var calibrationRow = { agentId:agentId, status:$('#ec-status').value,
             callDate:$('#ec-call-date').value, date:$('#ec-date').value, callId:$('#ec-call').value.trim(),
             evaluator:$('#ec-evaluator').value.trim(), evaluator_kind:r.evaluator || 'Autre', language:r.language || 'Français',
-            notes:$('#ec-notes').value.trim(), values:vals, reasons:reasons, elements:elements };
+            notes:$('#ec-notes').value.trim(), values:values, reasons:reasons, elements:elements };
           var savedCal = r.id ? await pgvData.updateCalibration(r.id, calibrationRow) : await pgvData.saveCalibration(calibrationRow);
-          OPS.toast(r.id ? 'Calibrage mis à jour' : 'Calibrage créé'); await load();
+          var docMsg = '';
+          if ($('#ec-create-doc').checked) {
+            var failedItems = window.PGV_GRID.filter(function (g, i) { return values[i] === 'Non'; });
+            var agentName = name(agentId), meetingDate = $('#ec-doc-meet').value || $('#ec-date').value;
+            try {
+              await pgvData.createFollowUpDoc({
+                agentId:agentId, callId:$('#ec-call').value.trim() || null, meetingDate:meetingDate,
+                followUpDate:$('#ec-doc-next').value || null, object:'Calibrage — coaching des points à consolider',
+                facts:'Calibrage du ' + OPS.fmtDate($('#ec-date').value) + ' sur l’appel ' + ($('#ec-call').value.trim() || '(sans numéro)') + ' : score ' + score.pct + ' %, niveau ' + score.niveau + '.',
+                impacts:failedItems.length ? failedItems.length + ' point(s) à consolider : ' + failedItems.map(function (g) { return g.label; }).join(' · ') : 'Aucun point non maîtrisé : séance de consolidation.',
+                solutions:failedItems.length ? failedItems.map(function (g) { return '• ' + g.label + ' — ' + g.critere; }).join('\n') : '• Maintenir les acquis et partager les bonnes pratiques.',
+                followup:'Coaching de ' + agentName + ' le ' + OPS.fmtDate(meetingDate) + '. Revoir les ' + failedItems.length + ' point(s) signalé(s), puis réécoute de contrôle.'
+              });
+              docMsg = ' + documentation de suivi';
+            } catch (docErr) { OPS.toast('Calibrage enregistré, mais création de la documentation échouée : ' + docErr.message, 'error'); }
+          }
+          OPS.toast((r.id ? 'Calibrage mis à jour' : 'Calibrage enregistré') + docMsg);
+          await load();
           var fresh = CAL.filter(function (x) { return x.id === savedCal.id; })[0];
           if (fresh) { CURRENT_EVENT = { kind:'cal', id:fresh.id, date:fresh.calibration_date, agentId:fresh.agent_id, record:fresh }; renderDay([CURRENT_EVENT]); }
           else closeEvent();
         } catch (err) { OPS.toast(err.message || 'Modification refusée', 'error'); }
-        finally { b.disabled = false; }
+        finally { b.disabled = false; b.textContent = 'Enregistrer le calibrage'; }
       });
     }
   }

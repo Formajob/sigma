@@ -482,3 +482,53 @@ body.modal-open{overflow:hidden}
 #event-modal .cal-reason-wrap{flex:1 1 220px;min-width:180px}
 #event-modal .cal-reason-wrap[hidden]{display:none!important}
 @media(max-width:520px){#event-modal .cal-answer-row{align-items:stretch}#event-modal .cal-answer-set{width:100%}#event-modal .cal-answer-option{flex:1}#event-modal .cal-reason-wrap{flex-basis:100%;min-width:0}}
+/* Éditeur de calibrage du calendrier — reprend la grille et le score latéral PGV. */
+#event-modal .ops-modal-card{width:min(1280px,98vw);max-width:1280px}
+#event-modal .cal-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 286px;align-items:start;gap:18px}
+#event-modal .cal-editor-main{min-width:0}
+#event-modal .cal-editor-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 16px;padding:16px;border:1px solid #EAE5DD;border-radius:7px;background:#FBFAF7}
+#event-modal .cal-editor-note{grid-column:1/-1}
+#event-modal .cal-question-family{margin:0 0 16px;padding:14px;border:1px solid #E7E2D9;border-radius:7px;background:#fff}
+#event-modal .cal-question-family-title{margin:0 0 10px;padding:0 0 9px;border-bottom:1px solid #EEEAE3;color:#243741;font:700 16px/1.2 var(--serif)}
+#event-modal .cal-editor-question{display:grid;grid-template-columns:minmax(0,1fr) 232px;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #F0EDE7}
+#event-modal .cal-editor-question:last-child{border-bottom:0}
+#event-modal .cal-editor-question-copy{min-width:0}
+#event-modal .cal-editor-question-copy strong{display:block;color:#3F4D53;font-size:12px;line-height:1.4}
+#event-modal .cal-editor-question-copy p{margin:4px 0 0;color:#778387;font-size:10px;line-height:1.5}
+#event-modal .cal-editor-answer{min-width:0}
+#event-modal .cal-editor-answer .cal-answer-set{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+#event-modal .cal-editor-answer .cal-answer-option{min-width:0;padding:8px 6px}
+#event-modal .cal-reason-wrap{margin-top:7px}
+#event-modal .cal-editor-side{min-width:0;align-self:stretch}
+#event-modal .cal-score-panel{position:sticky;top:8px;margin:0 0 12px}
+#event-modal .cal-score-panel .panel-body,#event-modal .cal-score-extra .panel-body{padding:16px}
+#event-modal .cal-score-title{margin:0 0 8px;color:#7B878B;font:800 10px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+#event-modal .cal-score-value{display:flex;align-items:baseline;gap:4px;color:#17242D}
+#event-modal .cal-score-value strong{font:600 52px/1 var(--serif);letter-spacing:-.05em}
+#event-modal .cal-score-value span{color:#778387;font-size:18px}
+#event-modal .cal-score-warning{margin-top:10px;padding:9px 10px;border:1px solid #F0D2C9;border-radius:5px;color:#943F35;background:#FDF0EE;font-size:10px;line-height:1.45}
+#event-modal .cal-score-progress{margin-top:11px;color:#748186;font-size:10px;line-height:1.5}
+#event-modal .cal-family-scores{display:grid;gap:11px;margin-top:15px}
+#event-modal .cal-family-score>div{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;color:#5C686D;font-size:10px}
+#event-modal .cal-family-score b{color:#243741}
+#event-modal .cal-family-track{display:block;height:6px;overflow:hidden;border-radius:10px;background:#ECE9E3}
+#event-modal .cal-family-track i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#D98255,#C0622D);transition:width .2s ease}
+#event-modal .cal-followup-check{display:flex;align-items:flex-start;gap:8px;color:#3F4D53;font-size:11px;font-weight:700;line-height:1.4;cursor:pointer}
+#event-modal .cal-followup-check input{margin:1px 0 0;accent-color:#C0622D}
+#event-modal .cal-score-extra .f-note{font-size:10px;line-height:1.5}
+#event-modal .cal-editor-side #event-edit-save{min-height:42px}
+@media(max-width:900px){#event-modal .cal-editor-layout{grid-template-columns:minmax(0,1fr) 245px;gap:12px}#event-modal .cal-editor-question{grid-template-columns:minmax(0,1fr) 205px}}
+@media(max-width:760px){#event-modal .cal-editor-layout{grid-template-columns:1fr}#event-modal .cal-editor-side{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:10px}#event-modal .cal-score-panel{position:static;margin:0}#event-modal .cal-editor-question{grid-template-columns:1fr}#event-modal .cal-editor-answer{max-width:360px;width:100%}}
+@media(max-width:520px){#event-modal .cal-editor-meta{grid-template-columns:1fr}#event-modal .cal-editor-note{grid-column:auto}#event-modal .cal-editor-side{grid-template-columns:1fr}#event-modal .cal-question-family{padding:11px}#event-modal .cal-editor-question{padding:10px 0}}
+#event-modal .cal-detail-families{display:grid;gap:13px}
+#event-modal .cal-detail-family{padding:12px;border:1px solid #E7E2D9;border-radius:6px;background:#fff}
+#event-modal .cal-detail-family h4{margin:0 0 8px;color:#243741;font:700 14px var(--serif)}
+#event-modal .cal-detail-rows{display:grid;gap:7px}
+#event-modal .cal-detail-rows article{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:8px 0;border-top:1px solid #F0EDE7}
+#event-modal .cal-detail-rows article:first-child{border-top:0}
+#event-modal .cal-detail-rows strong{font-size:11px}
+#event-modal .cal-detail-rows p{margin:3px 0 0;color:#748186;font-size:10px;line-height:1.5}
+#event-modal .cal-detail-result{min-width:88px;text-align:right}
+#event-modal .cal-detail-result b{display:block;color:#2F6B46;font-size:11px}
+#event-modal .cal-detail-result small{display:block;margin-top:3px;color:#943F35;font-size:9px;line-height:1.4}
+@media(max-width:600px){#event-modal .cal-detail-rows article{grid-template-columns:1fr}#event-modal .cal-detail-result{text-align:left}}
