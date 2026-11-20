@@ -28,7 +28,7 @@ VALUES
   ('pgv','PGV-04','traitement'::public.qa_category,'Réponse exacte, pertinente et claire',4,7,true,false,true),
   ('pgv','PGV-05','traitement'::public.qa_category,'Procédure respectée et engagement autorisé',5,6,true,false,true),
   ('pgv','PGV-06','traitement'::public.qa_category,'Dossier tracé et mis à jour',6,5,false,true,true),
-  ('pgv','PGV-07','traitement'::public.qa_category,'Réclamation traitée avec empathie',7,5,false,false,true),
+  ('pgv','PGV-07','traitement'::public.qa_category,'Réclamation traitée avec empathie',7,5,false,true,true),
   ('pgv','PGV-08','traitement'::public.qa_category,'Attente, transfert et escalade maîtrisés',8,5,false,true,true),
   ('pgv','PGV-09','traitement'::public.qa_category,'Suite annoncée et clôture complète',9,4,false,false,true),
   ('pgv','PGV-10','posture'::public.qa_category,'Communication orale professionnelle',10,5,false,false,true),

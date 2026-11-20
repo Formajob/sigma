@@ -592,3 +592,9 @@ body.modal-open{overflow:hidden}
   .at-break-menu{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.at-status-alert.over{animation:none}.at-status-meter i,.at-break-menu button{transition:none}}
+#event-modal .cal-grid-note{margin:0 0 12px;padding:10px 12px;border:1px solid #E7E2D9;border-radius:6px;color:#68767B;background:#F8F7F3;font-size:10px;line-height:1.5}
+#event-modal .cal-critical-tag{display:inline-flex;align-items:center;margin-left:8px;padding:3px 7px;border:1px solid #E7B9B2;border-radius:20px;color:#923C33;background:#FDEDEA;font:800 8px/1.2 var(--sans);letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+#event-modal .cal-editor-question.critical{margin-inline:-5px;padding-inline:8px;border-left:3px solid #B4514A;background:linear-gradient(90deg,#FFF7F5,transparent 75%)}
+#event-modal .cal-answer-option:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(.65)}
+#event-modal .cal-answer-option:disabled:hover{border-color:#E0DCD5;background:#fff}
+#event-modal .cal-detail-rows article.critical{margin-inline:-5px;padding-inline:8px;border-left:3px solid #B4514A;background:#FFF7F5}
