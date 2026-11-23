@@ -1,0 +1,55 @@
+MISE À JOUR PGV — CALENDRIER, APPELS MENSUELS ET CLOISONNEMENT
+
+CONTENU
+- Calibrages et documentation centralisés dans Calendrier; les anciennes URLs redirigent vers le calendrier.
+- Modale calendrier élargie; elle ne se ferme qu'avec Fermer ou Annuler.
+- Bouton « Envoyer à l’agent » uniquement pour un document partagé (visibility='agent').
+- Saisie d'appels traités mensuelle par agent depuis le dashboard, réservée aux responsables, avec remplacement (upsert), pas de cumul.
+- Les agents gardent seulement la saisie quotidienne des appels reçus; ils ne saisissent plus les appels traités.
+- Email de notification Sigma stylisé, envoyé par une Edge Function et Resend.
+- Le retour du lien de récupération est capturé avant l'initialisation du SDK Supabase, afin d'éviter que le SDK efface le fragment recovery avant l'affichage du formulaire nouveau mot de passe.
+- Dans Calendrier, le calibrage utilise la grille synthétisée en 11 critères, les 3 typologies et le score live latéral; les codes techniques CTB/CTC/NC ne sont pas affichés.
+- La grille PGV est synthétisée en 11 critères et 3 typologies; total des poids conservé à 57. Les anciennes réponses restent archivées et une migration les agrège vers les nouveaux critères.
+- La page Présence s’ouvre sur « Ma journée » pour un agent, avec un chrono HH:MM:SS, des commandes tactiles et le changement direct de statut; l’alerte apparaît avant la limite configurée puis au dépassement.
+- Le Dashboard charge maintenant le helper OPS utilisé par l'enregistrement des volumes mensuels.
+- Cloisonnement des profils PGV/americana: jawad@acx.ma reste PGV seulement.
+
+EXTRACTION
+1. Extraire l'archive à la racine de C:\Users\User18\Desktop\SIGMA\sigma (pas dans sigma-build).
+2. Garder les dossiers js/, scripts/, css/, assets/ et supabase/.
+
+ORDRE SUPABASE
+1. Vérifier une sauvegarde récente.
+2. Si pas déjà appliqué, exécuter sql-fix-isolation-pgv.sql en premier. Il attribue Jawad à PGV et remplace les politiques RLS permissives.
+3. Exécuter sql-appels-recus.sql si la colonne calls_received n'existe pas.
+4. Exécuter sql-appels-mensuels.sql avant d'utiliser la saisie mensuelle.
+5. Exécuter sql-agent-sac-pgv.sql si les rôles des agents PGV doivent être corrigés.
+6. sql-auth-trigger-agent-pgv.sql seulement si le trigger invitation PGV n'est pas déjà installé.
+7. Faire une sauvegarde; exécuter sql-grille-pgv-synthese-enum.sql seul et valider, puis exécuter sql-grille-pgv-synthese.sql. Cette migration archive les 26 anciens éléments, ajoute les 11 nouveaux et mappe les calibrages historiques complets. Une fusion où au moins une ancienne réponse est « Non » devient « Non »; les pourcentages historiques peuvent donc changer.
+8. Dans Supabase Authentication > URL Configuration, autoriser https://sigma.acx.ma/login.html?client=pgv pour les liens de choix/réinitialisation du mot de passe.
+9. Ne pas exécuter sql-grille-pgv-v2.sql (obsolète) ni réexécuter ops-install.sql ou l'ancien sql-activite-agent.sql après le correctif RLS.
+
+INVITATIONS SUPABASE
+La fonction admin-invite-user ajoute maintenant automatiquement flow=invite à l'URL de retour, pour que login.html ouvre le formulaire de création du mot de passe même si le fragment d'auth a été retiré. Déployer la fonction après le push; vérifier le secret AUTH_REDIRECT_URL (valeur recommandée: https://sigma.acx.ma/login.html?client=pgv). Les liens déjà envoyés ne sont pas modifiés : renvoyer l'invitation après le déploiement. Les demandes de récupération depuis Administration ajoutent flow=recovery.
+
+EMAIL DE DOCUMENTATION
+La notification utilise Resend (email transactionnel séparé de Supabase Auth). Depuis la racine du dépôt, après avoir créé et vérifié le domaine expéditeur chez Resend, configurer les secrets sans les écrire dans les fichiers :
+  npx --yes supabase secrets set RESEND_API_KEY="VOTRE_CLE_RESEND" MAIL_FROM="Sigma <notifications@votre-domaine-verifie.ma>" APP_PUBLIC_URL="https://sigma.acx.ma" --project-ref VOTRE_PROJECT_REF
+Puis déployer :
+  npx --yes supabase functions deploy pgv-send-agent-document --no-verify-jwt --project-ref VOTRE_PROJECT_REF
+La fonction vérifie côté serveur le rôle, profiles.activity='pgv', la visibilité du document et le destinataire. Le logo est chargé depuis l'asset public Sigma.
+
+DÉPLOIEMENT WEB / GIT
+Depuis la racine du dépôt :
+  powershell -ExecutionPolicy Bypass -File .\push-pgv-changes.ps1
+Le script demande confirmation avant commit/push. Vérifier ensuite le déploiement automatique du site.
+
+TESTS APRÈS DÉPLOIEMENT
+- Dashboard > choisir un mois > responsable saisit un total entier pour chaque agent > enregistrer deux fois avec une valeur modifiée : le total affiché doit être la dernière valeur, pas la somme des deux saisies.
+- Compte Agent sur mobile : vérifier l’ouverture directe sur Ma journée, le chrono du statut, le changement direct Pause → Lunch et l’alerte avant/au dépassement de la durée configurée.
+- Compte Agent : aucun champ de saisie des appels traités dans Présence; la valeur mensuelle s'affiche en lecture seule.
+- Calendrier : tester le détail, le formulaire complet, le clic extérieur et Échap (la modale reste ouverte), puis Fermer/Annuler.
+- Envoyer à l'agent apparaît uniquement pour une documentation avec visibilité « Admin + agent concerné »; un calibrage n'affiche pas ce bouton.
+- Tester le mail dans boîte réelle et vérifier les journaux Resend. Pas de secret dans le navigateur.
+
+Aucun SQL, envoi email, déploiement de fonction ou push Git n'est exécuté par la création de cette archive.

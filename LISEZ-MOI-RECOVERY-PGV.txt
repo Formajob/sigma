@@ -1,0 +1,15 @@
+CORRECTIF DU LIEN DE CHOIX DU MOT DE PASSE
+
+Cause : le lien de récupération ouvrait login.html, mais cette page ne proposait pas le formulaire de définition du mot de passe. Le correctif affiche un formulaire lorsque Supabase retourne un PASSWORD_RECOVERY, valide et confirme le nouveau mot de passe via Auth, puis revient à la connexion. Aucun mot de passe n'est conservé dans Sigma.
+
+1. Extraire login.html, administration.html et push-pgv-changes.ps1 à la racine du dépôt Sigma.
+2. Pousser le correctif depuis PowerShell :
+   .\push-pgv-changes.ps1
+3. Dans Supabase > Authentication > URL Configuration, autoriser également :
+   https://sigma.acx.ma/login.html?client=pgv
+   (ou une règle sûre équivalente qui autorise seulement les chemins nécessaires sur sigma.acx.ma).
+4. Attendre que le site soit effectivement à jour sur https://sigma.acx.ma.
+5. Dans Sigma Administration, utiliser « Renvoyer le lien » pour l'agent. Ne pas réutiliser un ancien lien dirigé vers localhost.
+
+Le compte PGV est envoyé vers l'espace PGV après la connexion. Si le lien est expiré ou déjà utilisé, Sigma affiche de demander un nouveau lien.
+Le push Git ne change pas les réglages Supabase et n'envoie aucun email par lui-même.

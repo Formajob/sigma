@@ -18,6 +18,34 @@
 begin;
 
 -- ------------------------------------------------------------
+-- 0. Types de document : la liste est ouverte
+--    L'enum d'origine ne contient que Rencontre, Observation et
+--    Disciplinaire. On ajoute les deux autres par des blocs
+--    séparés (PostgreSQL interdit d'utiliser une valeur d'enum
+--    dans la transaction qui l'ajoute).
+-- ------------------------------------------------------------
+do $$ begin
+  if not exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid
+                  where t.typname = 'doc_type' and e.enumlabel = 'Feedback') then
+    alter type public.doc_type add value 'Feedback';
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid
+                  where t.typname = 'doc_type' and e.enumlabel = 'Rapport de fait') then
+    alter type public.doc_type add value 'Rapport de fait';
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid
+                  where t.typname = 'doc_type' and e.enumlabel = 'Plan d''action') then
+    alter type public.doc_type add value 'Plan d''action';
+  end if;
+end $$;
+
+-- ------------------------------------------------------------
 -- 1. Colonnes d'activité (idempotent)
 -- ------------------------------------------------------------
 alter table public.documents add column if not exists activity text not null default 'americana';

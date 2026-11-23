@@ -1,0 +1,218 @@
+/* Sigma visual refresh — stronger backgrounds, readable type and calm motion. */
+:root {
+  --paper: #F2F3F1;
+  --white: #FFFFFF;
+  --line: #DDE2DE;
+  --muted: #647178;
+  --shadow: 0 14px 36px rgba(23,36,45,.075);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh;
+  color: #1B2B34;
+  background:
+    radial-gradient(ellipse at 88% 7%, rgba(219,154,115,.16), transparent 28rem),
+    radial-gradient(ellipse at 8% 48%, rgba(119,160,145,.10), transparent 30rem),
+    linear-gradient(145deg,#F5F5F1 0%,#EFF2F0 58%,#F7F4EF 100%);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Navigation and page frame */
+.app-shell { grid-template-columns: 258px minmax(0,1fr); }
+.sidebar {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(192,98,45,.24), transparent 18rem),
+    linear-gradient(165deg,#172832 0%,#1B3038 55%,#20343C 100%);
+  box-shadow: 8px 0 28px rgba(23,36,45,.08);
+}
+.brand { padding-bottom: 26px; }
+.workspace { border-radius: 12px; background: rgba(255,255,255,.075); }
+.workspace-label,.nav-label { font-size: 10px; }
+.workspace-name { font-size: 14px; }
+.workspace-sub { font-size: 10px; }
+.side-nav { gap: 6px; }
+.side-nav a { min-height: 45px; border-radius: 9px; font-size: 12px; }
+.side-nav a:hover { transform: translateX(2px); }
+.demo-notice { font-size: 10px; }
+.user-meta strong { font-size: 11px; }
+.user-meta small { font-size: 10px; }
+.topbar {
+  min-height: 70px;
+  border-bottom-color: rgba(215,221,217,.9);
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 5px 20px rgba(23,36,45,.025);
+}
+.crumbs,.top-link,.role-preview,.demo-badge { font-size: 11px; }
+.top-link { border-radius: 9px; padding: 9px 13px; }
+.content { padding: clamp(26px,3.1vw,44px) clamp(20px,3vw,42px) 64px; }
+
+/* Stronger page hierarchy */
+.welcome-row { margin-bottom: 25px; }
+.welcome-kicker { font-size: 11px; letter-spacing: .16em; }
+.welcome-row h1 { margin-top: 8px; font-size: clamp(31px,3vw,42px); letter-spacing: -.05em; }
+.welcome-row p { max-width: 760px; font-size: 14px; line-height: 1.65; }
+.welcome-date { border-radius: 9px; font-size: 12px; }
+.section-title { margin-top: 34px; margin-bottom: 16px; }
+.section-title h2 { font-size: 22px; }
+.section-title p { font-size: 13px; }
+.period-bar { min-height: 58px; border-radius: 12px; background: rgba(255,255,255,.82); }
+.period-info,.period-inputs label { font-size: 12px; }
+.period-info strong { font-size: 13px; }
+.period-inputs input { min-height: 38px; border-radius: 8px; font-size: 12px; }
+
+/* Cards, panels and data surfaces */
+.kpi-grid { gap: 14px; margin-bottom: 18px; }
+.kpi,.panel,.attendance-card,.at-count,.at-kv {
+  border-color: #DEE3DF;
+  border-radius: 14px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 7px 20px rgba(23,36,45,.04);
+}
+.kpi { min-height: 126px; padding: 19px; transition: transform .22s ease,box-shadow .22s ease,border-color .22s ease; }
+.kpi:hover,.attendance-card:hover,.at-count:hover { transform: translateY(-3px); box-shadow: 0 14px 28px rgba(23,36,45,.09); }
+.kpi-label { font-size: 11px; letter-spacing: .08em; }
+.kpi-icon { width: 32px; height: 32px; border-radius: 10px; font-size: 15px; }
+.kpi-value { margin-top: 13px; font-size: 32px; }
+.kpi-foot { font-size: 11px; }
+.panel { overflow: hidden; box-shadow: 0 8px 24px rgba(23,36,45,.045); }
+.panel-head { padding: 19px 21px 15px; }
+.panel-head h2 { font-size: 16px; }
+.panel-head p { font-size: 12px; line-height: 1.5; }
+.panel-body { padding: 19px 21px; }
+.dashboard-grid { gap: 16px; margin-bottom: 18px; }
+.chart-list { gap: 16px; }
+.chart-name,.chart-percent { font-size: 12px; }
+.chart-row { grid-template-columns: minmax(110px,150px) 1fr 46px; }
+.chart-foot,.chart-legend { font-size: 10px; }
+.agent-table th { padding: 11px 9px; font-size: 10px; }
+.agent-table td { padding: 12px 9px; font-size: 12px; }
+.agent-cell { font-size: 12px; }
+.score-pill { font-size: 10px; }
+.empty-note { font-size: 12px; }
+
+/* Legible forms, controls and tabs */
+button,input,select,textarea { font-size: 13px; }
+input,select,textarea { min-height: 40px; }
+.button,.btn,.btn-sm,.small-button,.at-btn { min-height: 42px; border-radius: 9px; font-size: 12px; }
+.button,.btn { padding-inline: 15px; }
+.btn-sm,.small-button { padding-inline: 13px; }
+.field label,.f-label,.form-label,.period-inputs label { font-size: 12px; }
+.f-input,.f-select,.field input,.field select,.field textarea { border-radius: 8px; font-size: 13px; }
+.at-tabs { gap: 7px; margin-bottom: 18px; }
+.at-tab { min-height: 44px; padding: 10px 17px; border-radius: 9px 9px 0 0; font-size: 12px; }
+.at-count { padding: 15px; }
+.at-count strong { font-size: 29px; }
+.at-count span { font-size: 10px; }
+.at-kv span { font-size: 10px; }
+.at-kv strong { font-size: 20px; }
+.at-btn { min-height: 58px; font-size: 13px; }
+.at-btn small { font-size: 10px; }
+
+/* Calendars and dense editors stay usable without losing structure */
+.cal-fam,.cal-question-family,.cal-detail-family { border-radius: 12px; }
+.cal-fam-head { padding: 15px 18px; }
+.cal-fam-head h3 { font-size: 11px; }
+.cal-fam-head span { font-size: 11px; }
+.cal-item { gap: 13px; padding: 14px 18px; }
+.cal-code { font-size: 10px; }
+.cal-body strong { font-size: 13px; }
+.cal-body p { font-size: 11px; }
+.cal-choice label { min-width: 52px; height: 34px; border-radius: 8px; font-size: 12px; }
+.cal-warn { font-size: 11px; }
+.pl-grid { font-size: 12px; }
+.pl-grid th { padding: 11px 7px; font-size: 10px; }
+.pl-grid td.pl-agent { font-size: 12px; }
+.pl-grid td.pl-agent small,.pl-hour { font-size: 10px; }
+.pl-cell select { min-height: 38px; font-size: 11px; }
+.at-daybar { padding: 14px 16px; border-radius: 12px; }
+.at-daybar strong { font-size: 14px; }
+.at-daybar label,.at-daybar small { font-size: 12px; }
+.attendance-card { padding: 17px; }
+.attendance-card-top strong { font-size: 16px; }
+.attendance-card-top small,.attendance-card-metrics small { font-size: 11px; }
+.attendance-card-metrics b { font-size: 13px; }
+.attendance-card-alert { font-size: 12px; }
+
+/* Motion: subtle entrance, clear hover feedback, no motion for reduced-motion users. */
+@keyframes sigma-rise-in {
+  from { opacity: 0; transform: translateY(13px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.content > .welcome-row,.content > .kpi-grid,.content > .dashboard-grid,
+.content > .panel,.content > .section-title,.content > .period-bar,
+.content > .at-tabs,.content > .attendance-cards {
+  animation: sigma-rise-in .58s cubic-bezier(.2,.75,.25,1) both;
+}
+.content > .kpi-grid { animation-delay: .06s; }
+.content > .dashboard-grid,.content > .panel { animation-delay: .11s; }
+.panel,.cal-fam,.cal-question-family,.attendance-card { transition: box-shadow .2s ease,border-color .2s ease,transform .2s ease; }
+.panel:hover { border-color: #D4DCD6; box-shadow: 0 13px 32px rgba(23,36,45,.075); }
+button,a,input,select,textarea { transition: color .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {
+  outline: 3px solid rgba(192,98,45,.35);
+  outline-offset: 3px;
+}
+
+/* Login shares the updated palette, type scale and motion. */
+.login-shell {
+  background:
+    radial-gradient(ellipse at 92% 10%,rgba(219,154,115,.17),transparent 28rem),
+    radial-gradient(ellipse at 10% 88%,rgba(119,160,145,.12),transparent 27rem),
+    linear-gradient(140deg,#F4F5F2,#EEF1EF 62%,#F8F4EF);
+}
+.brand-panel {
+  background:
+    radial-gradient(ellipse at 10% 10%,rgba(192,98,45,.29),transparent 23rem),
+    linear-gradient(150deg,#142630,#1C343C 60%,#213B42);
+}
+.brand-panel:before { animation: sigma-orbit 22s ease-in-out infinite alternate; }
+@keyframes sigma-orbit { to { transform: translate(18px,-14px) rotate(8deg); } }
+.access-card { border-radius: 18px; box-shadow: 0 24px 70px rgba(23,36,45,.11); animation: sigma-rise-in .7s cubic-bezier(.2,.75,.25,1) both; }
+.brand-main h1 { font-size: clamp(46px,5.2vw,68px); }
+.brand-main p { font-size: 15px; }
+.feature-list li { font-size: 12px; }
+.access-top span,.brand-footer { font-size: 11px; }
+.access-top a { font-size: 12px; }
+.card-heading p { font-size: 13px; }
+.client-heading strong,.client-option strong,.credentials-head strong { font-size: 13px; }
+.client-heading span,.selected-client,.form-field label,.show-password,.help-link { font-size: 11px; }
+.client-option { min-height: 64px; border-radius: 10px; }
+.client-option strong { font-size: 13px; }
+.form-field input { min-height: 46px; border-radius: 8px; font-size: 14px; }
+.sign-in-button { min-height: 46px; border-radius: 9px; font-size: 13px; }
+.login-status,.client-status { font-size: 12px; }
+.security-note,.access-foot { font-size: 10px; }
+
+@media (max-width:1180px) {
+  .app-shell { grid-template-columns: 225px minmax(0,1fr); }
+  .content { padding: 28px 24px 50px; }
+}
+@media (max-width:760px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { padding: 14px 16px; }
+  .side-nav a { min-height: 42px; padding-inline: 12px; font-size: 11px; }
+  .topbar { min-height: 60px; padding-inline: 16px; }
+  .content { padding: 24px 16px 42px; }
+  .welcome-row h1 { font-size: clamp(29px,7vw,36px); }
+  .welcome-row p { font-size: 13px; }
+  .kpi { min-height: 112px; padding: 14px; }
+  .kpi-value { font-size: 27px; }
+  .panel-head { padding: 16px; }
+  .panel-body { padding: 16px; }
+  .at-count span { font-size: 9px; }
+}
+@media (max-width:450px) {
+  .content { padding: 20px 12px 36px; }
+  .welcome-row h1 { font-size: 29px; }
+  .kpi-label { font-size: 10px; }
+  .kpi-foot { font-size: 10px; }
+  .panel-head h2 { font-size: 15px; }
+  .cal-item { grid-template-columns: 38px minmax(0,1fr); }
+  .cal-choice { grid-column: 2; }
+  .login-shell .brand-main h1 { font-size: 42px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
