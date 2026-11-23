@@ -39,8 +39,8 @@
       <!-- ================= TEMPS RÉEL ================= -->
       <section id="tab-live" hidden>
         <div class="at-daybar">
-          <strong>Présences du jour</strong>
-          <label for="live-day">Choisir une date passée</label>
+          <strong id="live-title">Présences du jour</strong>
+          <label for="live-day" id="live-day-label">Choisir une date passée</label>
           <input type="date" id="live-day">
           <button class="btn-sm" id="live-today">Aujourd’hui</button>
           <small id="live-date">—</small>
@@ -184,10 +184,13 @@
     document.querySelector('.at-tab[data-tab="live"]').classList.add('active');
   }
   if (!isManager) {
-    var liveTabButton = document.querySelector('.at-tab[data-tab="live"]');
-    if (liveTabButton) liveTabButton.hidden = true;
+    // Les agents gardent « Ma journée » en onglet d’accueil, mais peuvent
+    // ouvrir Temps réel pour consulter l’équipe (lecture seule).
     $('#tab-live').hidden = true;
     $('#tab-me').hidden = false;
+    $('#live-day-label').hidden = true;
+    $('#live-day').hidden = true;
+    $('#live-today').hidden = true;
     $$('.at-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'me'); });
   }
 
@@ -368,9 +371,10 @@
 
   /* ---------------- rendu temps réel ---------------- */
   function renderLive() {
+    $('#live-title').textContent = isManager ? 'Présences du jour' : 'Présence de l’équipe';
     $('#live-date').textContent = OPS.fmtDateLong(VIEW_DAY);
     $('#live-day').value = VIEW_DAY;
-    var visibleAgents = isManager ? AGENTS : AGENTS.filter(function (a) { return a.id === myAgentId; });
+    var visibleAgents = AGENTS; // La vue Temps réel est l'annuaire de présence de toute l'équipe PGV.
     var days = visibleAgents.map(function (a) { return computeDay(a.id, VIEW_DAY); });
     var c = { online: 0, break: 0, late: 0, absent: 0, out: 0, waiting: 0, off: 0, unplanned: 0 };
     days.forEach(function (d) { if (d.status.indexOf('break_') === 0) c.break++; else if (c[d.status] != null) c[d.status]++; });
@@ -772,13 +776,13 @@
   /* ---------------- onglets + horloge ---------------- */
   $$('.at-tab').forEach(function (t) {
     t.addEventListener('click', function () {
-      if (!isManager && t.getAttribute('data-tab') === 'live') return;
       currentTab = t.getAttribute('data-tab');
       $$('.at-tab').forEach(function (x) { x.classList.toggle('active', x === t); });
       $('#tab-live').hidden = currentTab !== 'live';
       $('#tab-me').hidden = currentTab !== 'me';
       $('#tab-week').hidden = currentTab !== 'week';
       $('#tab-activity').hidden = currentTab !== 'activity';
+      if (currentTab === 'live') loadDay();
       if (currentTab === 'week') renderWeek();
       if (currentTab === 'activity') loadActivity();
     });
@@ -801,6 +805,7 @@
 
   $('#live-day').max = TODAY;
   $('#live-day').value = TODAY;
+  if (!isManager) $('#live-day').disabled = true;
   $('#live-day').addEventListener('change', function () {
     if (this.value && this.value <= TODAY) { VIEW_DAY = this.value; loadDay(); }
     else { this.value = TODAY; OPS.toast('Choisis aujourd’hui ou une date passée.', 'error'); }

@@ -265,7 +265,7 @@
 
   async function loadPlanning(from, to) {
     var res = await db.from('planning_entries')
-      .select('id, agent_id, work_date, shift_code, start_time, end_time, note')
+      .select('id, agent_id, work_date, shift_code, start_time, end_time')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
     if (res.error) raise(res.error, 'planning_entries');
     return res.data || [];
@@ -290,7 +290,7 @@
   /* ---------------- présence ---------------- */
   async function loadAttendance(workDate, agentId) {
     var q = db.from('attendance_events')
-      .select('id, agent_id, event_type, break_type, occurred_at, work_date, source, note')
+      .select('id, agent_id, event_type, break_type, occurred_at, work_date, source')
       .eq('activity', ACTIVITY).eq('work_date', workDate)
       .order('occurred_at');
     if (agentId) q = q.eq('agent_id', agentId);
@@ -301,7 +301,7 @@
 
   async function loadAttendanceRange(from, to) {
     var res = await db.from('attendance_events')
-      .select('id, agent_id, event_type, break_type, occurred_at, work_date, source, note')
+      .select('id, agent_id, event_type, break_type, occurred_at, work_date, source')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to)
       .order('occurred_at');
     if (res.error) raise(res.error, 'attendance_events');

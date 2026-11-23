@@ -317,7 +317,10 @@
   /* ---------------- saisie ---------------- */
   function openEntry(dateISO) {
     var dlg = $('#dlg');
+    $('#dlg-title').textContent = isManager ? 'Saisie de la journée' : 'Détail du planning emails';
     $('#d-date').value = dateISO || TODAY;
+    $('#d-date').disabled = !isManager;
+    ['#d-total', '#d-sac', '#d-done', '#d-note'].forEach(function (sel) { $(sel).disabled = !isManager; });
     $('#d-duty').disabled = !isManager;
     $('#d-save').hidden = !isManager;
     $('#d-duty').innerHTML = AGENTS.map(function (a) {
@@ -361,6 +364,7 @@
   $('#btn-entry').addEventListener('click', function () { openEntry(TODAY); });
 
   $('#d-save').addEventListener('click', async function () {
+    if (!isManager) return;
     var consistent = check();
     var dateISO = $('#d-date').value;
     if (!dateISO) { OPS.toast('Choisis une date', 'error'); return; }
