@@ -122,7 +122,7 @@
 
       <div class="p-grid2" style="margin-top:14px">
         <div class="panel">
-          <div class="panel-head"><h2>Conformité par typologie</h2><small>Poids des « Oui » par type logique</small></div>
+          <div class="panel-head"><h2>Conformité par typologie</h2><small>Conformité détaillée des points critiques</small></div>
           <div class="panel-body"><div class="p-steps" id="steps"></div></div>
         </div>
         <div class="panel">
@@ -155,10 +155,10 @@
       </div>
 
       <section class="panel" id="calls-month-entry" style="margin:14px 0" hidden>
-        <div class="panel-head"><h2>Saisie mensuelle des appels traités</h2><small id="calls-entry-month">—</small></div>
+        <div class="panel-head"><h2>Saisie mensuelle des appels traités</h2><label class="calls-month-picker">Mois à saisir<select id="calls-entry-month-select" class="f-select" aria-label="Choisir le mois des appels traités"></select></label></div>
         <div class="panel-body">
           <p class="f-note" style="margin:0 0 12px">Saisie réservée aux responsables. Chaque valeur enregistrée remplace le total du mois pour cet agent (elle ne s’ajoute pas à l’ancienne).</p>
-          <div class="table-wrap scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Appels traités ce mois</th></tr></thead><tbody id="calls-entry-body"></tbody></table></div>
+          <div class="table-wrap scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Appels traités pour le mois choisi</th></tr></thead><tbody id="calls-entry-body"></tbody></table></div>
           <div class="act-foot" style="margin-top:12px"><span class="f-note" id="calls-entry-hint">—</span><button class="button button-primary" id="calls-entry-save">Enregistrer les volumes du mois</button></div>
         </div>
       </section>
@@ -182,7 +182,7 @@
 (async function () {
   'use strict';
 
-  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [], CALL_ROWS = [], CALL_MONTH_ROWS = [], EMAIL_ROWS = [];
+  var PROFILE = null, db = null, AGENTS = [], CAL = [], ELEMENTS = [], RESULTS = [], CALL_ROWS = [], CALL_MONTH_ROWS = [], MONTHLY_ENTRY_ROWS = [], EMAIL_ROWS = [];
   var migrationMissing = false;
 
   function $(s) { return document.querySelector(s); }
@@ -207,6 +207,7 @@
   var now = new Date();
   var periodMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   var from, to;
+  var callsEntryMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   function setMonth(d) {
     periodMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     from = new Date(periodMonth.getFullYear(), periodMonth.getMonth(), 1);
@@ -364,25 +365,55 @@
       if (er.error) throw er.error;
       EMAIL_ROWS = (er.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
     } catch (e) { EMAIL_ROWS = []; }
-    if (IS_CALL_MANAGER) renderCallsEntry();
   }
 
   var IS_CALL_MANAGER = ['superviseur','admin','super_admin'].indexOf(String(PROFILE.role || '').trim().toLowerCase()) >= 0;
   if (IS_CALL_MANAGER) $('#calls-month-entry').hidden = false;
 
+  function monthISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; }
+  function initCallsMonthOptions() {
+    var select = $('#calls-entry-month-select'), opts = [];
+    // 24 mois précédents et 3 mois à venir pour permettre la saisie anticipée.
+    for (var offset = 24; offset >= -3; offset--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      opts.push('<option value="' + monthISO(d) + '">' + esc(d.toLocaleDateString('fr-MA', { month:'long', year:'numeric' })) + '</option>');
+    }
+    select.innerHTML = opts.join('');
+    select.value = monthISO(callsEntryMonth);
+    select.addEventListener('change', function () {
+      var parts = this.value.split('-');
+      callsEntryMonth = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      loadCallsEntryMonth();
+    });
+  }
   function renderCallsEntry() {
     if (!IS_CALL_MANAGER) return;
-    $('#calls-entry-month').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' });
     var map = {};
-    CALL_MONTH_ROWS.forEach(function (r) { map[r.agent_id] = Number(r.calls_treated) || 0; });
+    MONTHLY_ENTRY_ROWS.forEach(function (r) { map[r.agent_id] = Number(r.calls_treated) || 0; });
     $('#calls-entry-body').innerHTML = AGENTS.map(function (a) {
       var exists = Object.prototype.hasOwnProperty.call(map, a.id);
       return '<tr><td class="name">' + esc(a.full_name) + '</td><td class="num"><input class="f-input calls-month-value" data-agent-id="' + esc(a.id) + '" type="number" min="0" step="1" required inputmode="numeric" aria-label="Appels traités pour ' + esc(a.full_name) + '" value="' + (exists ? map[a.id] : '') + '" style="max-width:220px;margin-left:auto"></td></tr>';
     }).join('');
-    $('#calls-entry-hint').textContent = CALL_MONTH_ROWS.length
+    $('#calls-entry-hint').textContent = MONTHLY_ENTRY_ROWS.length
       ? 'Une valeur existe déjà pour ce mois : Enregistrer la remplacera.'
       : 'Saisis le total du mois pour chaque agent; aucun cumul automatique.';
   }
+  async function loadCallsEntryMonth() {
+    if (!IS_CALL_MANAGER) return;
+    MONTHLY_ENTRY_ROWS = [];
+    try {
+      var selectedISO = monthISO(callsEntryMonth);
+      var mr = await db.from('agent_monthly_activity').select('agent_id, calls_treated')
+        .eq('activity', 'pgv').eq('month_start', selectedISO);
+      if (mr.error) throw mr.error;
+      MONTHLY_ENTRY_ROWS = (mr.data || []).filter(function (r) { return AGENTS.some(function (a) { return a.id === r.agent_id; }); });
+      renderCallsEntry();
+    } catch (e) {
+      renderCallsEntry();
+      $('#calls-entry-hint').textContent = 'Impossible de charger les valeurs du mois. Vérifie la table agent_monthly_activity et sa migration.';
+    }
+  }
+  if (IS_CALL_MANAGER) { initCallsMonthOptions(); loadCallsEntryMonth(); }
 
   $('#calls-entry-save').addEventListener('click', async function () {
     if (!IS_CALL_MANAGER) return;
@@ -393,10 +424,12 @@
     }
     var button = this; button.disabled = true;
     try {
-      var rows = values.map(function (x) { return { activity:'pgv', month_start:iso(from), agent_id:x.agentId, calls_treated:Number(x.value), updated_at:new Date().toISOString() }; });
+      var selectedISO = monthISO(callsEntryMonth);
+      var rows = values.map(function (x) { return { activity:'pgv', month_start:selectedISO, agent_id:x.agentId, calls_treated:Number(x.value), updated_at:new Date().toISOString() }; });
       var saved = await db.from('agent_monthly_activity').upsert(rows, { onConflict:'activity,month_start,agent_id' });
       if (saved.error) throw saved.error;
       OPS.toast('Volumes mensuels remplacés et enregistrés.');
+      await loadCallsEntryMonth();
       await loadVolumeStats(iso(from), iso(to));
       render();
     } catch (err) { OPS.toast(err.message || 'Enregistrement refusé', 'error'); }
@@ -482,33 +515,28 @@
     $('#volume-caption').textContent = periodMonth.toLocaleDateString('fr-MA', { month:'long', year:'numeric' }) + ' · appels traités saisis par un responsable; appels reçus cumulés par jour';
     $('#volume-body').innerHTML = volumeRows.length ? volumeRows.join('') : '<tr><td colspan="6"><p class="empty-note">Aucun agent pour cette vue.</p></td></tr>';
 
-    // Étapes SAC
-    var steps = [];
-    for (var s = 1; s <= 3; s++) steps.push({ n:s, name:window.PGV_STEPS[s], oui:0, eval:0, count:0 });
-    window.PGV_GRID.forEach(function (g) { if (g.step >= 1 && g.step <= 3) steps[g.step - 1].count++; });
+    // Conformité par point critique: Oui pondérés ÷ réponses Oui/Non.
+    var criticalPoints = window.PGV_GRID.filter(function (g) { return g.critical; }).map(function (g) {
+      return { code:g.code, name:g.label, weight:g.weight, oui:0, eval:0, count:0 };
+    });
+    var criticalByCode = {};
+    criticalPoints.forEach(function (point) { criticalByCode[point.code] = point; });
     CAL.forEach(function (c) {
-      var values = new Array(window.PGV_GRID.length).fill('');
       RESULTS.filter(function (r) { return r.calibration_id === c.id; }).forEach(function (r) {
-        var el = byId[r.element_id];
-        var idx = el && idxByCode[el.code] != null ? idxByCode[el.code] : null;
-        if (idx == null) return;
-        values[idx] = r.result;
-      });
-      window.PGV_GRID.forEach(function (g, i) {
-        if (g.step < 1) return;
-        var v = values[i];
-        if (v === 'Oui') { steps[g.step - 1].oui += g.weight; steps[g.step - 1].eval += g.weight; }
-        else if (v === 'Non') { steps[g.step - 1].eval += g.weight; }
+        var el = byId[r.element_id], point = el && criticalByCode[el.code];
+        if (!point) return;
+        if (r.result === 'Oui') { point.oui += point.weight; point.eval += point.weight; point.count++; }
+        else if (r.result === 'Non') { point.eval += point.weight; point.count++; }
       });
     });
-    $('#steps').innerHTML = steps.map(function (st) {
+    $('#steps').innerHTML = criticalPoints.map(function (st) {
       var p = st.eval ? Math.round(st.oui / st.eval * 100) : null;
       var cls = p == null ? 'none' : p >= 85 ? 'good' : p >= 70 ? 'mid' : 'low';
-      return '<div class="p-step" title="' + esc(st.name) + ' — ' + (p == null ? 'non évalué' : p + ' %') + '">' +
+      return '<div class="p-step" title="' + esc(st.name) + ' (' + esc(st.code) + ') — ' + (p == null ? 'non évalué' : p + ' %') + '">' +
         '<span class="p-step-pct">' + (p == null ? '—' : p + '%') + '</span>' +
         '<div class="p-step-track"><div class="p-step-fill ' + cls + '" style="height:' + (p == null ? 3 : p) + '%"></div></div>' +
         '<span class="p-step-name">' + esc(st.name) + '</span>' +
-        '<span class="p-step-count">' + st.count + ' élém.</span></div>';
+        '<span class="p-step-count">' + st.code + ' · ' + st.count + ' réponse(s)</span></div>';
     }).join('');
 
     // Familles

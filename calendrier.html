@@ -227,6 +227,14 @@
     }
     $('#cal').innerHTML = cells.join('');
 
+    $$('#cal .cal-cell[data-date]').forEach(function (cell) {
+      cell.addEventListener('dblclick', function () {
+        if (!isManager) return;
+        SELECTED = cell.getAttribute('data-date');
+        openCreateCalibration();
+      });
+    });
+
     $$('#cal [data-event-id]').forEach(function (chip) {
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -387,18 +395,17 @@
           '<div><label class="f-label" for="ec-call">N° d’appel / ticket</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
           '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
           '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
-        '</div><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est activé uniquement lorsque la situation ne se présente pas.</p><div class="cal-question-list">';
+        '</div><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
       categoryOrder.forEach(function (cat) {
         var items = window.PGV_GRID.map(function (g, i) { return { g:g, i:i }; }).filter(function (x) { return x.g.cat === cat; });
         form += '<section class="cal-question-family"><h3 class="cal-question-family-title">' + esc(typology[cat]) + '</h3>';
         items.forEach(function (x) {
           var g = x.g, i = x.i, el = elementByCode[g.code], old = el && resultMap[el.id], val = values[i];
-          var naDisabled = (!g.na || (el && el.na_allowed === false)) && val !== 'N/A' ? ' disabled' : '';
           form += '<article class="cal-editor-question' + (g.critical ? ' critical' : '') + '"><div class="cal-editor-question-copy"><strong>' + esc(g.label) + (g.critical ? '<span class="cal-critical-tag">Critique · Non = non conforme</span>' : '') + '</strong><p>' + esc(g.critere) + '</p></div>' +
             '<div class="cal-editor-answer"><div class="cal-answer-set" role="group" aria-label="' + esc(typology[cat] + ' — ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
             ['Oui','Non','N/A'].map(function (answer) {
               var active = answer === val, state = answer === 'Oui' ? 'oui' : answer === 'Non' ? 'non' : 'na';
-              return '<button type="button" class="cal-answer-option' + (active ? ' selected-' + state : '') + '" data-cal-answer="' + i + '" data-value="' + answer + '" aria-pressed="' + (active ? 'true' : 'false') + '"' + (answer === 'N/A' && naDisabled ? ' disabled title="N/A indisponible pour ce critère"' : '') + '>' + answer + '</button>';
+              return '<button type="button" class="cal-answer-option' + (active ? ' selected-' + state : '') + '" data-cal-answer="' + i + '" data-value="' + answer + '" aria-pressed="' + (active ? 'true' : 'false') + '"' +  + '>' + answer + '</button>';
             }).join('') + '</div><div class="cal-reason-wrap" data-cal-reason-wrap="' + i + '"' + (val === 'Non' ? '' : ' hidden') + '><input class="f-input" data-cal-reason="' + i + '" aria-label="Motif obligatoire pour ' + esc(g.label) + '" placeholder="Motif obligatoire pour un « Non »" value="' + esc(old ? old.reason || '' : '') + '"></div></div></article>';
         });
         form += '</section>';
@@ -468,8 +475,6 @@
           var score = window.pgvScore(values);
           if (score.restants) throw new Error('Complète les ' + score.restants + ' critère(s) restant(s).');
           var reasons = window.PGV_GRID.map(function (_, i) { var input = $('[data-cal-reason="' + i + '"]'); return input ? input.value.trim() : ''; });
-          var invalidNa = window.PGV_GRID.findIndex(function (g, i) { var element = elementByCode[g.code]; return values[i] === 'N/A' && (!g.na || !element || element.na_allowed === false); });
-          if (invalidNa >= 0) throw new Error('N/A n’est pas autorisé pour « ' + window.PGV_GRID[invalidNa].label + ' ».');
           var missing = values.findIndex(function (v, i) { return v === 'Non' && !reasons[i]; });
           if (missing >= 0) throw new Error('Motif obligatoire pour « ' + window.PGV_GRID[missing].label + ' ».');
           var elements = window.PGV_GRID.map(function (g) { return elementByCode[g.code]; });
