@@ -405,7 +405,7 @@
             '<div class="cal-editor-answer"><div class="cal-answer-set" role="group" aria-label="' + esc(typology[cat] + ' — ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
             ['Oui','Non','N/A'].map(function (answer) {
               var active = answer === val, state = answer === 'Oui' ? 'oui' : answer === 'Non' ? 'non' : 'na';
-              return '<button type="button" class="cal-answer-option' + (active ? ' selected-' + state : '') + '" data-cal-answer="' + i + '" data-value="' + answer + '" aria-pressed="' + (active ? 'true' : 'false') + '"' +  + '>' + answer + '</button>';
+              return '<button type="button" class="cal-answer-option' + (active ? ' selected-' + state : '') + '" data-cal-answer="' + i + '" data-value="' + answer + '" aria-pressed="' + (active ? 'true' : 'false') + '">' + answer + '</button>';
             }).join('') + '</div><div class="cal-reason-wrap" data-cal-reason-wrap="' + i + '"' + (val === 'Non' ? '' : ' hidden') + '><input class="f-input" data-cal-reason="' + i + '" aria-label="Motif obligatoire pour ' + esc(g.label) + '" placeholder="Motif obligatoire pour un « Non »" value="' + esc(old ? old.reason || '' : '') + '"></div></div></article>';
         });
         form += '</section>';
