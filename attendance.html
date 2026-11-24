@@ -44,6 +44,7 @@
           <input type="date" id="live-day">
           <button class="btn-sm" id="live-today">Aujourd’hui</button>
           <small id="live-date">—</small>
+          <button class="btn-sm" id="share-attendance-whatsapp" type="button" hidden>Partager le résumé · WhatsApp</button>
         </div>
         <div class="at-counters" id="counters"></div>
         <div class="attendance-cards" id="agent-cards"></div>
@@ -373,6 +374,10 @@
   function renderLive() {
     $('#live-title').textContent = isManager ? 'Présences du jour' : 'Présence de l’équipe';
     $('#live-date').textContent = OPS.fmtDateLong(VIEW_DAY);
+    if (shareAttendanceBtn) {
+      shareAttendanceBtn.disabled = VIEW_DAY !== TODAY;
+      shareAttendanceBtn.title = VIEW_DAY === TODAY ? 'Partager le résumé de la journée en cours' : 'Disponible uniquement pour aujourd’hui';
+    }
     $('#live-day').value = VIEW_DAY;
     var visibleAgents = AGENTS; // La vue Temps réel est l'annuaire de présence de toute l'équipe PGV.
     var days = visibleAgents.map(function (a) { return computeDay(a.id, VIEW_DAY); });
@@ -471,6 +476,67 @@
       });
     });
   }
+
+  function buildDailyAttendanceSummary() {
+    var scheduled = AGENTS.map(function (a) { return { agent:a, day:computeDay(a.id, TODAY) }; })
+      .filter(function (x) { return x.day.shift && x.day.shift.is_work; });
+    var absents = scheduled.filter(function (x) { return x.day.status === 'absent'; });
+    var late = scheduled.filter(function (x) {
+      return x.day.status !== 'absent' && (x.day.lateMin > 0 || x.day.status === 'late');
+    }).map(function (x) {
+      var minutes = x.day.firstIn ? x.day.lateMin : x.day.statusDurationMin;
+      return { name:x.agent.full_name, minutes:minutes, waiting:!x.day.firstIn };
+    });
+    var dateLabel = new Date(TODAY + 'T12:00:00').toLocaleDateString('en-GB', {
+      weekday:'long', day:'numeric', month:'long', year:'numeric'
+    });
+    var lines = [
+      'Daily attendance summary — PGV', dateLabel, '',
+      'Scheduled today: ' + scheduled.length,
+      'Late: ' + late.length,
+      'Absent: ' + absents.length,
+      'Total late/absent: ' + (late.length + absents.length)
+    ];
+    if (late.length) {
+      lines.push('', 'Late arrivals:');
+      late.forEach(function (x) {
+        lines.push('• ' + x.name + ' — ' + x.minutes + ' min late' + (x.waiting ? ' (not checked in yet)' : ''));
+      });
+    }
+    if (absents.length) {
+      lines.push('', 'Absences:');
+      absents.forEach(function (x) {
+        lines.push('• ' + x.agent.full_name + ' — no check-in (' + x.day.statusDurationMin + ' min after shift start)');
+      });
+    }
+    if (!late.length && !absents.length) lines.push('', 'Nothing to report.');
+    return lines.join('\\n');
+  }
+
+  function openWhatsAppShare(text) {
+    var target = 'https://wa.me/?text=' + encodeURIComponent(text);
+    var popup = window.open(target, '_blank');
+    if (popup) { try { popup.opener = null; } catch (e) {} return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        OPS.toast('Résumé copié. Ouvre le groupe WhatsApp TDC et colle le message.');
+      }).catch(function () { window.prompt('Copie ce résumé dans le groupe WhatsApp TDC :', text); });
+    } else {
+      window.prompt('Copie ce résumé dans le groupe WhatsApp TDC :', text);
+    }
+  }
+
+  var shareAttendanceBtn = $('#share-attendance-whatsapp');
+  shareAttendanceBtn.hidden = !isManager;
+  shareAttendanceBtn.addEventListener('click', function () {
+    if (!isManager) return;
+    if (VIEW_DAY !== TODAY) { OPS.toast('Le partage est disponible uniquement pour la journée en cours.', 'error'); return; }
+    var text = buildDailyAttendanceSummary();
+    if (navigator.share) {
+      navigator.share({ title:'Daily attendance summary — PGV', text:text })
+        .catch(function (e) { if (!e || e.name !== 'AbortError') openWhatsAppShare(text); });
+    } else openWhatsAppShare(text);
+  });
 
   function timeline(d) {
     var ev = EVENTS.filter(function (e) { return e.agent_id === d.agentId; });
