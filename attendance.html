@@ -158,6 +158,22 @@
   </main>
 </div>
 
+<div class="ops-modal" id="attendance-share-modal" role="dialog" aria-modal="true" aria-labelledby="attendance-share-title" hidden>
+  <div class="ops-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+      <h2 id="attendance-share-title" style="margin:0;font:600 19px var(--serif)">Modifier le résumé du jour</h2>
+      <button type="button" class="btn-sm" id="attendance-share-cancel-top">Fermer</button>
+    </div>
+    <p class="f-note" style="margin:0 0 10px">Relis ou modifie le texte avant de choisir le groupe WhatsApp TDC.</p>
+    <label class="f-label" for="attendance-share-text">Message à partager</label>
+    <textarea class="f-input" id="attendance-share-text" rows="14" style="width:100%;min-height:250px;resize:vertical;line-height:1.55"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button type="button" class="btn-sm" id="attendance-share-cancel">Annuler</button>
+      <button type="button" class="button button-primary" id="attendance-share-send">Continuer vers WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/i18n.js"></script>
 <script>window.__SIGMA_PAGE = 'attendance';</script>
 <script>window.__SIGMA_ACTIVITY = 'pgv';</script>
@@ -491,6 +507,7 @@
       weekday:'long', day:'numeric', month:'long', year:'numeric'
     });
     var lines = [
+      'Hello, good day!', '',
       'Daily attendance summary — PGV', dateLabel, '',
       'Scheduled today: ' + scheduled.length,
       'Late: ' + late.length,
@@ -510,7 +527,8 @@
       });
     }
     if (!late.length && !absents.length) lines.push('', 'Nothing to report.');
-    return lines.join('\\n');
+    lines.push('', 'Have a good day!');
+    return lines.join('\n');
   }
 
   function openWhatsAppShare(text) {
@@ -527,15 +545,38 @@
   }
 
   var shareAttendanceBtn = $('#share-attendance-whatsapp');
+  var shareModal = $('#attendance-share-modal');
   shareAttendanceBtn.hidden = !isManager;
+  function closeAttendanceShare() {
+    shareModal.hidden = true;
+    document.body.classList.remove('modal-open');
+  }
   shareAttendanceBtn.addEventListener('click', function () {
     if (!isManager) return;
     if (VIEW_DAY !== TODAY) { OPS.toast('Le partage est disponible uniquement pour la journée en cours.', 'error'); return; }
-    var text = buildDailyAttendanceSummary();
+    $('#attendance-share-text').value = buildDailyAttendanceSummary();
+    shareModal.hidden = false;
+    document.body.classList.add('modal-open');
+    $('#attendance-share-text').focus();
+  });
+  $('#attendance-share-cancel').addEventListener('click', closeAttendanceShare);
+  $('#attendance-share-cancel-top').addEventListener('click', closeAttendanceShare);
+  shareModal.addEventListener('click', function (e) { if (e.target === shareModal) closeAttendanceShare(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !shareModal.hidden) closeAttendanceShare();
+  });
+  $('#attendance-share-send').addEventListener('click', function () {
+    if (!isManager) return;
+    var text = $('#attendance-share-text').value.trim();
+    if (!text) { OPS.toast('Le message est vide.', 'error'); return; }
     if (navigator.share) {
       navigator.share({ title:'Daily attendance summary — PGV', text:text })
-        .catch(function (e) { if (!e || e.name !== 'AbortError') openWhatsAppShare(text); });
-    } else openWhatsAppShare(text);
+        .then(closeAttendanceShare)
+        .catch(function (e) { if (!e || e.name !== 'AbortError') { closeAttendanceShare(); openWhatsAppShare(text); } });
+    } else {
+      closeAttendanceShare();
+      openWhatsAppShare(text);
+    }
   });
 
   function timeline(d) {
