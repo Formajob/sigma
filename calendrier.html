@@ -395,7 +395,7 @@
           '<div><label class="f-label" for="ec-call">N° d’appel / ticket</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
           '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
           '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
-        '</div><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
+        '</div><section class="cal-audio-panel" aria-labelledby="ec-audio-title"><div class="cal-audio-panel-copy"><strong id="ec-audio-title">Analyse assistée de l’appel · prototype</strong><p>Importe un MP3, WAV ou M4A pour préparer le parcours d’analyse. Les suggestions seront présentées pour les 11 critères, avec preuves, et resteront toutes à valider par toi.</p></div><input type="file" id="ec-audio-file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a,audio/webm" hidden><div class="cal-audio-actions"><button type="button" class="btn-sm" id="ec-audio-choose">Importer un audio</button><button type="button" class="btn-sm" id="ec-audio-clear" hidden>Retirer le fichier</button><button type="button" class="btn-sm" id="ec-audio-analyze" disabled title="Le fournisseur d’analyse doit d’abord être configuré">Analyser l’appel</button></div><p id="ec-audio-status" class="cal-audio-status" role="status" aria-live="polite">Aucun fichier choisi. Le prototype ne transmet ni ne conserve l’audio.</p><p class="cal-audio-privacy">Aucun point ne sera coché automatiquement. Une fois le moteur configuré, toutes les propositions devront être confirmées par un responsable avant l’enregistrement du calibrage.</p></section><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
       categoryOrder.forEach(function (cat) {
         var items = window.PGV_GRID.map(function (g, i) { return { g:g, i:i }; }).filter(function (x) { return x.g.cat === cat; });
         form += '<section class="cal-question-family"><h3 class="cal-question-family-title">' + esc(typology[cat]) + '</h3>';
@@ -425,6 +425,24 @@
       $('#event-actions').innerHTML = '<button type="button" class="btn-sm" id="event-edit-cancel">Annuler</button>';
       $('#event-actions #event-edit-cancel').addEventListener('click', closeEvent);
       $('#event-body').innerHTML = form;
+      var audioInput = $('#ec-audio-file'), audioStatus = $('#ec-audio-status');
+      $('#ec-audio-choose').addEventListener('click', function () { audioInput.click(); });
+      audioInput.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        if (!/\.(mp3|wav|m4a|mp4|webm)$/i.test(file.name)) {
+          audioStatus.textContent = 'Format non pris en charge. Choisis un MP3, WAV, M4A, MP4 ou WebM.';
+          this.value = ''; $('#ec-audio-clear').hidden = true; return;
+        }
+        var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        audioStatus.textContent = file.name + ' · ' + sizeMB + ' Mo. Fichier sélectionné localement; aucun envoi ni stockage. L’analyse IA sera activée après le choix et la configuration du fournisseur.';
+        $('#ec-audio-clear').hidden = false;
+      });
+      $('#ec-audio-clear').addEventListener('click', function () {
+        audioInput.value = '';
+        audioStatus.textContent = 'Fichier retiré. Aucun audio n’a été envoyé ni conservé.';
+        this.hidden = true;
+      });
       $('#ec-create-doc').addEventListener('change', function () { $('#ec-doc-fields').hidden = !this.checked; });
 
       function renderCalScore() {
