@@ -22,7 +22,7 @@
         <div>
           <span class="welcome-kicker">PGV · Organisation</span>
           <h1>Planning</h1>
-          <p>Shifts, repos, vacances et maladie par agent et par semaine.</p>
+          <p>Équipe par semaine · horaires standards : M 14h–23h, samedi SAT 14h–18h. Repos, congé, maladie et formation restent des statuts d’absence.</p>
         </div>
         <div class="welcome-right">
           <button class="btn-sm" id="btn-apply-week">Appliquer la semaine type</button>
@@ -78,7 +78,7 @@
   if (!session) return;
   var isManager = session.isManager, db = session.db;
 
-  var AGENTS = [], SHIFTS = [], ENTRIES = {}, WEEK = OPS.mondayOf(pgvData.iso());
+  var AGENTS = [], SHIFTS = [], ALL_SHIFTS = [], ENTRIES = {}, WEEK = OPS.mondayOf(pgvData.iso());
   var DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   var ANCHOR_SATURDAY = '2026-10-17';   // Amadou le 17/10 ; Hind le 10/10, Zineb le 24/10
 
@@ -91,7 +91,9 @@
   try {
     await pgvData.init();
     AGENTS = await pgvData.loadAgents();
-    SHIFTS = await pgvData.loadShifts();
+    ALL_SHIFTS = await pgvData.loadShifts();
+    var visibleCodes = { M:true, SAT:true, OFF:true, VAC:true, MAL:true, FORM:true };
+    SHIFTS = ALL_SHIFTS.filter(function (s) { return visibleCodes[s.code]; });
   } catch (e) {
     OPS.banner('Migration incomplète',
       OPS.isMissing(e) ? OPS.MIGRATION_MSG.replace('{t}', e.table || 'planning_shifts') : esc(e.message), 'error');
@@ -103,7 +105,7 @@
   }
 
   var shiftByCode = {};
-  SHIFTS.forEach(function (s) { shiftByCode[s.code] = s; });
+  ALL_SHIFTS.forEach(function (s) { shiftByCode[s.code] = s; });
   var WORK = SHIFTS.filter(function (s) { return s.is_work; });
   var DEFAULT_CODE = shiftByCode.M ? 'M' : (WORK.length ? WORK[0].code : 'M');
   var SAT_CODE = shiftByCode.SAT ? 'SAT' : DEFAULT_CODE;
@@ -165,9 +167,11 @@
         var val = cellValue(a.id, d);
         var sh = shiftByCode[val];
         if (sh && sh.is_work) mins += duration(sh);
-        var opts = '<option value="">—</option>' + SHIFTS.map(function (s) {
-          return '<option value="' + s.code + '"' + (s.code === val ? ' selected' : '') + '>' +
-            s.code + (s.is_work && s.start_time ? ' · ' + s.start_time.slice(0, 5) : '') + '</option>';
+        var archived = val && !SHIFTS.some(function (s) { return s.code === val; }) && shiftByCode[val]
+          ? '<option value="' + esc(val) + '" selected disabled>' + esc(val) + ' · ancien shift (historique)</option>' : '';
+        var opts = '<option value="">—</option>' + archived + SHIFTS.map(function (s) {
+          return '<option value="' + esc(s.code) + '"' + (s.code === val ? ' selected' : '') + '>' +
+            esc(s.code) + (s.is_work && s.start_time ? ' · ' + s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5) : '') + '</option>';
         }).join('');
         var cls = val === 'OFF' ? 'off' : val === 'VAC' ? 'vac' : val === 'MAL' ? 'mal' : (val === 'FORM' ? 'form' : '');
         return '<td class="pl-cell' + (wd === 0 || wd === 6 ? ' weekend' : '') + '">' +

@@ -43,6 +43,17 @@
         </div>
 
         <div class="section-title">
+          <div><h2>Demandes de congé</h2><p>Les administrateurs valident ou refusent; une validation inscrit VAC aux jours travaillés concernés.</p></div>
+          <div class="section-actions"><button class="btn-sm" id="adm-leave-refresh" type="button">Actualiser</button></div>
+        </div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-body" style="padding:0"><div class="scroll-x"><table class="p-table">
+            <thead><tr><th>Agent</th><th>Période</th><th>Commentaire</th><th>Statut</th><th>Décision</th><th>Action</th></tr></thead>
+            <tbody id="adm-leave-body"><tr><td colspan="6"><p class="empty-note">Chargement des demandes…</p></td></tr></tbody>
+          </table></div></div>
+        </div>
+
+        <div class="section-title">
           <div><h2>Inviter un agent</h2><p>Le titulaire choisira son mot de passe via le lien reçu par email.</p></div>
         </div>
         <div class="panel" style="margin-bottom:18px">
@@ -179,7 +190,63 @@
 
     renderKpis();
     renderTable();
+    await loadVacationRequests();
   }
+
+  async function loadVacationRequests() {
+    var body = $('#adm-leave-body');
+    try {
+      var res = await db.from('vacation_requests')
+        .select('id,agent_id,start_date,end_date,reason,status,decision_note,created_at,decided_at')
+        .eq('activity','pgv').order('created_at',{ ascending:false }).limit(100);
+      if (res.error) throw res.error;
+      var rows = res.data || [];
+      body.innerHTML = rows.length ? rows.map(function (r) {
+        var agent = AGENTS.filter(function (a) { return a.id === r.agent_id; })[0];
+        var name = agent ? agent.full_name : 'Agent PGV';
+        var status = { pending:'En attente', approved:'Approuvée', rejected:'Refusée' }[r.status] || r.status;
+        var cls = r.status === 'approved' ? 'ok' : r.status === 'rejected' ? 'grey' : 'warn';
+        var actions = r.status === 'pending'
+          ? '<button class="btn-sm primary" data-leave-action="approve" data-id="' + esc(r.id) + '">Valider</button> <button class="btn-sm" data-leave-action="reject" data-id="' + esc(r.id) + '">Refuser</button>'
+          : '—';
+        var decision = (r.decided_at ? new Date(r.decided_at).toLocaleDateString('fr-MA') + ' · ' : '') + (r.decision_note || '—');
+        return '<tr><td class="name">' + esc(name) + '</td><td>' + esc(r.start_date) + ' – ' + esc(r.end_date) + '</td>' +
+          '<td>' + esc(r.reason || '—') + '</td><td><span class="p-pill ' + cls + '">' + esc(status) + '</span></td>' +
+          '<td>' + esc(decision) + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
+      }).join('') : '<tr><td colspan="6"><p class="empty-note">Aucune demande de congé.</p></td></tr>';
+    } catch (e) {
+      body.innerHTML = '<tr><td colspan="6"><p class="empty-note">Demandes indisponibles : ' + esc((e && e.message) || 'migration SQL requise.') + '</p></td></tr>';
+    }
+  }
+
+  $('#adm-leave-refresh').addEventListener('click', loadVacationRequests);
+  $('#adm-leave-body').addEventListener('click', async function (event) {
+    var button = event.target.closest('[data-leave-action]');
+    if (!button || button.disabled) return;
+    var approve = button.getAttribute('data-leave-action') === 'approve';
+    var requestId = button.getAttribute('data-id');
+    var note = null;
+    if (approve) {
+      if (!confirm('Valider cette demande ? Les jours prévus travaillés de la période passeront en VAC.')) return;
+    } else {
+      note = prompt('Motif du refus (facultatif) :');
+      if (note === null) return;
+      if (!confirm('Refuser cette demande de congé ?')) return;
+    }
+    button.disabled = true;
+    try {
+      var result = await db.rpc('admin_decide_vacation_request', {
+        p_request_id: requestId, p_approve: approve, p_note: (note || '').trim() || null
+      });
+      if (result.error) throw result.error;
+      var data = result.data || {};
+      OPS.toast(approve ? 'Demande validée · ' + (data.vac_days_applied || 0) + ' journée(s) passée(s) en VAC' : 'Demande refusée');
+      await loadVacationRequests();
+    } catch (e) {
+      OPS.toast((e && e.message) || 'Décision impossible.', 'error');
+      button.disabled = false;
+    }
+  });
 
   async function adminUsers() {
     var r = await db.rpc('admin_users');

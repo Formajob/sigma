@@ -381,7 +381,16 @@
       treated_sac: Math.max(0, +sac || 0),
       treated_other: Math.max(0, +other || 0),
       note: note || null
-    }, { onConflict: 'activity,work_date,agent_id' }).select().single();
+    }, { onConflict: 'activity,work_date,agent_id' }).select('id,activity,work_date,agent_id,treated_sac,treated_other').single();
+    if (res.error) raise(res.error, 'email_agent_daily');
+    return res.data;
+  }
+
+  async function saveTeamEmailAgentRow(workDate, agentId, sac, other) {
+    var res = await db.rpc('pgv_save_team_email_agent_daily', {
+      p_work_date: workDate, p_agent_id: agentId,
+      p_treated_sac: Math.max(0, +sac || 0), p_treated_other: Math.max(0, +other || 0)
+    });
     if (res.error) raise(res.error, 'email_agent_daily');
     return res.data;
   }
@@ -430,7 +439,7 @@
 
   async function loadEmailAgents(from, to) {
     var res = await db.from('email_agent_daily')
-      .select('work_date, agent_id, treated_sac, treated_other, note')
+      .select('work_date, agent_id, treated_sac, treated_other')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
     if (res.error) raise(res.error, 'email_agent_daily');
     return res.data || [];
@@ -532,6 +541,7 @@
     loadEmailDays: loadEmailDays,
     saveEmailDay: saveEmailDay,
     loadEmailAgents: loadEmailAgents,
+    saveTeamEmailAgentRow: saveTeamEmailAgentRow,
     simulateRotation: simulateRotation,
     nextDay: nextDay,
     cacheSet: cacheSet,

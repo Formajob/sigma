@@ -37,6 +37,21 @@
           </form>
         </div>
       </section>
+      <section class="panel account-card" style="max-width:900px">
+        <div class="panel-head"><h2>Demander un congé</h2></div>
+        <div class="panel-body">
+          <p class="f-note">Demande une période en journées entières. La demande reste en attente jusqu’à la décision d’un administrateur PGV. Après validation, les journées prévues travaillées passent en VAC; les repos hebdomadaires et les autres absences ne sont pas remplacés.</p>
+          <form id="leave-request-form" class="f-row c3" style="align-items:end">
+            <div><label class="f-label" for="leave-start">Du</label><input class="f-input" type="date" id="leave-start" required></div>
+            <div><label class="f-label" for="leave-end">Au inclus</label><input class="f-input" type="date" id="leave-end" required></div>
+            <div><label class="f-label" for="leave-reason">Commentaire facultatif</label><input class="f-input" id="leave-reason" maxlength="500" placeholder="Ex. motif ou précision"></div>
+            <div><button class="button button-primary" id="leave-submit" type="submit">Envoyer la demande</button></div>
+          </form>
+          <div id="leave-status" class="account-status" role="status" aria-live="polite" hidden></div>
+          <div class="section-title" style="margin-top:18px"><div><h3>Mes demandes</h3><p>Statut et décision de l’administration</p></div></div>
+          <div class="scroll-x"><table class="p-table"><thead><tr><th>Période</th><th>Commentaire</th><th>Statut</th><th>Réponse</th><th>Envoyée</th></tr></thead><tbody id="leave-requests-body"></tbody></table></div>
+        </div>
+      </section>
     </div>
   </main>
 </div>
@@ -90,6 +105,51 @@
       message((error && error.message) || 'Modification impossible. Réessayez ou contactez un administrateur.', 'err');
     } finally { btn.disabled = false; }
   });
+
+  var leaveForm = $('#leave-request-form'), leaveStatus = $('#leave-status'), leaveBtn = $('#leave-submit');
+  var now = new Date(), today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  $('#leave-start').min = today; $('#leave-end').min = today;
+  $('#leave-start').addEventListener('change', function () { $('#leave-end').min = this.value || today; });
+  function leaveMessage(text, kind) {
+    leaveStatus.hidden = !text; leaveStatus.className = 'account-status ' + (kind || ''); leaveStatus.textContent = text || '';
+  }
+  function dateLabel(value) {
+    return value ? new Date(value + 'T12:00:00').toLocaleDateString('fr-MA', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+  }
+  async function loadLeaveRequests() {
+    var res = await db.from('vacation_requests')
+      .select('id,start_date,end_date,reason,status,decision_note,created_at')
+      .eq('activity','pgv').order('created_at', { ascending:false }).limit(50);
+    if (res.error) throw res.error;
+    var rows = res.data || [];
+    $('#leave-requests-body').innerHTML = rows.length ? rows.map(function (r) {
+      var statusLabel = { pending:'En attente', approved:'Approuvée', rejected:'Refusée' }[r.status] || r.status;
+      var statusClass = r.status === 'approved' ? 'ok' : r.status === 'rejected' ? 'grey' : 'warn';
+      return '<tr><td>' + dateLabel(r.start_date) + ' – ' + dateLabel(r.end_date) + '</td>' +
+        '<td>' + OPS.esc(r.reason || '—') + '</td><td><span class="p-pill ' + statusClass + '">' + OPS.esc(statusLabel) + '</span></td>' +
+        '<td>' + OPS.esc(r.decision_note || '—') + '</td><td>' + dateLabel((r.created_at || '').slice(0,10)) + '</td></tr>';
+    }).join('') : '<tr><td colspan="5"><p class="empty-note">Aucune demande envoyée.</p></td></tr>';
+  }
+  leaveForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var start = $('#leave-start').value, end = $('#leave-end').value;
+    if (!start || !end || end < start) { leaveMessage('Vérifie les dates de la période.', 'err'); return; }
+    if (!confirm('Envoyer une demande de congé du ' + dateLabel(start) + ' au ' + dateLabel(end) + ' ?')) return;
+    leaveBtn.disabled = true; leaveMessage('Envoi de la demande…', '');
+    try {
+      var result = await db.rpc('agent_submit_vacation_request', {
+        p_start_date: start, p_end_date: end, p_reason: ($('#leave-reason').value || '').trim() || null
+      });
+      if (result.error) throw result.error;
+      leaveForm.reset(); $('#leave-start').min = today; $('#leave-end').min = today;
+      leaveMessage('Demande envoyée. Elle restera en attente jusqu’à la décision d’un administrateur.', 'ok');
+      await loadLeaveRequests();
+    } catch (error) {
+      leaveMessage((error && error.message) || 'Envoi impossible. Réessaie ou contacte un administrateur.', 'err');
+    } finally { leaveBtn.disabled = false; }
+  });
+  try { await loadLeaveRequests(); }
+  catch (error) { leaveMessage('Historique des demandes indisponible : ' + ((error && error.message) || 'migration requise.'), 'err'); }
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

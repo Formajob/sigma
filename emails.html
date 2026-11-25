@@ -41,6 +41,19 @@
         </div>
       </div>
 
+      <section class="panel" id="agent-team-email-entry" style="margin-bottom:14px" hidden>
+        <div class="panel-head"><h2>Saisie quotidienne des emails par agent</h2><small>Modification autorisée à l’équipe PGV</small></div>
+        <div class="panel-body">
+          <p class="f-note">Choisis une date et saisis les emails traités pour chaque agent. Les totaux d’emails reçus restent saisis par un responsable. Les modifications sont journalisées.</p>
+          <div style="display:flex;gap:8px;align-items:end;margin-bottom:12px;flex-wrap:wrap">
+            <div><label class="f-label" for="team-email-date">Journée</label><input class="f-input" type="date" id="team-email-date"></div>
+            <button class="btn-sm" id="team-email-load" type="button">Charger</button>
+          </div>
+          <div class="scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Emails SAC traités</th><th class="num">Autres emails traités</th><th>Action</th></tr></thead><tbody id="team-email-entry-body"></tbody></table></div>
+          <p id="team-email-entry-status" class="f-note" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
       <div class="period-bar" style="margin-bottom:14px">
         <div class="period-info"><strong>Période</strong><span id="period-label">—</span></div>
         <div class="period-inputs">
@@ -133,7 +146,10 @@
   var TODAY = pgvData.iso();
   var FROM = pgvData.startOfMonth(), TO = pgvData.endOfMonth();
 
-  if (!isManager) $('#btn-entry').style.display = 'none';
+  if (!isManager) {
+    $('#btn-entry').style.display = 'none';
+    $('#agent-team-email-entry').hidden = false;
+  }
 
   try {
     await pgvData.init();
@@ -186,6 +202,48 @@
     }
     render();
   }
+
+  async function loadTeamEmailEntry() {
+    var date = $('#team-email-date').value || TODAY;
+    $('#team-email-date').value = date;
+    try {
+      var rows = await pgvData.loadEmailAgents(date, date), map = {};
+      rows.forEach(function (r) { map[r.agent_id] = r; });
+      $('#team-email-entry-body').innerHTML = AGENTS.filter(function (a) { return a.active !== false; }).map(function (a) {
+        var r = map[a.id] || {};
+        return '<tr data-team-email-agent="' + esc(a.id) + '"><td class="name">' + esc(a.full_name) + '</td>' +
+          '<td><input class="f-input team-email-sac num" type="number" min="0" step="1" value="' + (+r.treated_sac || 0) + '" aria-label="Emails SAC traités · ' + esc(a.full_name) + '"></td>' +
+          '<td><input class="f-input team-email-other num" type="number" min="0" step="1" value="' + (+r.treated_other || 0) + '" aria-label="Autres emails traités · ' + esc(a.full_name) + '"></td>' +
+          '<td><button class="btn-sm team-email-save" type="button">Enregistrer</button></td></tr>';
+      }).join('') || '<tr><td colspan="4"><p class="empty-note">Aucun agent actif.</p></td></tr>';
+      $('#team-email-entry-status').textContent = 'Données chargées pour le ' + OPS.fmtDateLong(date) + '.';
+    } catch (error) {
+      $('#team-email-entry-body').innerHTML = '<tr><td colspan="4"><p class="empty-note">Lecture indisponible : ' + esc(error.message || error) + '</p></td></tr>';
+    }
+  }
+  $('#team-email-date').value = TODAY;
+  $('#team-email-load').addEventListener('click', loadTeamEmailEntry);
+  $('#team-email-date').addEventListener('change', loadTeamEmailEntry);
+  $('#team-email-entry-body').addEventListener('click', async function (event) {
+    var button = event.target.closest('.team-email-save');
+    if (!button || button.disabled) return;
+    var row = button.closest('tr'), agentId = row.getAttribute('data-team-email-agent');
+    var sac = Number(row.querySelector('.team-email-sac').value || 0);
+    var other = Number(row.querySelector('.team-email-other').value || 0);
+    if (!Number.isInteger(sac) || !Number.isInteger(other) || sac < 0 || other < 0) {
+      OPS.toast('Saisis des nombres entiers positifs ou nuls.', 'error'); return;
+    }
+    button.disabled = true; button.textContent = 'Enregistrement…';
+    try {
+      await pgvData.saveTeamEmailAgentRow($('#team-email-date').value, agentId, sac, other);
+      OPS.toast('Saisie emails enregistrée pour ' + name(agentId));
+      await load();
+      await loadTeamEmailEntry();
+    } catch (error) {
+      OPS.toast((error && error.message) || 'Enregistrement impossible.', 'error');
+      button.disabled = false; button.textContent = 'Réessayer';
+    }
+  });
 
   function dayMap() {
     var m = {};
@@ -417,6 +475,7 @@
   $('#p-to').value = TO;
 
   await load();
+  if (!isManager) await loadTeamEmailEntry();
 })();
 </script>
 <script src="js/support-widget.js" defer></script>
