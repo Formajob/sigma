@@ -604,6 +604,13 @@ body.modal-open{overflow:hidden}
 #event-modal .cal-local-analysis-proposal{display:block;color:#2D694B;font-size:10px}
 #event-modal .cal-local-analysis-reason,#event-modal .cal-local-analysis-evidence{margin-top:4px}
 #event-modal .cal-local-analysis-evidence{padding-top:4px;border-top:1px solid #D9E6DD;color:#586B5F}
+#adm-temp-password-dialog{width:min(520px,calc(100% - 28px));max-width:520px;padding:0;border:1px solid #D9E0DB;border-radius:10px;color:#23312D;background:#fff;box-shadow:0 18px 60px #10261b38}
+#adm-temp-password-dialog::backdrop{background:#101a18a8}
+#adm-temp-password-dialog .panel-body{padding:22px}
+#adm-temp-password-dialog h2{margin:0 0 8px;color:#244A40;font-size:20px}
+#adm-temp-password-dialog p{font-size:11px;line-height:1.5}
+#adm-temp-password-dialog #adm-temp-password-value{margin-top:5px;font:700 14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em}
+#adm-temp-password-dialog .section-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 @media(max-width:520px){#event-modal .cal-audio-actions>*{flex:1 1 auto}}
 #event-modal .cal-critical-tag{display:inline-flex;align-items:center;margin-left:8px;padding:3px 7px;border:1px solid #E7B9B2;border-radius:20px;color:#923C33;background:#FDEDEA;font:800 8px/1.2 var(--sans);letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
 #event-modal .cal-editor-question.critical{margin-inline:-5px;padding-inline:8px;border-left:3px solid #B4514A;background:linear-gradient(90deg,#FFF7F5,transparent 75%)}
