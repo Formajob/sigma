@@ -395,13 +395,13 @@
           '<div><label class="f-label" for="ec-call">N° d’appel / ticket</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
           '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
           '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
-        '</div><section class="cal-audio-panel" aria-labelledby="ec-audio-title"><div class="cal-audio-panel-copy"><strong id="ec-audio-title">Analyse assistée de l’appel · prototype</strong><p>Importe un MP3, WAV ou M4A pour préparer le parcours d’analyse. Les suggestions seront présentées pour les 11 critères, avec preuves, et resteront toutes à valider par toi.</p></div><input type="file" id="ec-audio-file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a,audio/webm" hidden><div class="cal-audio-actions"><button type="button" class="btn-sm" id="ec-audio-choose">Importer un audio</button><button type="button" class="btn-sm" id="ec-audio-clear" hidden>Retirer le fichier</button><button type="button" class="btn-sm" id="ec-audio-analyze" disabled title="Le fournisseur d’analyse doit d’abord être configuré">Analyser l’appel</button></div><p id="ec-audio-status" class="cal-audio-status" role="status" aria-live="polite">Aucun fichier choisi. Le prototype ne transmet ni ne conserve l’audio.</p><p class="cal-audio-privacy">Aucun point ne sera coché automatiquement. Une fois le moteur configuré, toutes les propositions devront être confirmées par un responsable avant l’enregistrement du calibrage.</p></section><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
+        '</div><section class="cal-audio-panel" aria-labelledby="ec-audio-title"><div class="cal-audio-panel-copy"><strong id="ec-audio-title">Importer les suggestions du moteur local</strong><p>Analyse l’appel dans l’application locale, exporte le JSON, puis importe-le ici. Les réponses proposées et leurs explications seront préremplies dans les 11 questions; l’audio et la transcription complète ne sont pas transférés dans Sigma.</p></div><input type="file" id="ec-pgv-json-file" accept="application/json,.json" hidden><div class="cal-audio-actions"><button type="button" class="btn-sm" id="ec-pgv-json-choose">Importer le JSON d’analyse</button><button type="button" class="btn-sm" id="ec-pgv-json-clear" hidden>Retirer les suggestions</button></div><p id="ec-pgv-json-status" class="cal-audio-status" role="status" aria-live="polite">Aucune analyse importée. Après import, vérifiez chaque réponse préremplie et modifiez-la si nécessaire.</p><p class="cal-audio-privacy">Les réponses préremplies ne sont pas encore enregistrées. Vous pouvez les corriger; elles ne seront sauvegardées qu’en cliquant sur « Enregistrer le calibrage ».</p></section><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
       categoryOrder.forEach(function (cat) {
         var items = window.PGV_GRID.map(function (g, i) { return { g:g, i:i }; }).filter(function (x) { return x.g.cat === cat; });
         form += '<section class="cal-question-family"><h3 class="cal-question-family-title">' + esc(typology[cat]) + '</h3>';
         items.forEach(function (x) {
           var g = x.g, i = x.i, el = elementByCode[g.code], old = el && resultMap[el.id], val = values[i];
-          form += '<article class="cal-editor-question' + (g.critical ? ' critical' : '') + '"><div class="cal-editor-question-copy"><strong>' + esc(g.label) + (g.critical ? '<span class="cal-critical-tag">Critique · Non = non conforme</span>' : '') + '</strong><p>' + esc(g.critere) + '</p></div>' +
+          form += '<article class="cal-editor-question' + (g.critical ? ' critical' : '') + '"><div class="cal-editor-question-copy"><strong>' + esc(g.label) + (g.critical ? '<span class="cal-critical-tag">Critique · Non = non conforme</span>' : '') + '</strong><p>' + esc(g.critere) + '</p><div class="cal-local-analysis-note" data-local-analysis="' + i + '" hidden></div></div>' +
             '<div class="cal-editor-answer"><div class="cal-answer-set" role="group" aria-label="' + esc(typology[cat] + ' — ' + g.label) + '" data-cal-result="' + i + '" data-selected="' + esc(val) + '">' +
             ['Oui','Non','N/A'].map(function (answer) {
               var active = answer === val, state = answer === 'Oui' ? 'oui' : answer === 'Non' ? 'non' : 'na';
@@ -425,24 +425,71 @@
       $('#event-actions').innerHTML = '<button type="button" class="btn-sm" id="event-edit-cancel">Annuler</button>';
       $('#event-actions #event-edit-cancel').addEventListener('click', closeEvent);
       $('#event-body').innerHTML = form;
-      var audioInput = $('#ec-audio-file'), audioStatus = $('#ec-audio-status');
-      $('#ec-audio-choose').addEventListener('click', function () { audioInput.click(); });
-      audioInput.addEventListener('change', function () {
-        var file = this.files && this.files[0];
-        if (!file) return;
-        if (!/\.(mp3|wav|m4a|mp4|webm)$/i.test(file.name)) {
-          audioStatus.textContent = 'Format non pris en charge. Choisis un MP3, WAV, M4A, MP4 ou WebM.';
-          this.value = ''; $('#ec-audio-clear').hidden = true; return;
-        }
-        var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        audioStatus.textContent = file.name + ' · ' + sizeMB + ' Mo. Fichier sélectionné localement; aucun envoi ni stockage. L’analyse IA sera activée après le choix et la configuration du fournisseur.';
-        $('#ec-audio-clear').hidden = false;
-      });
-      $('#ec-audio-clear').addEventListener('click', function () {
-        audioInput.value = '';
-        audioStatus.textContent = 'Fichier retiré. Aucun audio n’a été envoyé ni conservé.';
+      var jsonInput = $('#ec-pgv-json-file'), jsonStatus = $('#ec-pgv-json-status');
+      $('#ec-pgv-json-choose').addEventListener('click', function () { jsonInput.click(); });
+      $('#ec-pgv-json-clear').addEventListener('click', function () {
+        jsonInput.value = '';
+        $('#event-body').querySelectorAll('[data-local-analysis]').forEach(function (note) { note.replaceChildren(); note.hidden = true; });
+        jsonStatus.textContent = 'Explications retirées. Les réponses actuellement sélectionnées dans le formulaire sont conservées.';
         this.hidden = true;
       });
+      jsonInput.addEventListener('change', async function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        try {
+          if (file.size > 2 * 1024 * 1024) throw new Error('Le JSON dépasse la limite de 2 Mo.');
+          var data = JSON.parse(await file.text());
+          if (!data || data.format !== 'sigma-pgv-local-review-v1' || !Array.isArray(data.criteria)) throw new Error('Format non reconnu. Exportez le JSON depuis le moteur local SIGMA PGV.');
+          if (data.criteria.length !== window.PGV_GRID.length) throw new Error('Le fichier ne contient pas exactement les 11 critères PGV.');
+          var seen = {};
+          data.criteria.forEach(function (item) {
+            var i = window.PGV_GRID.findIndex(function (g) { return g.code === item.code; });
+            if (i < 0 || seen[item.code]) throw new Error('Code de critère inconnu ou en double dans le JSON.');
+            seen[item.code] = true;
+            if (['Oui','Non','N/A','À valider'].indexOf(item.ai_suggestion) < 0) throw new Error('Suggestion invalide pour ' + item.code + '.');
+            if (item.ai_suggestion === 'N/A' && !window.PGV_GRID[i].na) throw new Error('N/A interdit pour ' + item.code + ' dans la grille PGV.');
+          });
+          var counts = renderLocalSuggestions(data.criteria);
+          $('#ec-pgv-json-clear').hidden = false;
+          jsonStatus.textContent = counts.prefilled + ' réponse(s) préremplie(s), ' + counts.review + ' à valider dans la grille. Rien n’est enregistré avant votre clic sur « Enregistrer le calibrage ». Vérifiez les explications et corrigez si nécessaire.';
+        } catch (err) {
+          jsonInput.value = '';
+          jsonStatus.textContent = err.message || 'Impossible de lire ce fichier JSON.';
+          $('#event-body').querySelectorAll('[data-local-analysis]').forEach(function (note) { note.replaceChildren(); note.hidden = true; });
+          $('#ec-pgv-json-clear').hidden = true;
+        }
+      });
+
+      function renderLocalSuggestions(items) {
+        var counts = { prefilled:0, review:0 };
+        items.forEach(function (item) {
+          var index = window.PGV_GRID.findIndex(function (g) { return g.code === item.code; });
+          var criterion = window.PGV_GRID[index];
+          var note = $('#event-body').querySelector('[data-local-analysis="' + index + '"]');
+          note.replaceChildren();
+          var proposal = document.createElement('strong'); proposal.className = 'cal-local-analysis-proposal';
+          if (['Oui','Non','N/A'].indexOf(item.ai_suggestion) >= 0) {
+            proposal.textContent = 'Suggestion locale préremplie : ' + item.ai_suggestion + (item.confidence != null ? ' · confiance indicative ' + item.confidence + '%' : '');
+            var group = $('#event-body').querySelector('[data-cal-result="' + index + '"]');
+            var option = group && group.querySelector('[data-value="' + item.ai_suggestion + '"]');
+            if (option) {
+              option.click(); counts.prefilled++;
+              if (item.ai_suggestion === 'Non') {
+                var reasonInput = $('#event-body').querySelector('[data-cal-reason="' + index + '"]');
+                if (reasonInput && item.reason) reasonInput.value = String(item.reason);
+              }
+            } else counts.review++;
+          } else {
+            proposal.textContent = 'Suggestion : À valider · aucune réponse préremplie'; counts.review++;
+          }
+          var reason = document.createElement('div'); reason.className = 'cal-local-analysis-reason';
+          reason.textContent = 'Explication : ' + (item.reason || 'À vérifier dans l’enregistrement.');
+          var evidence = document.createElement('div'); evidence.className = 'cal-local-analysis-evidence';
+          evidence.textContent = item.evidence ? 'Preuve' + (item.timestamp ? ' · ' + item.timestamp : '') + ' : « ' + item.evidence + ' »' : 'Preuve : aucune citation suffisante; vérifier l’appel original.';
+          note.append(proposal, reason, evidence); note.hidden = false;
+        });
+        return counts;
+      }
       $('#ec-create-doc').addEventListener('change', function () { $('#ec-doc-fields').hidden = !this.checked; });
 
       function renderCalScore() {
