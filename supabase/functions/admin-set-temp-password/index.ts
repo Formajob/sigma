@@ -1,27 +1,18 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const ALLOWED_ORIGIN = "https://sigma.acx.ma";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+const ALLOWED_ORIGINS = new Set(["https://sigma.acx.ma"]);
+const BASE_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
 };
 
-function reply(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
-  });
+function reply(origin: string | null, status: number, body: Record<string, unknown>) {
+  const headers = new Headers({ ...BASE_HEADERS, "Content-Type": "application/json", "Cache-Control": "no-store" });
+  if (origin && ALLOWED_ORIGINS.has(origin)) headers.set("Access-Control-Allow-Origin", origin);
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
 function makePassword(length = 24): string {
-  const groups = [
-    "ABCDEFGHJKLMNPQRSTUVWXYZ",
-    "abcdefghijkmnopqrstuvwxyz",
-    "23456789",
-    "!#$%&*+-=?@_",
-  ];
+  const groups = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!#$%&*+-=?@_"];
   const all = groups.join("");
   const bytes = new Uint8Array(length + groups.length);
   crypto.getRandomValues(bytes);
@@ -36,77 +27,95 @@ function makePassword(length = 24): string {
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
-  if (origin && origin !== ALLOWED_ORIGIN) return reply(403, { error: "Origine non autorisée." });
-  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
-  if (req.method !== "POST") return reply(405, { error: "Méthode non autorisée." });
+  if (origin && !ALLOWED_ORIGINS.has(origin)) return reply(null, 403, { error: "Origine non autorisée." });
+  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: {
+    ...BASE_HEADERS,
+    ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
+  } });
+  if (req.method !== "POST") return reply(origin, 405, { error: "Méthode non autorisée." });
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return reply(401, { error: "Session Sigma requise." });
-
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) return reply(origin, 401, { error: "Session Sigma requise." });
   const url = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !anonKey || !serviceKey) return reply(500, { error: "Configuration serveur incomplète." });
-
-  const callerClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const adminClient = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!url || !anonKey || !serviceKey) return reply(origin, 500, { error: "Configuration serveur incomplète." });
 
   try {
-    const { data: authData, error: authError } = await callerClient.auth.getUser();
-    if (authError || !authData.user) return reply(401, { error: "Session invalide." });
+    // Vérifie le JWT du demandeur auprès de GoTrue sans dépendance externe au démarrage.
+    const callerResponse = await fetch(`${url}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: authHeader },
+    });
+    if (!callerResponse.ok) return reply(origin, 401, { error: "Session invalide." });
+    const callerAuth = await callerResponse.json();
+    if (!callerAuth?.id) return reply(origin, 401, { error: "Session invalide." });
 
-    const { data: caller, error: callerError } = await adminClient
-      .from("profiles")
-      .select("role, active, activity")
-      .eq("id", authData.user.id)
-      .maybeSingle();
+    const serviceHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+    const callerProfileUrl = new URL(`${url}/rest/v1/profiles`);
+    callerProfileUrl.searchParams.set("id", `eq.${callerAuth.id}`);
+    callerProfileUrl.searchParams.set("select", "role,active,activity");
+    const callerProfileResponse = await fetch(callerProfileUrl, { headers: serviceHeaders });
+    if (!callerProfileResponse.ok) {
+      console.error("admin-set-temp-password profile lookup failed", callerProfileResponse.status);
+      return reply(origin, 500, { error: "Impossible de vérifier les droits administrateur." });
+    }
+    const callerProfiles = await callerProfileResponse.json();
+    const caller = Array.isArray(callerProfiles) ? callerProfiles[0] : null;
     const canManage = caller && caller.active !== false &&
       (caller.role === "super_admin" || (caller.role === "admin" && caller.activity === "pgv"));
-    if (callerError || !canManage) return reply(403, { error: "Action réservée aux administrateurs PGV actifs." });
+    if (!canManage) return reply(origin, 403, { error: "Action réservée aux administrateurs PGV actifs." });
 
     const input = await req.json().catch(() => ({}));
     const userId = typeof input.user_id === "string" ? input.user_id : "";
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
-      return reply(400, { error: "Identifiant de compte invalide." });
+      return reply(origin, 400, { error: "Identifiant de compte invalide." });
     }
 
-    const { data: targetProfile, error: targetProfileError } = await adminClient
-      .from("profiles")
-      .select("id, full_name, role, active, activity")
-      .eq("id", userId)
-      .maybeSingle();
-    if (targetProfileError || !targetProfile || targetProfile.role !== "agent" || targetProfile.activity !== "pgv") {
-      return reply(404, { error: "Compte agent PGV introuvable; aucun changement effectué." });
+    const targetProfileUrl = new URL(`${url}/rest/v1/profiles`);
+    targetProfileUrl.searchParams.set("id", `eq.${userId}`);
+    targetProfileUrl.searchParams.set("select", "id,full_name,role,active,activity");
+    const targetProfileResponse = await fetch(targetProfileUrl, { headers: serviceHeaders });
+    if (!targetProfileResponse.ok) {
+      console.error("admin-set-temp-password target lookup failed", targetProfileResponse.status);
+      return reply(origin, 500, { error: "Impossible de vérifier le compte cible." });
     }
-    if (targetProfile.active === false) return reply(409, { error: "Compte désactivé. Réactivez-le avant de changer son mot de passe." });
+    const targetProfiles = await targetProfileResponse.json();
+    const targetProfile = Array.isArray(targetProfiles) ? targetProfiles[0] : null;
+    if (!targetProfile || targetProfile.role !== "agent" || targetProfile.activity !== "pgv") {
+      return reply(origin, 404, { error: "Compte agent PGV introuvable; aucun changement effectué." });
+    }
+    if (targetProfile.active === false) return reply(origin, 409, { error: "Compte désactivé. Réactivez-le avant de changer son mot de passe." });
 
-    const { data: targetAuth, error: targetAuthError } = await adminClient.auth.admin.getUserById(userId);
-    if (targetAuthError || !targetAuth.user) return reply(404, { error: "Compte Auth introuvable; aucun changement effectué." });
-    if (!targetAuth.user.email_confirmed_at) {
-      return reply(409, { error: "Adresse email non confirmée; aucun mot de passe modifié." });
+    const targetAuthResponse = await fetch(`${url}/auth/v1/admin/users/${userId}`, { headers: serviceHeaders });
+    if (!targetAuthResponse.ok) {
+      console.error("admin-set-temp-password auth lookup failed", targetAuthResponse.status);
+      return reply(origin, 404, { error: "Compte Auth introuvable; aucun changement effectué." });
     }
+    const targetAuth = await targetAuthResponse.json();
+    if (!targetAuth?.email_confirmed_at) return reply(origin, 409, { error: "Adresse email non confirmée; aucun mot de passe modifié." });
 
     const temporaryPassword = makePassword();
-    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, { password: temporaryPassword });
-    if (updateError) return reply(500, { error: "Supabase n’a pas pu modifier le mot de passe." });
+    const updateResponse = await fetch(`${url}/auth/v1/admin/users/${userId}`, {
+      method: "PUT",
+      headers: { ...serviceHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ password: temporaryPassword }),
+    });
+    if (!updateResponse.ok) {
+      console.error("admin-set-temp-password password update failed", updateResponse.status);
+      return reply(origin, 500, { error: "Supabase n’a pas pu modifier le mot de passe." });
+    }
 
-    // Journal serveur minimal sans email, mot de passe ni contenu client.
-    console.info("admin-set-temp-password success", { actor: authData.user.id, target: userId, at: new Date().toISOString() });
-    return reply(200, {
+    console.info("admin-set-temp-password success", { actor: callerAuth.id, target: userId, at: new Date().toISOString() });
+    return reply(origin, 200, {
       ok: true,
       full_name: targetProfile.full_name,
-      email: targetAuth.user.email,
+      email: targetAuth.email,
       temporary_password: temporaryPassword,
       email_sent: false,
       displayed_once: true,
     });
   } catch (error) {
     console.error("admin-set-temp-password failed", error instanceof Error ? error.name : "unknown");
-    return reply(500, { error: "Erreur serveur pendant la définition du mot de passe." });
+    return reply(origin, 500, { error: "Erreur serveur pendant la définition du mot de passe." });
   }
 });

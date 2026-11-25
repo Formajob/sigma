@@ -10,8 +10,8 @@ assert(adminHtml.includes('Fermer efface sa valeur'), 'UI must clear the one-tim
 assert(fn.includes('caller.role === "super_admin"'), 'function must authorize super admins');
 assert(fn.includes('caller.activity === "pgv"'), 'function must scope admins to PGV');
 assert(fn.includes('targetProfile.role !== "agent" || targetProfile.activity !== "pgv"'), 'function must restrict targets to PGV agents');
-assert(fn.includes('targetAuth.user.email_confirmed_at'), 'function must reject unconfirmed accounts');
-assert(fn.includes('adminClient.auth.admin.updateUserById(userId, { password: temporaryPassword })'), 'function must use server-side Supabase Admin Auth');
+assert(fn.includes('targetAuth?.email_confirmed_at'), 'function must reject unconfirmed accounts');
+assert(fn.includes('/auth/v1/admin/users/${userId}') && /method:\s*"PUT"/.test(fn), 'function must use server-side Supabase Admin Auth REST endpoint');
 assert(!/resetPasswordForEmail|inviteUserByEmail|sendEmail/i.test(fn), 'function must not send email');
 assert(!/console\.(?:log|info|error)[^\n]*(?:temporaryPassword|password\s*[,}])/i.test(fn), 'function must not log passwords');
 console.log('TEMP PASSWORD ADMIN OK');
