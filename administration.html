@@ -23,7 +23,7 @@
           <span class="welcome-kicker">PGV · Comptes et droits</span>
           <h1>Administration</h1>
           <p>Agents et superviseurs, rôles, rattachement aux fiches agents et accès sécurisés.</p>
-          <p class="f-note">Les comptes et rattachements se gèrent depuis cette page. Sigma conserve le rôle et la fiche agent; l’authentification sécurisée gère le mot de passe et envoie un lien d’invitation au titulaire.</p>
+          <p class="f-note">Les comptes et rattachements se gèrent depuis cette page. Pour un compte existant, un administrateur peut envoyer un lien sécurisé ou définir un mot de passe généré sans email. Il est affiché une seule fois et remplace immédiatement l’ancien.</p>
         </div>
       </div>
 
@@ -102,7 +102,7 @@
                 <p>Gère les comptes, les rôles et les mots de passe, en plus de tout le périmètre superviseur.</p>
               </div>
             </div>
-            <p class="f-note" style="margin-top:14px">La gestion des mots de passe passe par un lien de réinitialisation envoyé par email au titulaire. Aucun mot de passe n’est affiché ni stocké côté Sigma.</p>
+            <p class="f-note" style="margin-top:14px">Les mots de passe temporaires sont générés côté serveur, affichés une seule fois à un administrateur actif et jamais envoyés ou conservés dans Sigma. Transmettez-les uniquement par un canal privé approuvé.</p>
           </div>
         </div>
       </div>
@@ -110,6 +110,20 @@
     </div>
   </main>
 </div>
+
+<dialog id="adm-temp-password-dialog" aria-labelledby="adm-temp-password-title">
+  <div class="panel-body">
+    <h2 id="adm-temp-password-title">Mot de passe défini</h2>
+    <p>Pour <strong id="adm-temp-password-name"></strong> · <span id="adm-temp-password-email"></span></p>
+    <label class="f-label" for="adm-temp-password-value">Mot de passe temporaire · affiché une seule fois</label>
+    <input class="f-input" id="adm-temp-password-value" type="text" readonly autocomplete="off" spellcheck="false">
+    <p class="f-note">Aucun email n’a été envoyé. Ce mot de passe remplace l’ancien et reste valable jusqu’à une modification ultérieure. Communiquez-le par un canal privé approuvé; ne le copiez pas dans un ticket ou un document partagé. Fermer efface sa valeur de cette fenêtre.</p>
+    <div class="section-actions">
+      <button class="btn-sm" id="adm-temp-password-copy" type="button">Copier</button>
+      <button class="button button-primary" id="adm-temp-password-close" type="button">Fermer et effacer</button>
+    </div>
+  </div>
+</dialog>
 
 <script src="js/i18n.js"></script>
 <script>window.__SIGMA_PAGE = 'administration';</script>
@@ -219,7 +233,8 @@
         '<td class="mono" style="font-size:8px">' + last + '</td>' +
         '<td><button class="btn-sm adm-active" data-user="' + u.id + '" data-active="' + active + '">' +
           (active ? '<span class="p-pill ok">Actif</span>' : '<span class="p-pill grey">Inactif</span>') + '</button></td>' +
-        '<td><button class="btn-sm adm-reset" data-user="' + u.id + '" data-email="' + esc(u.email || '') + '">Renvoyer le lien</button></td>' +
+        '<td><button class="btn-sm adm-reset" data-user="' + u.id + '" data-email="' + esc(u.email || '') + '">Renvoyer le lien</button>' +
+          (u.role === 'agent' ? ' <button class="btn-sm adm-temp-password" data-user="' + u.id + '" data-email="' + esc(u.email || '') + '"' + (active ? '' : ' disabled title="Réactivez d’abord ce compte"') + '>Définir un mot de passe</button>' : '') + '</td>' +
       '</tr>';
     }).join('') : '<tr><td colspan="7"><p class="empty-note">Aucun compte pour cette recherche.</p></td></tr>';
 
@@ -335,6 +350,54 @@
     } catch (e) {
       OPS.toast((e && e.message) || 'Invitation impossible. Vérifie le déploiement de la fonction admin-invite-user.', 'error');
     } finally { btn.disabled = false; }
+  });
+
+  $$('.adm-temp-password').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var id = b.getAttribute('data-user');
+      var u = USERS.filter(function (x) { return x.id === id; })[0];
+      if (!u || u.active === false || u.role !== 'agent') return;
+      if (!confirm('Cette action remplace immédiatement le mot de passe de ' + (u.full_name || u.email) + '. Aucun email ne sera envoyé. Le nouveau mot de passe sera affiché une seule fois. Continuer ?')) return;
+      b.disabled = true;
+      try {
+        var result = await db.functions.invoke('admin-set-temp-password', { body: { user_id: id } });
+        if (result.error) {
+          var detail = result.error.message || 'Impossible de définir le mot de passe.';
+          if (result.error.context && result.error.context.json) {
+            var body = await result.error.context.json().catch(function () { return null; });
+            if (body && body.error) detail = body.error;
+          }
+          throw new Error(detail);
+        }
+        var payload = result.data || {};
+        if (!payload.ok || !payload.temporary_password) throw new Error(payload.error || 'Réponse serveur incomplète.');
+        $('#adm-temp-password-name').textContent = payload.full_name || u.full_name || 'Agent';
+        $('#adm-temp-password-email').textContent = payload.email || u.email || '';
+        $('#adm-temp-password-value').value = payload.temporary_password;
+        $('#adm-temp-password-dialog').showModal();
+        OPS.toast('Mot de passe remplacé. Aucun email n’a été envoyé.');
+      } catch (e) {
+        OPS.toast((e && e.message) || 'Action impossible. Vérifiez que admin-set-temp-password est déployée.', 'error');
+      } finally { b.disabled = false; }
+    });
+  });
+
+  $('#adm-temp-password-copy').addEventListener('click', async function () {
+    var field = $('#adm-temp-password-value');
+    try {
+      await navigator.clipboard.writeText(field.value);
+      OPS.toast('Copié. Transmettez-le uniquement par un canal approuvé.');
+    } catch (e) {
+      field.focus(); field.select();
+      try { document.execCommand('copy'); OPS.toast('Copié. Transmettez-le uniquement par un canal approuvé.'); }
+      catch (_) { OPS.toast('Copie impossible : sélectionnez le champ et copiez-le manuellement.', 'error'); }
+    }
+  });
+  $('#adm-temp-password-close').addEventListener('click', function () { $('#adm-temp-password-dialog').close(); });
+  $('#adm-temp-password-dialog').addEventListener('close', function () {
+    $('#adm-temp-password-value').value = '';
+    $('#adm-temp-password-email').textContent = '';
+    $('#adm-temp-password-name').textContent = '';
   });
 
   $('#adm-search').addEventListener('input', renderTable);
