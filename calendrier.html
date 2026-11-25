@@ -27,6 +27,7 @@
         <div class="welcome-right">
           <button class="button button-muted" id="new-calibration" hidden>＋ Calibrage</button>
           <button class="button button-muted" id="new-document" hidden>＋ Documentation</button>
+          <span class="tag" id="calendar-live-status" aria-live="polite">Connexion…</span>
           <span class="tag" id="month-counts">—</span>
         </div>
       </div>
@@ -49,6 +50,7 @@
         </div>
       </div>
 
+      <p id="agent-calendar-note" class="f-note" hidden>Les calibrages de toute l’équipe sont visibles ici, avec les notes, réponses et motifs détaillés. Les documents de suivi restent limités à votre propre dossier.</p>
       <div class="panel">
         <div class="panel-body">
           <div class="cal-month" id="cal-head"></div>
@@ -122,6 +124,7 @@
   });
   function name(id) { return agentById[id] ? agentById[id].full_name : 'Agent inconnu'; }
   if (isManager) { $('#new-calibration').hidden = false; $('#new-document').hidden = false; }
+  else $('#agent-calendar-note').hidden = false;
 
   function monthBounds(ym) {
     var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
@@ -138,7 +141,8 @@
       CAL = await pgvData.loadCalibrationsFull(b.from, b.to);
       DOCS = await pgvData.loadDocuments(b.from, b.to);
       if (!isManager) {
-        CAL = CAL.filter(function (c) { return c.agent_id === profile.agentId; });
+        // Le périmètre des calibrages partagés est contrôlé par RLS (agents PGV).
+        // Les documents de suivi restent limités aux documents destinés à cet agent.
         DOCS = DOCS.filter(function (d) { return d.agent_id === profile.agentId; });
       }
     } catch (e) {
@@ -661,7 +665,21 @@
     return function () { clearTimeout(t); t = setTimeout(render, 220); };
   })());
 
+  var calendarRealtime = false;
+  var calendarChannel = null;
+  if (session.db && typeof session.db.channel === 'function') calendarChannel = session.db.channel('pgv-calendar-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calibrations', filter: 'activity=eq.pgv' }, function () { load(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calibration_results' }, function () { load(); });
+  if (calendarChannel) calendarChannel.subscribe(function (status) {
+    calendarRealtime = status === 'SUBSCRIBED';
+    var badge = $('#calendar-live-status');
+    badge.textContent = calendarRealtime ? 'En direct' : 'Reconnexion…';
+    badge.title = calendarRealtime ? 'Les calibrages sont synchronisés en temps réel' : 'Synchronisation Realtime en cours';
+  });
+  window.addEventListener('pagehide', function () { if (calendarChannel && session.db) session.db.removeChannel(calendarChannel); }, { once: true });
+
   await load();
+  setInterval(function () { if (!calendarRealtime) load(); }, 60000);
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

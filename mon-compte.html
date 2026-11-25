@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17242D">
+<meta name="robots" content="noindex, nofollow">
+<title>PGV · Mon compte — Sigma</title>
+<link rel="stylesheet" href="css/ops.css">
+<link rel="stylesheet" href="css/polish.css">
+<style>
+.account-card{max-width:620px;margin-top:18px}.account-grid{display:grid;gap:14px}.account-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.account-status{margin-top:14px;padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.5}.account-status[hidden]{display:none}.account-status.ok{color:#285b44;background:#e8f2ec}.account-status.err{color:#8b3934;background:#fbe9e7}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <main class="main">
+    <header class="topbar"></header>
+    <div class="content">
+      <div id="ops-banner" class="p-banner" hidden></div>
+      <div class="welcome-row">
+        <div><span class="welcome-kicker">PGV · Sécurité</span><h1>Mon compte</h1><p>Modifiez uniquement le mot de passe de votre propre compte Sigma.</p></div>
+      </div>
+      <section class="panel account-card">
+        <div class="panel-head"><h2>Changer mon mot de passe</h2></div>
+        <div class="panel-body">
+          <p class="f-note">Pour confirmer votre identité, saisissez votre mot de passe actuel. Choisissez ensuite un mot de passe d’au moins 12 caractères. Cette page ne donne aucun accès à l’administration des autres comptes.</p>
+          <form id="account-password-form" autocomplete="on">
+            <div class="account-grid">
+              <div><label class="f-label" for="current-password">Mot de passe actuel</label><input class="f-input" type="password" id="current-password" autocomplete="current-password" required></div>
+              <div><label class="f-label" for="new-password">Nouveau mot de passe</label><input class="f-input" type="password" id="new-password" autocomplete="new-password" minlength="12" required></div>
+              <div><label class="f-label" for="confirm-password">Confirmer le nouveau mot de passe</label><input class="f-input" type="password" id="confirm-password" autocomplete="new-password" minlength="12" required></div>
+            </div>
+            <div id="account-password-status" class="account-status" role="status" aria-live="polite" hidden></div>
+            <div class="account-actions"><button id="account-password-submit" class="button button-primary" type="submit">Mettre à jour mon mot de passe</button></div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="js/i18n.js"></script>
+<script>window.__SIGMA_PAGE = 'account';</script>
+<script>window.__SIGMA_ACTIVITY = 'pgv';</script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="scripts/app-shared.js"></script>
+<script src="js/ops-common.js"></script>
+<script>
+(async function () {
+  'use strict';
+  var $ = OPS.$;
+  var session = await OPS.boot({ active: 'account', title: 'Mon compte' });
+  if (!session) return;
+  if (!session.isAgent || session.profile.activity !== 'pgv') {
+    OPS.banner('Accès réservé', 'Cette page est réservée aux agents PGV.', 'error');
+    return;
+  }
+  var db = session.db;
+  var form = $('#account-password-form'), btn = $('#account-password-submit'), status = $('#account-password-status');
+  function message(text, kind) {
+    status.hidden = !text;
+    status.className = 'account-status ' + (kind || '');
+    status.textContent = text || '';
+  }
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var current = $('#current-password').value;
+    var next = $('#new-password').value;
+    var confirmNext = $('#confirm-password').value;
+    if (next.length < 12) return message('Le nouveau mot de passe doit contenir au moins 12 caractères.', 'err');
+    if (next !== confirmNext) return message('Les deux nouveaux mots de passe ne correspondent pas.', 'err');
+    if (next === current) return message('Choisissez un mot de passe différent de l’actuel.', 'err');
+    btn.disabled = true;
+    message('Vérification et mise à jour…', '');
+    try {
+      var currentUser = await db.auth.getUser();
+      if (currentUser.error || !currentUser.data || !currentUser.data.user) throw new Error('Session Sigma expirée. Reconnectez-vous.');
+      var email = currentUser.data.user.email;
+      var verify = await db.auth.signInWithPassword({ email: email, password: current });
+      if (verify.error || !verify.data || !verify.data.user || verify.data.user.id !== currentUser.data.user.id) {
+        throw new Error('Mot de passe actuel incorrect.');
+      }
+      var update = await db.auth.updateUser({ password: next });
+      if (update.error) throw update.error;
+      form.reset();
+      message('Mot de passe modifié. Votre session reste ouverte. Sigma ne conserve pas votre mot de passe en clair.', 'ok');
+    } catch (error) {
+      message((error && error.message) || 'Modification impossible. Réessayez ou contactez un administrateur.', 'err');
+    } finally { btn.disabled = false; }
+  });
+})();
+</script>
+<script src="js/support-widget.js" defer></script>
+</body>
+</html>

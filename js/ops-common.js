@@ -106,6 +106,7 @@
     { key: 'rapports', href: 'rapports.html?activity=pgv', icon: '⇩', label: 'Rapports' },
     { key: 'attendance', href: 'attendance.html?activity=pgv', icon: '◔', label: 'Présence' },
     { key: 'planning', href: 'planning.html?activity=pgv', icon: '◷', label: 'Planning' },
+    { key: 'account', href: 'mon-compte.html', icon: '◎', label: 'Mon compte', roles: ['agent'] },
     { key: 'administration', href: 'administration.html', icon: '⚙', label: 'Administration',
       roles: ['admin', 'super_admin'] }
   ];

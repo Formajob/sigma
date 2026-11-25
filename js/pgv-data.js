@@ -45,7 +45,7 @@
 
   async function loadAgents() {
     var res = await db.from('agents')
-      .select('id, full_name, staff_id, active, team, activity, email')
+      .select('id, full_name, staff_id, active, team, activity')
       .eq('activity', ACTIVITY)
       .order('full_name');
     if (res.error) {
@@ -308,6 +308,14 @@
     return res.data || [];
   }
 
+  async function loadTeamPresence(workDate) {
+    var res = await db.from('attendance_team_presence')
+      .select('agent_id, status, state_since, updated_at')
+      .eq('activity', ACTIVITY).eq('work_date', workDate || isoLocal());
+    if (res.error) raise(res.error, 'attendance_team_presence');
+    return res.data || [];
+  }
+
   async function addEvent(agentId, eventType, breakType, workDate, source, note) {
     var payload = {
       activity: ACTIVITY, agent_id: agentId, event_type: eventType,
@@ -327,9 +335,11 @@
     return res.data || [];
   }
 
-  async function loadAcks(workDate) {
-    var res = await db.from('attendance_alert_acks')
+  async function loadAcks(workDate, agentId) {
+    var q = db.from('attendance_alert_acks')
       .select('agent_id, alert_code').eq('activity', ACTIVITY).eq('work_date', workDate);
+    if (agentId) q = q.eq('agent_id', agentId);
+    var res = await q;
     if (res.error) return [];                    // non bloquant
     return res.data || [];
   }
