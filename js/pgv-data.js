@@ -309,8 +309,8 @@
   }
 
   async function loadTeamPresence(workDate) {
-    var res = await db.from('attendance_team_presence')
-      .select('agent_id, status, state_since, updated_at')
+    var res = await db.from('attendance_team_presence_live')
+      .select('agent_id, status, state_since, updated_at, elapsed_seconds')
       .eq('activity', ACTIVITY).eq('work_date', workDate || isoLocal());
     if (res.error) raise(res.error, 'attendance_team_presence');
     return res.data || [];
@@ -522,6 +522,7 @@
     clearPlanningEntry: clearPlanningEntry,
     loadAttendance: loadAttendance,
     loadAttendanceRange: loadAttendanceRange,
+    loadTeamPresence: loadTeamPresence,
     addEvent: addEvent,
     loadBreakSettings: loadBreakSettings,
     loadAcks: loadAcks,

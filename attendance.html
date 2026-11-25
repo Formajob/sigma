@@ -194,7 +194,7 @@
   var TODAY = pgvData.iso();
   var VIEW_DAY = TODAY;
 
-  var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], TEAM_STATUS = [], BREAKS = {}, ACKS = {};
+  var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], TEAM_STATUS = [], TEAM_STATUS_FETCHED_AT = Date.now(), BREAKS = {}, ACKS = {};
   var myAgentId = profile.agentId || null;
   var currentTab = isManager ? 'live' : 'me', filterStatus = null;
   if (isManager) {
@@ -239,6 +239,7 @@
       // son propre journal; l’équipe reçoit des états agrégés sans chronologie brute.
       EVENTS = await pgvData.loadAttendance(VIEW_DAY, isManager ? null : myAgentId);
       TEAM_STATUS = (!isManager && VIEW_DAY === TODAY) ? await pgvData.loadTeamPresence(TODAY) : [];
+      TEAM_STATUS_FETCHED_AT = Date.now();
       var a = await pgvData.loadAcks(VIEW_DAY, isManager ? null : myAgentId);
       ACKS = {};
       a.forEach(function (x) { ACKS[x.agent_id + '|' + x.alert_code] = true; });
@@ -393,22 +394,33 @@
   }
 
   /* ---------------- rendu temps réel ---------------- */
+  // La vue calcule elapsed_seconds avec l’horloge PostgreSQL. On ajoute ensuite
+  // le temps écoulé depuis le chargement avec l’horloge monotone du navigateur.
+  function teamStatusElapsedSeconds(record) {
+    if (!record || record.elapsed_seconds == null) return null;
+    var base = Number(record.elapsed_seconds);
+    if (!Number.isFinite(base)) return null;
+    var localSinceFetch = Math.max(0, Math.floor((Date.now() - TEAM_STATUS_FETCHED_AT) / 1000));
+    return Math.max(0, Math.floor(base)) + localSinceFetch;
+  }
+
   function renderAgentTeamLive() {
     var labels = {
       online: ['En poste', 'online'], break_pause: ['Pause', 'break'], break_lunch: ['Lunch', 'lunch'],
       break_sortie: ['Sortie temporaire', 'break'], break_rencontre: ['Rencontre', 'meeting'],
       break_reunion: ['Réunion', 'meeting'], break_coaching: ['Coaching', 'meeting'],
       break_formation: ['Formation', 'meeting'], break_technique: ['Technique', 'meeting'],
-      out: ['A terminé', 'out'], not_started: ['Pas encore pointé', 'off']
+      out: ['A terminé', 'out'], not_started: ['Pas encore pointé', 'off'],
+      unavailable: ['Données non synchronisées', 'late']
     };
     var liveAgents = AGENTS.filter(function (a) { return a.active !== false; });
     var rows = liveAgents.map(function (agent) {
       var record = TEAM_STATUS.filter(function (x) { return x.agent_id === agent.id; })[0];
-      var status = record ? record.status : 'not_started';
+      var status = record ? record.status : 'unavailable';
       var meta = labels[status] || ['Statut inconnu', 'off'];
       var since = record && record.state_since ? new Date(record.state_since) : null;
-      var seconds = since ? Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000)) : 0;
-      return { agent: agent, label: meta[0], cls: meta[1], since: since, seconds: seconds };
+      var seconds = teamStatusElapsedSeconds(record);
+      return { agent: agent, label: meta[0], cls: meta[1], since: since, seconds: seconds, record: record };
     });
     var counts = { online: 0, break: 0, out: 0, off: 0 };
     rows.forEach(function (r) {
@@ -426,10 +438,10 @@
     $('#agent-cards').innerHTML = rows.map(function (r) {
       return '<article class="attendance-card status-' + r.cls + '">' +
         '<div class="attendance-card-top"><div><strong>' + esc(r.agent.full_name) + '</strong>' +
-        '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : 'Aucun pointage actif') + '</small></div>' +
+        '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : (r.record ? 'Aucun pointage actif' : 'État absent de la synchronisation')) + '</small></div>' +
         '<span class="at-badge ' + r.cls + '">' + esc(r.label) + '</span></div>' +
         '<div class="attendance-card-metrics"><div><small>Durée du statut actuel</small>' +
-        '<b data-state-duration="' + esc(r.agent.id) + '">' + OPS.minutes(Math.floor(r.seconds / 60)) + '</b></div></div></article>';
+        '<b data-state-duration="' + esc(r.agent.id) + '">' + (r.seconds == null ? '—' : OPS.minutes(Math.floor(r.seconds / 60))) + '</b></div></div></article>';
     }).join('') || '<p class="empty-note">Aucun agent actif à afficher.</p>';
   }
 
@@ -955,8 +967,8 @@
         var el = document.querySelector('[data-state-duration="' + a.id + '"]');
         if (!el) return;
         var record = TEAM_STATUS.filter(function (x) { return x.agent_id === a.id; })[0];
-        var since = record && record.state_since ? new Date(record.state_since).getTime() : null;
-        el.textContent = since ? OPS.minutes(Math.floor(Math.max(0, Date.now() - since) / 60000)) : '0 min';
+        var elapsed = teamStatusElapsedSeconds(record);
+        el.textContent = elapsed == null ? '—' : OPS.minutes(Math.floor(elapsed / 60));
       });
     }
     if (currentTab === 'me' && myAgentId) {

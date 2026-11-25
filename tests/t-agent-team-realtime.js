@@ -13,6 +13,10 @@ assert(account.includes("db.auth.signInWithPassword") && account.includes("db.au
 assert(account.includes("!session.isAgent || session.profile.activity !== 'pgv'"), 'self-service page is agent-PGV scoped');
 assert(attendance.includes("table: 'attendance_team_presence'") && attendance.includes("filter: 'activity=eq.pgv'"), 'agents receive PGV team presence snapshots through Realtime');
 assert(attendance.includes('pgvData.loadTeamPresence(TODAY)'), 'agents read only the aggregate current team status');
+assert(data.includes('loadTeamPresence: loadTeamPresence'), 'team presence loader is exposed by the pgvData API');
+assert(data.includes("from('attendance_team_presence_live')") && data.includes('elapsed_seconds'), 'team durations come from the database-clock view');
+assert(attendance.includes('record.elapsed_seconds'), 'UI uses server-computed durations instead of local absolute clock');
+assert(sql.includes('attendance_team_presence_live') && sql.includes('statement_timestamp() - state_since'), 'SQL computes elapsed status duration using the server clock');
 assert(attendance.includes('data-state-duration') && attendance.includes('setInterval(tick, 1000)'), 'presence durations advance live between pointages');
 assert(planning.includes("table: 'planning_entries'") && planning.includes("planningChannel.subscribe"), 'team planning refreshes by realtime');
 assert(calendar.includes("table: 'calibrations'") && calendar.includes("table: 'calibration_results'"), 'calendar listens for calibration and result changes');

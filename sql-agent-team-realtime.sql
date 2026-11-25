@@ -125,6 +125,17 @@ create policy attendance_team_presence_read on public.attendance_team_presence
          ))
   );
 
+-- Le calcul de la durée utilise l’horloge serveur PostgreSQL, pas celle du PC.
+create or replace view public.attendance_team_presence_live
+with (security_invoker = true) as
+select activity, work_date, agent_id, status, state_since, updated_at,
+       case when state_since is null then null
+            else greatest(0, floor(extract(epoch from (statement_timestamp() - state_since))))::integer
+       end as elapsed_seconds
+  from public.attendance_team_presence;
+grant select on public.attendance_team_presence_live to authenticated;
+revoke all on public.attendance_team_presence_live from anon;
+
 create or replace function public.sigma_refresh_attendance_team_presence(
   p_activity text, p_work_date date, p_agent_id uuid
 ) returns void language plpgsql security definer set search_path = public
