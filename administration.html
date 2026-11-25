@@ -352,8 +352,10 @@
     } finally { btn.disabled = false; }
   });
 
-  $$('.adm-temp-password').forEach(function (b) {
-    b.addEventListener('click', async function () {
+  // Delegation: les lignes/boutons sont créés dynamiquement par renderTable().
+  $('#adm-body').addEventListener('click', async function (event) {
+    var b = event.target.closest('.adm-temp-password');
+    if (!b || b.disabled) return;
       var id = b.getAttribute('data-user');
       var u = USERS.filter(function (x) { return x.id === id; })[0];
       if (!u || u.active === false || u.role !== 'agent') return;
@@ -379,7 +381,6 @@
       } catch (e) {
         OPS.toast((e && e.message) || 'Action impossible. Vérifiez que admin-set-temp-password est déployée.', 'error');
       } finally { b.disabled = false; }
-    });
   });
 
   $('#adm-temp-password-copy').addEventListener('click', async function () {

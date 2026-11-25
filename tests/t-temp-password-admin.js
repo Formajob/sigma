@@ -5,6 +5,7 @@ const adminHtml = fs.readFileSync('/home/user/sigma-build/administration.html', 
 const fn = fs.readFileSync('/home/user/sigma-build/supabase/functions/admin-set-temp-password/index.ts', 'utf8');
 assert(adminHtml.includes('adm-temp-password'), 'UI admin must expose the password action');
 assert(adminHtml.includes("db.functions.invoke('admin-set-temp-password'"), 'UI must call the protected Edge Function');
+assert(adminHtml.includes("$('#adm-body').addEventListener('click'"), 'UI must delegate clicks because account rows are rendered dynamically');
 assert(adminHtml.includes('Fermer efface sa valeur'), 'UI must clear the one-time password on close');
 assert(fn.includes('caller.role === "super_admin"'), 'function must authorize super admins');
 assert(fn.includes('caller.activity === "pgv"'), 'function must scope admins to PGV');
