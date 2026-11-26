@@ -27,7 +27,7 @@ const TABLES = {
                     {activity:'pgv',code:'SAT',label:'Samedi',start_time:'14:00:00',end_time:'18:00:00',is_work:true,break_minutes:0},
                     {activity:'pgv',code:'OFF',label:'Repos',start_time:null,end_time:null,is_work:false,break_minutes:0}],
   planning_entries: [], attendance_events: [], attendance_settings: [
-    {activity:'pgv',break_type:'pause',max_minutes:15,max_per_day:2},
+    {activity:'pgv',break_type:'pause',max_minutes:30,max_per_day:3,daily_limit_minutes:30},
     {activity:'pgv',break_type:'lunch',max_minutes:60,max_per_day:1},
     {activity:'pgv',break_type:'sortie',max_minutes:5,max_per_day:2},
     {activity:'pgv',break_type:'rencontre',max_minutes:30,max_per_day:1},
@@ -35,7 +35,7 @@ const TABLES = {
   ], attendance_alert_acks: [],
   email_rotation: [{activity:'pgv',position:1,agent_id:'a1',active:true},{activity:'pgv',position:2,agent_id:'a2',active:true}],
   email_settings: [{activity:'pgv',anchor_date:'2026-11-16',skip_weekend:true,target_sac_pct:98,active:true}],
-  email_days: [], email_agent_daily: [], agent_daily_activity: [],
+  email_days: [], email_agent_daily: [], agent_daily_activity: [], attendance_daily_overrides: [], attendance_daily_override_audit: [],
   documents: [
     { activity:'pgv', id:'doc1', doc_type:'Rencontre', object:'Performance', meeting_date:'2026-11-10',
       follow_up_date:'2026-11-20', agent_id:'a1', call_id:'204186-1611', visibility:'agent',
@@ -67,7 +67,14 @@ window.__SIGMA_READY=Promise.resolve(window.__MOCK_PROFILE);
    delete:function(){return api},
    then:function(res){res({data:rows,error:null})}};
   return api; }
- window.sigmaSupabase={getClient:function(){return Promise.resolve({from:chain,rpc:function(){return Promise.resolve({data:[],error:null})},auth:{getUser:function(){return Promise.resolve({data:{user:{id:'u1',email:'j@acx.ma'}}})},resetPasswordForEmail:function(){return Promise.resolve({error:null})}}})},signOut:function(){return Promise.resolve()}};
+ window.sigmaSupabase={getClient:function(){return Promise.resolve({from:chain,rpc:function(name,args){
+  var today=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0');
+  if(name==='pgv_get_attendance_self_day'){var p=window.__MOCK_PROFILE||{};return Promise.resolve({data:(DATA.attendance_events||[]).filter(function(e){return e.agent_id===p.agentId&&e.work_date===args.p_work_date}).sort(function(a,b){return String(a.occurred_at).localeCompare(String(b.occurred_at))}),error:null})}
+  if(name==='pgv_get_team_presence_live'){var rows=DATA.agents.filter(function(a){return a.active&&a.activity==='pgv'}).map(function(a){var ev=(DATA.attendance_events||[]).filter(function(e){return e.agent_id===a.id&&e.work_date===today}).sort(function(x,y){return String(x.occurred_at).localeCompare(String(y.occurred_at))});var status='not_started',since=null;ev.forEach(function(e){if(e.event_type==='in'){status='online';since=e.occurred_at}else if(e.event_type==='break_start'){status='break_'+(e.break_type||'pause');since=e.occurred_at}else if(e.event_type==='break_end'){status='online';since=e.occurred_at}else if(e.event_type==='out'){status='out';since=e.occurred_at}});return {agent_id:a.id,status:status,state_since:since,updated_at:since||new Date().toISOString(),elapsed_seconds:since?Math.max(0,Math.floor((Date.now()-new Date(since).getTime())/1000)):0}});return Promise.resolve({data:rows,error:null})}
+  if(name==='pgv_get_team_attendance_events'){return Promise.resolve({data:(DATA.attendance_events||[]).filter(function(e){return e.work_date>=args.p_from&&e.work_date<=args.p_to}).map(function(e){return {agent_id:e.agent_id,work_date:e.work_date,event_type:e.event_type,break_type:e.break_type||null,occurred_at:e.occurred_at}}),error:null})}
+  if(name==='pgv_admin_save_attendance_override'){var q=args||{},i=(DATA.attendance_daily_overrides||[]).findIndex(function(r){return r.agent_id===q.p_agent_id&&r.work_date===q.p_work_date});if(q.p_status_override==null){if(i>=0)DATA.attendance_daily_overrides.splice(i,1)}else{var obj={activity:'pgv',work_date:q.p_work_date,agent_id:q.p_agent_id,status_override:q.p_status_override,presence_minutes:q.p_presence_minutes,late_minutes:q.p_late_minutes,pause_minutes:q.p_pause_minutes,lunch_minutes:q.p_lunch_minutes,sortie_minutes:q.p_sortie_minutes,reason:q.p_reason};if(i>=0)DATA.attendance_daily_overrides[i]=obj;else DATA.attendance_daily_overrides.push(obj)}return Promise.resolve({data:{ok:true},error:null})}
+  return Promise.resolve({data:[],error:null})
+ },auth:{getUser:function(){return Promise.resolve({data:{user:{id:'u1',email:'j@acx.ma'}}})},resetPasswordForEmail:function(){return Promise.resolve({error:null})}}})},signOut:function(){return Promise.resolve()}};
 })();
 `;
 module.exports = { TABLES, MOCK };

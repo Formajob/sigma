@@ -98,6 +98,42 @@
     return /does not exist|undefined table|schema cache|Could not find the table|relation .* does not exist/i.test(m);
   };
 
+  var PREVIEW_BLOCK_MESSAGE = 'Aperçu agent : cette action n’est pas enregistrée dans les données réelles.';
+  var PREVIEW_READ_RPCS = ['pgv_get_attendance_self_day','pgv_get_team_presence_live','pgv_get_team_attendance_events'];
+  function blockedBuilder() {
+    var result={data:null,error:{message:PREVIEW_BLOCK_MESSAGE}};
+    var b={select:function(){return b;},eq:function(){return b;},in:function(){return b;},gte:function(){return b;},lte:function(){return b;},order:function(){return b;},limit:function(){return b;},single:function(){return Promise.resolve(result);},maybeSingle:function(){return Promise.resolve(result);},then:function(resolve,reject){return Promise.resolve(result).then(resolve,reject);}};
+    return b;
+  }
+  function previewQuery(builder) {
+    if (!builder || typeof builder!=='object') return builder;
+    return new Proxy(builder,{get:function(target,prop){
+      if (['insert','upsert','update','delete'].indexOf(String(prop))>=0) return function(){return blockedBuilder();};
+      if (prop==='then') return function(resolve,reject){return target.then(resolve,reject);};
+      var value=Reflect.get(target,prop,target);
+      if (typeof value!=='function') return value;
+      return function(){var result=value.apply(target,arguments);return result&&typeof result==='object'?previewQuery(result):result;};
+    }});
+  }
+  function previewDatabase(db) {
+    if (!db || typeof Proxy==='undefined') return db;
+    return new Proxy(db,{get:function(target,prop){
+      if (prop==='from') return function(table){return previewQuery(target.from(table));};
+      if (prop==='rpc') return function(name,args){
+        if (PREVIEW_READ_RPCS.indexOf(name)<0) return Promise.resolve({data:null,error:{message:PREVIEW_BLOCK_MESSAGE}});
+        return target.rpc(name,args);
+      };
+      if (prop==='auth') {
+        var auth=target.auth;
+        return new Proxy(auth,{get:function(a,k){
+          if (['updateUser','signInWithPassword','resetPasswordForEmail'].indexOf(String(k))>=0) return function(){return Promise.resolve({data:null,error:{message:PREVIEW_BLOCK_MESSAGE}});};
+          var fn=Reflect.get(a,k,a); return typeof fn==='function'?fn.bind(a):fn;
+        }});
+      }
+      var value=Reflect.get(target,prop,target); return typeof value==='function'?value.bind(target):value;
+    }});
+  }
+
   /* ---------- navigation ---------- */
   var NAV = [
     { key: 'dashboard', href: 'pgv-dashboard.html', icon: '▦', label: 'Vue d’ensemble' },
@@ -108,7 +144,8 @@
     { key: 'planning', href: 'planning.html?activity=pgv', icon: '◷', label: 'Planning' },
     { key: 'account', href: 'mon-compte.html', icon: '◎', label: 'Mon compte', roles: ['agent'] },
     { key: 'administration', href: 'administration.html', icon: '⚙', label: 'Administration',
-      roles: ['admin', 'super_admin'] }
+      roles: ['admin', 'super_admin'] },
+    { key: 'agent-preview', href: 'agent-preview.html', icon: '▷', label: 'Tester vue agent', roles: ['super_admin'] }
   ];
 
   OPS.renderShell = function (opts) {
@@ -127,8 +164,12 @@
           '<span class="workspace-sub">Protégez-Vous · SAC</span></div>' +
         '<span class="nav-label">Espace de travail</span>' +
         '<nav class="side-nav" aria-label="Navigation principale">' +
-          NAV.filter(function (n) { return !n.roles || n.roles.indexOf(role) >= 0; }).map(function (n) {
-            return '<a class="' + (n.key === active ? 'active' : '') + '" href="' + n.href + '">' +
+          NAV.filter(function (n) { return (!n.roles || n.roles.indexOf(role) >= 0) && !(profile.isAgentPreview && n.key === 'account'); }).map(function (n) {
+            var href=n.href;
+            if(profile.isAgentPreview){
+              var u=new URL(href,window.location.href);u.searchParams.set('activity','pgv');u.searchParams.set('agent_preview','1');u.searchParams.set('agent_id',profile.agentId);href=u.pathname.split('/').pop()+u.search;
+            }
+            return '<a class="' + (n.key === active ? 'active' : '') + '" href="' + href + '">' +
               '<span class="nav-icon">' + n.icon + '</span>' + n.label + '</a>';
           }).join('') +
         '</nav>' +
@@ -159,14 +200,35 @@
   /* ---------- démarrage ---------- */
   OPS.boot = function (opts) {
     return (async function () {
-      var profile = null;
-      try { profile = await window.__SIGMA_READY; } catch (e) { profile = null; }
-      if (!profile) return null;                       // redirection déjà faite
+      var realProfile = null;
+      try { realProfile = await window.__SIGMA_READY; } catch (e) { realProfile = null; }
+      if (!realProfile) return null;                       // redirection déjà faite
       var db = null;
       try { db = await window.sigmaSupabase.getClient(); } catch (e) {}
-      var isManager = ['superviseur', 'admin', 'super_admin'].indexOf(profile.role) >= 0;
+      var profile=realProfile, isPreview=false;
+      var params=new URLSearchParams(window.location.search);
+      if(realProfile.role==='super_admin' && params.get('agent_preview')==='1'){
+        var agentId=params.get('agent_id');
+        try{
+          var result=await db.from('agents').select('id,full_name,staff_id,activity,active').eq('id',agentId).eq('activity','pgv').maybeSingle();
+          if(result.error||!result.data||result.data.active===false) throw new Error('Agent PGV actif introuvable.');
+          profile=Object.assign({},realProfile,{role:'agent',activity:'pgv',agentId:result.data.id,agentName:result.data.full_name,
+            displayName:result.data.full_name,isAgentPreview:true,realRole:'super_admin'});
+          db=previewDatabase(db);
+          var originalGetClient=window.sigmaSupabase.getClient;
+          window.sigmaSupabase.getClient=function(){return Promise.resolve(originalGetClient()).then(previewDatabase);};
+          isPreview=true;
+        }catch(error){
+          OPS.renderShell({active:opts.active,title:opts.title,profile:realProfile,actions:opts.actions});
+          OPS.banner('Aperçu agent indisponible',OPS.esc(error.message||error),'error');
+          return null;
+        }
+      }
+      var isManager = !isPreview && ['superviseur', 'admin', 'super_admin'].indexOf(profile.role) >= 0;
       OPS.renderShell({ active: opts.active, title: opts.title, profile: profile, actions: opts.actions });
-      return { profile: profile, db: db, isManager: isManager, isAgent: profile.role === 'agent' };
+      if(isPreview) OPS.banner('Mode test · vue agent',
+        'Tu consultes Sigma comme <b>'+OPS.esc(profile.displayName)+'</b>. Les écritures et changements de mot de passe sont bloqués; aucune donnée réelle ne sera modifiée. <a href="agent-preview.html" style="font-weight:800;color:inherit">Quitter l’aperçu</a>.','warn');
+      return { profile: profile, db: db, isManager: isManager, isAgent: profile.role === 'agent', isPreview:isPreview };
     })();
   };
 

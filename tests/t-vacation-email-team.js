@@ -14,8 +14,12 @@ assert(admin.includes('id="adm-leave-body"') && admin.includes("db.rpc('admin_de
 assert(admin.includes('vac_days_applied'), 'approval reports the VAC days applied');
 assert(leaveSql.includes('status in (\'pending\',\'approved\')') && leaveSql.includes("shift_code='VAC'"), 'server prevents overlap and changes only approved scheduled workdays');
 assert(leaveSql.includes('pgv_save_team_email_agent_daily') && leaveSql.includes('email_agent_daily_audit'), 'team email edit is server-validated and audited');
-assert(emails.includes('id="agent-team-email-entry"') && emails.includes('saveTeamEmailAgentRow'), 'agents can edit daily email counts by team member');
-assert(data.includes('saveTeamEmailAgentRow: saveTeamEmailAgentRow'), 'email team RPC is exposed in the data layer');
+assert(emails.includes('id="btn-entry">＋ Saisir la journée') && !emails.includes('agent-team-email-entry'), 'single daily-entry button replaces the agent-by-agent panel');
+assert(emails.includes('Emails reçus · total équipe') && emails.includes('Emails traités · toute l’équipe'), 'daily form uses team aggregate labels');
+assert(emails.includes('openEntry(b.getAttribute(\'data-date\'))') && emails.includes('saveTeamEmailDay(dateISO'), 'agents can open and correct any selected historical day');
+assert(data.includes('saveTeamEmailDay: saveTeamEmailDay') && data.includes("db.rpc('pgv_save_email_day_totals'"), 'agent daily aggregate RPC is exposed in the data layer');
+const dailySql=fs.readFileSync(root+'sql-emails-saisie-journee-equipe.sql','utf8');
+assert(dailySql.includes('treated_total integer not null') && dailySql.includes('pgv_save_email_day_totals'), 'daily totals migration preserves aggregate treatment counts');
 assert(planning.includes('visibleCodes = { M:true, SAT:true, OFF:true, VAC:true, MAL:true, FORM:true }'), 'planning offers only standard shifts and valid absence markers');
 assert(satSql.includes("date '2026-12-14'") && satSql.includes("date '2027-01-10'") && satSql.includes("'SAT'"), 'rotation extends through four Saturdays while filling the standard weeks');
 console.log('VACATION + EMAIL TEAM OK');

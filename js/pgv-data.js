@@ -288,6 +288,12 @@
   }
 
   /* ---------------- présence ---------------- */
+  async function loadMyAttendance(workDate) {
+    var res = await db.rpc('pgv_get_attendance_self_day', { p_work_date: workDate });
+    if (res.error) raise(res.error, 'attendance_events');
+    return res.data || [];
+  }
+
   async function loadAttendance(workDate, agentId) {
     var q = db.from('attendance_events')
       .select('id, agent_id, event_type, break_type, occurred_at, work_date, source')
@@ -299,6 +305,31 @@
     return res.data || [];
   }
 
+  async function loadTeamAttendanceHistory(from, to) {
+    var res = await db.rpc('pgv_get_team_attendance_events', { p_from: from, p_to: to });
+    if (res.error) raise(res.error, 'attendance_team_history');
+    return res.data || [];
+  }
+
+  async function loadAttendanceOverrides(from, to) {
+    var res = await db.from('attendance_daily_overrides')
+      .select('work_date,agent_id,status_override,presence_minutes,late_minutes,pause_minutes,lunch_minutes,sortie_minutes,reason,updated_at')
+      .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to);
+    if (res.error) raise(res.error, 'attendance_daily_overrides');
+    return res.data || [];
+  }
+
+  async function saveAttendanceOverride(row) {
+    var res = await db.rpc('pgv_admin_save_attendance_override', {
+      p_work_date: row.work_date,p_agent_id: row.agent_id,p_status_override: row.status_override,
+      p_presence_minutes: row.presence_minutes,p_late_minutes: row.late_minutes,
+      p_pause_minutes: row.pause_minutes,p_lunch_minutes: row.lunch_minutes,
+      p_sortie_minutes: row.sortie_minutes,p_reason: row.reason
+    });
+    if (res.error) raise(res.error, 'attendance_daily_overrides');
+    return res.data;
+  }
+
   async function loadAttendanceRange(from, to) {
     var res = await db.from('attendance_events')
       .select('id, agent_id, event_type, break_type, occurred_at, work_date, source')
@@ -308,11 +339,9 @@
     return res.data || [];
   }
 
-  async function loadTeamPresence(workDate) {
-    var res = await db.from('attendance_team_presence_live')
-      .select('agent_id, status, state_since, updated_at, elapsed_seconds')
-      .eq('activity', ACTIVITY).eq('work_date', workDate || isoLocal());
-    if (res.error) raise(res.error, 'attendance_team_presence');
+  async function loadTeamPresence() {
+    var res = await db.rpc('pgv_get_team_presence_live');
+    if (res.error) raise(res.error, 'attendance_team_presence_live');
     return res.data || [];
   }
 
@@ -330,7 +359,7 @@
 
   async function loadBreakSettings() {
     var res = await db.from('attendance_settings')
-      .select('break_type, max_minutes, max_per_day').eq('activity', ACTIVITY);
+      .select('break_type, max_minutes, max_per_day, daily_limit_minutes').eq('activity', ACTIVITY);
     if (res.error) raise(res.error, 'attendance_settings');
     return res.data || [];
   }
@@ -369,7 +398,7 @@
 
   async function loadEmailDays(from, to) {
     var res = await db.from('email_days')
-      .select('id, work_date, planned_agent_id, duty_agent_id, received_total, received_sac, non_sac_spam, non_sac_pub, non_sac_autre_departement, non_sac_autre, treated_sac, note')
+      .select('id, work_date, planned_agent_id, duty_agent_id, received_total, received_sac, non_sac_spam, non_sac_pub, non_sac_autre_departement, non_sac_autre, treated_sac, treated_total, note')
       .eq('activity', ACTIVITY).gte('work_date', from).lte('work_date', to).order('work_date');
     if (res.error) raise(res.error, 'email_days');
     return res.data || [];
@@ -395,6 +424,16 @@
     return res.data;
   }
 
+  async function saveTeamEmailDay(workDate, receivedTotal, treatedTotal) {
+    var res = await db.rpc('pgv_save_email_day_totals', {
+      p_work_date: workDate,
+      p_received_total: Math.max(0, +receivedTotal || 0),
+      p_treated_total: Math.max(0, +treatedTotal || 0)
+    });
+    if (res.error) raise(res.error, 'email_days');
+    return res.data;
+  }
+
   async function saveEmailDay(row) {
     var res = await db.from('email_days').upsert({
       activity: ACTIVITY,
@@ -408,6 +447,7 @@
       non_sac_autre_departement: row.non_sac_autre_departement || 0,
       non_sac_autre: row.non_sac_autre || 0,
       treated_sac: row.treated_sac || 0,
+      treated_total: row.treated_total == null ? (row.treated_sac || 0) : Math.max(0, +row.treated_total || 0),
       note: row.note || null,
       updated_at: new Date().toISOString()
     }, { onConflict: 'activity,work_date' }).select().single();
@@ -530,7 +570,11 @@
     savePlanningEntry: savePlanningEntry,
     clearPlanningEntry: clearPlanningEntry,
     loadAttendance: loadAttendance,
+    loadMyAttendance: loadMyAttendance,
     loadAttendanceRange: loadAttendanceRange,
+    loadTeamAttendanceHistory: loadTeamAttendanceHistory,
+    loadAttendanceOverrides: loadAttendanceOverrides,
+    saveAttendanceOverride: saveAttendanceOverride,
     loadTeamPresence: loadTeamPresence,
     addEvent: addEvent,
     loadBreakSettings: loadBreakSettings,
@@ -540,6 +584,7 @@
     loadEmailSettings: loadEmailSettings,
     loadEmailDays: loadEmailDays,
     saveEmailDay: saveEmailDay,
+    saveTeamEmailDay: saveTeamEmailDay,
     loadEmailAgents: loadEmailAgents,
     saveTeamEmailAgentRow: saveTeamEmailAgentRow,
     simulateRotation: simulateRotation,

@@ -9,6 +9,9 @@
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI0MwNjIyRCIvPjx0ZXh0IHg9IjE2IiB5PSIyNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlM8L3RleHQ+PC9zdmc+" type="image/svg+xml">
 <link rel="stylesheet" href="css/ops.css">
 <link rel="stylesheet" href="css/polish.css">
+<style>
+.attendance-week-table{min-width:900px}.attendance-week-table th{position:sticky;top:0;z-index:1;background:#a30e3d;color:#fff}.att-week-cell{position:relative;display:flex;flex-direction:column;gap:4px;min-width:106px;min-height:74px;padding:8px;border:1px solid #e5e1dc;border-radius:8px;background:#fff;color:#24313a;text-align:left;cursor:pointer}.att-week-cell .att-status{font-weight:800;font-size:11px}.att-week-cell .att-detail{font-size:9px;line-height:1.35;color:#69737a}.att-week-cell.present{background:#e4f7ec;border-color:#b6e0c6}.att-week-cell.absent{background:#fde9e7;border-color:#f0c0bb}.att-week-cell.vac{background:#e8f0ff;border-color:#cbd8f2}.att-week-cell.off{background:#f1f2f3}.att-week-cell.late{box-shadow:inset 0 0 0 2px #e3a43b}.att-week-edit{position:absolute;right:4px;top:4px;border:0;background:#fff;border-radius:5px;padding:3px 5px;cursor:pointer}.att-history-agent{background:#f5f6f7;font-weight:800}.att-history-summary{font-size:10px;color:#58636a}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -33,6 +36,7 @@
         <button class="at-tab" data-tab="live" role="tab">Temps réel</button>
         <button class="at-tab" data-tab="me" role="tab">Ma journée</button>
         <button class="at-tab" data-tab="week" role="tab">Semaine</button>
+        <button class="at-tab" data-tab="history" role="tab">Historique</button>
         <button class="at-tab" data-tab="activity" role="tab">Activité</button>
       </div>
 
@@ -96,13 +100,41 @@
         </div>
       </section>
 
-      <!-- ================= SEMAINE ================= -->
+      <!-- ================= SEMAINE / PÉRIODE ================= -->
       <section id="tab-week" hidden>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-body">
+          <div class="period-inputs" style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
+            <label>Du <input type="date" id="week-from"></label>
+            <label>Au <input type="date" id="week-to"></label>
+            <button class="btn-sm" id="week-load" type="button">Afficher la période</button>
+            <button class="button button-primary" id="week-export" type="button">⇩ Exporter Excel</button>
+            <small id="week-status" class="f-note" aria-live="polite"></small>
+          </div>
+          <p class="f-note" style="margin:10px 0 0">Clique une case pour consulter l’historique de cette journée. Les corrections de statut et de résumé sont réservées aux responsables.</p>
+        </div></div>
         <div class="panel"><div class="panel-body" style="padding:0">
-          <div class="scroll-x"><table class="p-table" id="week-table">
+          <div class="scroll-x"><table class="p-table attendance-week-table" id="week-table">
             <thead id="week-head"></thead><tbody id="week-body"></tbody>
           </table></div>
         </div></div>
+      </section>
+
+      <!-- ================= HISTORIQUE DES STATUTS ================= -->
+      <section id="tab-history" hidden>
+        <div class="panel" style="margin-bottom:12px"><div class="panel-body">
+          <div class="period-inputs" style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
+            <label>Journée <input type="date" id="history-date"></label>
+            <label>Agent <select id="history-agent" class="f-select"></select></label>
+            <button class="btn-sm" id="history-load" type="button">Afficher</button>
+            <small id="history-status" class="f-note" aria-live="polite"></small>
+          </div>
+        </div></div>
+        <div class="panel"><div class="panel-head"><h2>Historique des statuts</h2><small id="history-caption">—</small></div>
+          <div class="panel-body" style="padding:0"><div class="scroll-x"><table class="p-table">
+            <thead><tr><th>Agent</th><th>Statut</th><th>Début</th><th>Fin</th><th class="num">Durée</th><th>Détail</th></tr></thead>
+            <tbody id="history-body"></tbody>
+          </table></div></div>
+        </div>
       </section>
 
       <!-- ================= ACTIVITÉ ================= -->
@@ -159,6 +191,32 @@
   </main>
 </div>
 
+<div class="ops-modal" id="attendance-edit-modal" role="dialog" aria-modal="true" aria-labelledby="attendance-edit-title" hidden>
+  <div class="ops-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+      <h2 id="attendance-edit-title" style="margin:0;font:600 19px var(--serif)">Corriger le résumé journalier</h2>
+      <button type="button" class="btn-sm" id="attendance-edit-close">Fermer</button>
+    </div>
+    <p id="attendance-edit-agent" class="f-note"></p>
+    <div class="f-row c2">
+      <div><label class="f-label" for="edit-status">Statut corrigé</label><select class="f-select" id="edit-status">
+        <option value="">Choisir un statut</option><option value="PRESENT">Présent</option><option value="ABSENT">Absent</option><option value="VAC">VAC</option><option value="OFF">OFF</option>
+      </select></div>
+      <div><label class="f-label" for="edit-presence">Présence nette · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-presence"></div>
+      <div><label class="f-label" for="edit-late">Retard · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-late"></div>
+      <div><label class="f-label" for="edit-pause">Pauses cumulées · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-pause"></div>
+      <div><label class="f-label" for="edit-lunch">Lunch · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-lunch"></div>
+      <div><label class="f-label" for="edit-sortie">Sorties temporaires · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-sortie"></div>
+    </div>
+    <div class="f-row"><div><label class="f-label" for="edit-reason">Motif obligatoire</label><input class="f-input" id="edit-reason" maxlength="500" placeholder="Explique la correction"></div></div>
+    <p class="f-note">Le journal brut de pointage n’est pas réécrit. La correction est enregistrée séparément et auditée.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button type="button" class="btn-sm" id="attendance-edit-clear">Retirer la correction</button>
+      <button type="button" class="button button-primary" id="attendance-edit-save">Enregistrer la correction</button>
+    </div>
+  </div>
+</div>
+
 <div class="ops-modal" id="attendance-share-modal" role="dialog" aria-modal="true" aria-labelledby="attendance-share-title" hidden>
   <div class="ops-modal-card">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
@@ -184,6 +242,7 @@
 <script src="js/pgv-grid.js"></script>
 <script src="js/pgv-data.js"></script>
 <script src="js/ops-common.js"></script>
+<script src="js/xlsx.js"></script>
 <script>
 (async function () {
   'use strict';
@@ -191,10 +250,13 @@
   var session = await OPS.boot({ active: 'attendance', title: 'Présence' });
   if (!session) return;
   var profile = session.profile, isManager = session.isManager, db = session.db;
+  var canEditAttendance = ['admin','super_admin'].indexOf(profile.role) >= 0;
   var TODAY = pgvData.iso();
   var VIEW_DAY = TODAY;
 
-  var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], TEAM_STATUS = [], TEAM_STATUS_FETCHED_AT = Date.now(), BREAKS = {}, ACKS = {};
+  var AGENTS = [], SHIFTS = [], SHIFT = {}, PLANNING = {}, EVENTS = [], TEAM_STATUS = [], TEAM_STATUS_ERROR = false;
+  var TEAM_STATUS_FETCHED_AT = performance.now(), BREAKS = {}, ACKS = {};
+  var pauseAutoResumeInProgress = false, pauseAutoResumeLastAttempt = 0;
   var myAgentId = profile.agentId || null;
   var currentTab = isManager ? 'live' : 'me', filterStatus = null;
   if (isManager) {
@@ -225,6 +287,8 @@
     return;
   }
   SHIFTS.forEach(function (s) { SHIFT[s.code] = s; });
+  fillHistoryAgents();
+  $('#history-date').value = TODAY;
 
   var showPicker = isManager;
   if (!myAgentId && isManager) myAgentId = AGENTS.length ? AGENTS[0].id : null;
@@ -235,18 +299,29 @@
       var rows = await pgvData.loadPlanning(VIEW_DAY, VIEW_DAY);
       PLANNING = {};
       rows.forEach(function (r) { PLANNING[r.agent_id] = r; });
-      // Les managers disposent de l’historique complet. Un agent ne reçoit que
-      // son propre journal; l’équipe reçoit des états agrégés sans chronologie brute.
-      EVENTS = await pgvData.loadAttendance(VIEW_DAY, isManager ? null : myAgentId);
-      TEAM_STATUS = (!isManager && VIEW_DAY === TODAY) ? await pgvData.loadTeamPresence(TODAY) : [];
-      TEAM_STATUS_FETCHED_AT = Date.now();
+      // Les agents relisent leur propre journal via RPC sécurisé, les responsables
+      // gardent le détail autorisé par RLS.
+      EVENTS = isManager
+        ? await pgvData.loadAttendance(VIEW_DAY, null)
+        : await pgvData.loadMyAttendance(VIEW_DAY);
       var a = await pgvData.loadAcks(VIEW_DAY, isManager ? null : myAgentId);
       ACKS = {};
       a.forEach(function (x) { ACKS[x.agent_id + '|' + x.alert_code] = true; });
     } catch (e) {
-      TEAM_STATUS = [];
       OPS.banner('Lecture impossible', esc(e.message), 'error');
+      EVENTS = [];
     }
+    if (VIEW_DAY === TODAY) {
+      try {
+        TEAM_STATUS = await pgvData.loadTeamPresence();
+        TEAM_STATUS_ERROR = false;
+        TEAM_STATUS_FETCHED_AT = performance.now();
+      } catch (e) {
+        TEAM_STATUS = [];
+        TEAM_STATUS_ERROR = true;
+        if (!isManager) OPS.banner('Synchronisation indisponible', 'La présence de l’équipe n’a pas pu être actualisée. Réessaie dans quelques secondes.', 'error');
+      }
+    } else { TEAM_STATUS = []; TEAM_STATUS_ERROR = false; }
     renderLive(); renderMe();
   }
 
@@ -281,7 +356,11 @@
     var openMin = (open != null) ? Math.max(0, Math.round((now - open) / 60000)) : 0;
     var openBreakMin = (breakOpen != null) ? Math.max(0, Math.round((now - breakOpen) / 60000)) : 0;
     var presenceMin = Math.round(presence / 60000) + openMin;
-    var breakMin = 0; Object.keys(breaks).forEach(function (k) { breakMin += Math.round(breaks[k] / 60000); });
+    var breakMin = 0, breaksSec = {};
+    Object.keys(breaks).forEach(function (k) {
+      breaksSec[k] = Math.max(0, Math.floor(breaks[k] / 1000));
+      breakMin += Math.round(breaks[k] / 60000);
+    });
     breakMin += openBreakMin;
     var net = Math.max(0, presenceMin - breakMin);
 
@@ -305,6 +384,7 @@
     return {
       agentId: agentId, shift: sh, plan: plan,
       firstIn: firstIn, lastOut: lastOut, presenceMin: presenceMin, breakMin: breakMin,
+      breaksSec: breaksSec,
       breaksMin: {
         pause: Math.round(breaks.pause / 60000),
         lunch: Math.round(breaks.lunch / 60000),
@@ -352,9 +432,13 @@
 
   function breakLimitNotice(day) {
     if (!day.openBreak) return null;
-    var setting = BREAKS[day.openBreak] || {}, max = +setting.max_minutes || 0;
+    var setting = BREAKS[day.openBreak] || {};
+    var max = day.openBreak === 'pause'
+      ? (+setting.daily_limit_minutes || +setting.max_minutes || 30)
+      : (+setting.max_minutes || 0);
     if (!max) return null;
-    var maxSec = max * 60, elapsed = day.openBreakSec || 0;
+    var maxSec = max * 60;
+    var elapsed = (day.openBreakSec || 0) + (day.openBreak === 'pause' ? ((day.breaksSec || {}).pause || 0) : 0);
     var margin = Math.min(120, Math.max(30, maxSec * 0.2));
     var title = BREAK_LABEL[day.openBreak] || day.openBreak;
     if (elapsed >= maxSec) return { state:'over', code:'break_over_active', limit:max, elapsed:elapsed,
@@ -384,8 +468,9 @@
       if (!breakNotice && day.openBreakMin > 120) out.push({ code:'break_open_long', kind:'danger', text:'<b>' + esc(a.full_name) + '</b> : statut ouvert depuis ' + OPS.minutes(day.openBreakMin) + '.' });
     }
     ['pause', 'lunch', 'sortie', 'rencontre', 'reunion'].forEach(function (k) {
-      var setting = BREAKS[k] || {}, max = setting.max_minutes;
-      if (max && day.breaksMin[k] > max) out.push({ code: 'break_over_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + k + ' ' + day.breaksMin[k] + ' min pour un droit de ' + max + '.' });
+      var setting = BREAKS[k] || {};
+      var max = k === 'pause' ? (+setting.daily_limit_minutes || +setting.max_minutes) : setting.max_minutes;
+      if (max && day.breaksMin[k] > max) out.push({ code: 'break_over_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + k + ' ' + day.breaksMin[k] + ' min pour un droit quotidien de ' + max + '.' });
       if (setting.max_per_day && (day.breakCounts[k] || 0) > setting.max_per_day) out.push({ code: 'break_count_' + k, kind: 'warn', text: '<b>' + esc(a.full_name) + '</b> : ' + (day.breakCounts[k] || 0) + ' ' + k + ' pris(es), maximum ' + setting.max_per_day + '.' });
     });
     if (end && now > end + 15 * 60000 && day.status === 'online') out.push({ code: 'no_checkout', kind: 'danger', text: '<b>' + esc(a.full_name) + '</b> n’a pas pointé son départ.' });
@@ -400,8 +485,30 @@
     if (!record || record.elapsed_seconds == null) return null;
     var base = Number(record.elapsed_seconds);
     if (!Number.isFinite(base)) return null;
-    var localSinceFetch = Math.max(0, Math.floor((Date.now() - TEAM_STATUS_FETCHED_AT) / 1000));
+    var localSinceFetch = Math.max(0, Math.floor((performance.now() - TEAM_STATUS_FETCHED_AT) / 1000));
     return Math.max(0, Math.floor(base)) + localSinceFetch;
+  }
+
+  function applyPresenceSnapshot(day) {
+    if (!day || day.date !== TODAY) return day;
+    var record = TEAM_STATUS.filter(function (x) { return x.agent_id === day.agentId; })[0];
+    if (!record || !record.status || record.status === 'not_started') return day;
+    var seconds = teamStatusElapsedSeconds(record);
+    if (seconds == null) return day;
+    day.status = record.status;
+    day.stateSince = record.state_since ? new Date(record.state_since).getTime() : day.stateSince;
+    day.statusDurationSec = seconds;
+    day.statusDurationMin = Math.floor(seconds / 60);
+    if (record.status.indexOf('break_') === 0) {
+      day.openBreak = record.status.slice(6);
+      day.openBreakSec = seconds;
+      day.openBreakMin = Math.floor(seconds / 60);
+    } else {
+      day.openBreak = null;
+      day.openBreakSec = 0;
+      day.openBreakMin = 0;
+    }
+    return day;
   }
 
   function renderAgentTeamLive() {
@@ -411,12 +518,12 @@
       break_reunion: ['Réunion', 'meeting'], break_coaching: ['Coaching', 'meeting'],
       break_formation: ['Formation', 'meeting'], break_technique: ['Technique', 'meeting'],
       out: ['A terminé', 'out'], not_started: ['Pas encore pointé', 'off'],
-      unavailable: ['Données non synchronisées', 'late']
+      unavailable: ['Connexion à vérifier', 'late']
     };
     var liveAgents = AGENTS.filter(function (a) { return a.active !== false; });
     var rows = liveAgents.map(function (agent) {
       var record = TEAM_STATUS.filter(function (x) { return x.agent_id === agent.id; })[0];
-      var status = record ? record.status : 'unavailable';
+      var status = record ? record.status : (TEAM_STATUS_ERROR ? 'unavailable' : 'not_started');
       var meta = labels[status] || ['Statut inconnu', 'off'];
       var since = record && record.state_since ? new Date(record.state_since) : null;
       var seconds = teamStatusElapsedSeconds(record);
@@ -431,6 +538,8 @@
     });
     $('#live-title').textContent = 'Présence actuelle de l’équipe';
     $('#live-date').textContent = OPS.fmtDateLong(TODAY);
+    $('#attendance-live-status').textContent = TEAM_STATUS_ERROR ? 'Actualisation en attente' : 'Statuts synchronisés';
+    $('#attendance-live-status').title = TEAM_STATUS_ERROR ? 'Le dernier chargement des statuts a échoué; nouvelle tentative automatique.' : 'État actuel issu du serveur.';
     $('#counters').innerHTML = [
       ['En poste', counts.online, 'good'], ['En pause / activité', counts.break, 'warn'],
       ['Terminés', counts.out, 'grey'], ['Pas encore pointés', counts.off, 'grey']
@@ -438,7 +547,7 @@
     $('#agent-cards').innerHTML = rows.map(function (r) {
       return '<article class="attendance-card status-' + r.cls + '">' +
         '<div class="attendance-card-top"><div><strong>' + esc(r.agent.full_name) + '</strong>' +
-        '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : (r.record ? 'Aucun pointage actif' : 'État absent de la synchronisation')) + '</small></div>' +
+        '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : (r.record ? 'Aucun pointage actif' : 'Pas encore de pointage')) + '</small></div>' +
         '<span class="at-badge ' + r.cls + '">' + esc(r.label) + '</span></div>' +
         '<div class="attendance-card-metrics"><div><small>Durée du statut actuel</small>' +
         '<b data-state-duration="' + esc(r.agent.id) + '">' + (r.seconds == null ? '—' : OPS.minutes(Math.floor(r.seconds / 60))) + '</b></div></div></article>';
@@ -455,7 +564,7 @@
     }
     $('#live-day').value = VIEW_DAY;
     var visibleAgents = AGENTS; // La vue Temps réel est l'annuaire de présence de toute l'équipe PGV.
-    var days = visibleAgents.map(function (a) { return computeDay(a.id, VIEW_DAY); });
+    var days = visibleAgents.map(function (a) { return applyPresenceSnapshot(computeDay(a.id, VIEW_DAY)); });
     var c = { online: 0, break: 0, late: 0, absent: 0, out: 0, waiting: 0, off: 0, unplanned: 0 };
     days.forEach(function (d) { if (d.status.indexOf('break_') === 0) c.break++; else if (c[d.status] != null) c[d.status]++; });
     var presents = days.filter(function (d) { return ['online', 'out'].indexOf(d.status) >= 0 || d.status.indexOf('break_') === 0; }).length;
@@ -492,7 +601,7 @@
           '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
           '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
           '<div><small>Durée du statut · ' + esc(st[0]) + '</small><b data-state-duration="' + esc(d.agentId) + '">' + OPS.minutes(d.statusDurationMin) + '</b></div>' +
-          '<div><small>Pauses</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + d.breaksMin.pause + ' / 30 min</b></div>' +
+          '<div><small>Pauses cumulées</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + (d.breaksMin.pause + (d.openBreak === 'pause' ? d.openBreakMin : 0)) + ' / 30 min</b></div>' +
           '<div><small>Lunch</small><b>' + (d.breakCounts.lunch || 0) + ' prise(s) · ' + d.breaksMin.lunch + ' / 60 min</b></div>' +
           '<div><small>Sorties temp.</small><b>' + (d.breakCounts.sortie || 0) + ' prises · ' + d.breaksMin.sortie + ' / 5 min max.</b></div>' +
           '<div><small>Rencontre / réunion</small><b>' + ((d.breakCounts.rencontre || 0) + (d.breakCounts.reunion || 0)) + ' · ' + ((d.breaksMin.rencontre || 0) + (d.breaksMin.reunion || 0)) + ' / 30 min</b></div>' +
@@ -553,7 +662,7 @@
   }
 
   function buildDailyAttendanceSummary() {
-    var scheduled = AGENTS.map(function (a) { return { agent:a, day:computeDay(a.id, TODAY) }; })
+    var scheduled = AGENTS.map(function (a) { return { agent:a, day:applyPresenceSnapshot(computeDay(a.id, TODAY)) }; })
       .filter(function (x) { return x.day.shift && x.day.shift.is_work; });
     var absents = scheduled.filter(function (x) { return x.day.status === 'absent'; });
     var late = scheduled.filter(function (x) {
@@ -686,9 +795,11 @@
 
     var limit = $('#me-status-limit');
     if (d.openBreak && (BREAKS[d.openBreak] || {}).max_minutes) {
-      var max = BREAKS[d.openBreak].max_minutes, elapsed = d.openBreakSec || 0;
+      var setting = BREAKS[d.openBreak];
+      var max = d.openBreak === 'pause' ? (+setting.daily_limit_minutes || +setting.max_minutes || 30) : setting.max_minutes;
+      var elapsed = (d.openBreakSec || 0) + (d.openBreak === 'pause' ? ((d.breaksSec || {}).pause || 0) : 0);
       limit.hidden = false;
-      $('#me-status-limit-label').textContent = 'Limite · ' + (BREAK_LABEL[d.openBreak] || d.openBreak);
+      $('#me-status-limit-label').textContent = d.openBreak === 'pause' ? 'Quota pauses de la journée' : 'Limite · ' + (BREAK_LABEL[d.openBreak] || d.openBreak);
       $('#me-status-limit-time').textContent = Math.floor(elapsed / 60) + ' / ' + max + ' min';
       $('#me-status-meter-fill').style.width = Math.min(100, Math.round(elapsed / (max * 60) * 100)) + '%';
       limit.classList.toggle('near', elapsed >= Math.max(1, max * 60 - Math.min(120, Math.max(30, max * 60 * .2))) && elapsed < max * 60);
@@ -738,17 +849,15 @@
       return;
     }
     var me = AGENTS.filter(function (a) { return a.id === myAgentId; })[0];
-    myDay = computeDay(myAgentId, VIEW_DAY);
+    myDay = applyPresenceSnapshot(computeDay(myAgentId, VIEW_DAY));
     var d = myDay;
-    var ev = EVENTS.filter(function (e) { return e.agent_id === myAgentId; });
     renderMyStatus(d);
 
     $('#at-sub').textContent = me ? ('Votre journée · ' + me.full_name) : '—';
 
     var inBtn = $('#b-in'), outBtn = $('#b-out'), resumeBtn = $('#b-resume');
-    var last = ev.length ? ev[ev.length - 1] : null;
     var onBreak = !!d.openBreak;
-    var inService = !!last && (last.event_type === 'in' || last.event_type === 'break_end');
+    var inService = d.status === 'online';
 
     inBtn.disabled = VIEW_DAY !== TODAY || inService || onBreak;
     outBtn.disabled = VIEW_DAY !== TODAY || (!inService && !onBreak);
@@ -756,14 +865,20 @@
     $('#b-out-time').textContent = onBreak ? 'clôture la pause aussi' : '';
     $('#b-resume-time').textContent = onBreak ? formatStatusDuration(d.statusDurationSec) : '';
     $('#b-in-time').textContent = !inService && !onBreak && d.shift && d.shift.start_time ? 'Shift ' + d.shift.start_time.slice(0,5) : '';
+    var pauseSetting = BREAKS.pause || {};
+    var pauseLimit = +pauseSetting.daily_limit_minutes || 30;
+    var pauseUsedSec = ((d.breaksSec || {}).pause || 0) + (d.openBreak === 'pause' ? (d.openBreakSec || 0) : 0);
     $$('#b-breaks button').forEach(function (b) {
       var type = b.getAttribute('data-break'), active = onBreak && d.openBreak === type;
-      var allowed = !!(BREAKS[type] || {}).max_minutes;
+      var setting = BREAKS[type] || {}, allowed = !!setting.max_minutes;
+      if (type === 'pause' && ((setting.max_per_day && (d.breakCounts.pause || 0) >= setting.max_per_day) || pauseUsedSec >= pauseLimit * 60)) allowed = false;
       b.disabled = VIEW_DAY !== TODAY || !(inService || onBreak) || active || !allowed;
       b.classList.toggle('selected', active);
       b.setAttribute('aria-pressed', active ? 'true' : 'false');
       var small = b.querySelector('small');
-      if (small) small.textContent = ((BREAKS[type] || {}).max_minutes || '—') + ' min' + (active ? ' · en cours' : ' max');
+      if (small) small.textContent = type === 'pause'
+        ? Math.floor(pauseUsedSec / 60) + ' / ' + pauseLimit + ' min · ' + (d.breakCounts.pause || 0) + ' / ' + (setting.max_per_day || '∞') + ' pauses'
+        : ((setting.max_minutes || '—') + ' min' + (active ? ' · en cours' : ' max'));
     });
 
     $('#me-shift').innerHTML = d.shift && d.shift.is_work
@@ -774,7 +889,7 @@
     $('#me-summary').innerHTML = [
       ['Statut', st[0]],
       ['Arrivée', d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—'],
-      ['Pause', d.breaksMin.pause + '′ / ' + ((BREAKS.pause || {}).max_minutes || 15) + '′'],
+      ['Pause cumulée', Math.floor(pauseUsedSec / 60) + '′ / ' + pauseLimit + '′'],
       ['Lunch', d.breaksMin.lunch + '′ / ' + ((BREAKS.lunch || {}).max_minutes || 60) + '′'],
       ['Temps net', d.net ? OPS.minutes(d.net) : '—']
     ].map(function (kv) {
@@ -807,37 +922,227 @@
     b.addEventListener('click', function () { post('break_start', b.getAttribute('data-break')); });
   });
 
-  /* ---------------- semaine ---------------- */
-  async function renderWeek() {
-    var monday = OPS.mondayOf(TODAY);
-    var ds = [];
-    for (var i = 0; i < 7; i++) ds.push(OPS.addDays(monday, i));
-    $('#week-head').innerHTML = '<tr><th>Agent</th>' + ds.map(function (d) {
-      return '<th>' + OPS.fmtDate(d) + '</th>';
-    }).join('') + '<th class="num">Net</th></tr>';
+  /* ---------------- semaine + historique ---------------- */
+  var WEEK_DATA = { from:null, to:null, events:[], planning:[], overrides:[] };
+  var HISTORY_DATA = { date:null, events:[], planning:[], overrides:[] };
+  var WEEK_LOADING = false;
 
-    var evW = [], planW = {};
-    try {
-      evW = await pgvData.loadAttendanceRange(ds[0], ds[6]);
-      var rows = await pgvData.loadPlanning(ds[0], ds[6]);
-      rows.forEach(function (r) { planW[r.agent_id + '|' + r.work_date] = r; });
-    } catch (e) { OPS.toast(e.message, 'error'); }
-
-    var weekAgents = isManager ? AGENTS : AGENTS.filter(function (a) { return a.id === myAgentId; });
-    $('#week-body').innerHTML = weekAgents.map(function (a) {
-      var total = 0;
-      var cells = ds.map(function (d) {
-        var ev = evW.filter(function (e) { return e.agent_id === a.id && e.work_date === d; });
-        var plan = planW[a.id + '|' + d];
-        var net = netOf(ev);
-        total += net;
-        var label = net ? OPS.minutes(net) : (plan ? plan.shift_code : '—');
-        var col = net ? '#2F6B4F' : (plan && plan.shift_code === 'OFF' ? '#A09A91' : '#8A857D');
-        return '<td class="mono" style="color:' + col + '">' + label + '</td>';
-      }).join('');
-      return '<tr><td class="name">' + esc(a.full_name) + '</td>' + cells + '<td class="num mono">' + OPS.minutes(total) + '</td></tr>';
-    }).join('');
+  function dayDates(from,to) {
+    var out=[], d=from;
+    while(d<=to) { out.push(d); d=OPS.addDays(d,1); }
+    return out;
   }
+  function groupByAgentDate(rows) {
+    var map={};
+    (rows||[]).forEach(function(r){ var k=r.agent_id+'|'+r.work_date; (map[k]||(map[k]=[])).push(r); });
+    return map;
+  }
+  function planIndex(rows) {
+    var map={}; (rows||[]).forEach(function(r){map[r.agent_id+'|'+r.work_date]=r;}); return map;
+  }
+  function overrideIndex(rows) {
+    var map={}; (rows||[]).forEach(function(r){map[r.agent_id+'|'+r.work_date]=r;}); return map;
+  }
+  function summarizeAgentDay(agentId, dayISO, eventRows, planRow, overrideRow) {
+    var oldEvents=EVENTS, oldPlan=PLANNING, oldDay=VIEW_DAY;
+    EVENTS=eventRows||[]; PLANNING={}; if(planRow) PLANNING[agentId]=planRow; VIEW_DAY=dayISO;
+    var d=computeDay(agentId,dayISO);
+    EVENTS=oldEvents; PLANNING=oldPlan; VIEW_DAY=oldDay;
+    var shiftCode=planRow ? planRow.shift_code : null;
+    var status='NON_PLANIFIE', label='Non planifié';
+    if (overrideRow) {
+      status=overrideRow.status_override;
+    } else if (shiftCode==='VAC') status='VAC';
+    else if (shiftCode==='OFF' || (planRow && d.shift && !d.shift.is_work)) status='OFF';
+    else if (d.shift && d.shift.is_work) {
+      if (d.firstIn) status='PRESENT';
+      else if (d.status==='absent') status='ABSENT';
+      else if (d.status==='late') status='LATE';
+      else status='WAITING';
+    } else if (d.firstIn) status='PRESENT';
+    var names={PRESENT:'Présent',ABSENT:'Absent',VAC:'VAC',OFF:'OFF',LATE:'En retard',WAITING:'Attendu',NON_PLANIFIE:'—'};
+    label=names[status]||status;
+    var metrics={
+      presence:overrideRow && overrideRow.presence_minutes!=null ? +overrideRow.presence_minutes : d.net,
+      late:overrideRow && overrideRow.late_minutes!=null ? +overrideRow.late_minutes : d.lateMin,
+      pause:overrideRow && overrideRow.pause_minutes!=null ? +overrideRow.pause_minutes : d.breaksMin.pause+(d.openBreak==='pause'?d.openBreakMin:0),
+      lunch:overrideRow && overrideRow.lunch_minutes!=null ? +overrideRow.lunch_minutes : d.breaksMin.lunch+(d.openBreak==='lunch'?d.openBreakMin:0),
+      sortie:overrideRow && overrideRow.sortie_minutes!=null ? +overrideRow.sortie_minutes : d.breaksMin.sortie+(d.openBreak==='sortie'?d.openBreakMin:0)
+    };
+    return {agentId:agentId,date:dayISO,day:d,plan:planRow||null,status:status,label:label,metrics:metrics,override:overrideRow||null,
+      pauseOver:Math.max(0,metrics.pause-30),lunchOver:Math.max(0,metrics.lunch-60),sortieOver:Math.max(0,metrics.sortie-5)};
+  }
+  function detailText(summary) {
+    var bits=[];
+    if(summary.metrics.presence) bits.push('Présence '+OPS.minutes(summary.metrics.presence));
+    if(summary.metrics.late) bits.push('Retard '+OPS.minutes(summary.metrics.late));
+    if(summary.pauseOver) bits.push('Pause +'+OPS.minutes(summary.pauseOver));
+    if(summary.lunchOver) bits.push('Lunch +'+OPS.minutes(summary.lunchOver));
+    if(summary.sortieOver) bits.push('Sortie +'+OPS.minutes(summary.sortieOver));
+    if(summary.override) bits.push('Corrigé');
+    return bits.join(' · ')||'Aucun pointage';
+  }
+  function statusClass(status) {
+    if(status==='PRESENT') return 'present'; if(status==='ABSENT'||status==='LATE') return 'absent';
+    if(status==='VAC') return 'vac'; if(status==='OFF') return 'off'; return '';
+  }
+  function showTab(tab) {
+    currentTab=tab;
+    $$('.at-tab').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-tab')===tab);});
+    ['live','me','week','history','activity'].forEach(function(k){$('#tab-'+k).hidden=k!==tab;});
+    if(tab==='live') loadDay(); if(tab==='week') renderWeek(); if(tab==='history') loadHistory(); if(tab==='activity') loadActivity();
+  }
+
+  async function loadPeriod(from,to,allowLarge) {
+    if(!from||!to||to<from) throw new Error('Choisis une période valide.');
+    if(to>TODAY) throw new Error('La date de fin ne peut pas être dans le futur.');
+    var dates=dayDates(from,to);
+    if(!allowLarge && dates.length>31) throw new Error('Pour afficher la matrice, choisis au maximum 31 jours.');
+    if(allowLarge && dates.length>366) throw new Error('L’export est limité à 366 jours.');
+    var results=await Promise.all([
+      pgvData.loadTeamAttendanceHistory(from,to),
+      pgvData.loadPlanning(from,to),
+      pgvData.loadAttendanceOverrides(from,to)
+    ]);
+    return {from:from,to:to,dates:dates,events:results[0],planning:results[1],overrides:results[2],
+      eventMap:groupByAgentDate(results[0]),planMap:planIndex(results[1]),overrideMap:overrideIndex(results[2])};
+  }
+  async function renderWeek() {
+    if(!$('#week-from').value) {
+      var monday=OPS.mondayOf(TODAY); $('#week-from').value=monday; $('#week-to').value=OPS.addDays(monday,6);
+    }
+    var from=$('#week-from').value,to=$('#week-to').value;
+    $('#week-status').textContent='Chargement…';
+    try {
+      WEEK_DATA=await loadPeriod(from,to,false);
+      var liveAgents=AGENTS.filter(function(a){return a.active!==false;});
+      $('#week-head').innerHTML='<tr><th>Agent</th>'+WEEK_DATA.dates.map(function(date){return '<th>'+OPS.fmtDate(date)+'</th>';}).join('')+'</tr>';
+      $('#week-body').innerHTML=liveAgents.map(function(agent){
+        var cells=WEEK_DATA.dates.map(function(date){
+          var key=agent.id+'|'+date, summary=summarizeAgentDay(agent.id,date,WEEK_DATA.eventMap[key]||[],WEEK_DATA.planMap[key],WEEK_DATA.overrideMap[key]);
+          var metric=detailText(summary);
+          return '<td><div class="att-week-cell '+statusClass(summary.status)+(summary.status==='LATE'?' late':'')+'" role="button" tabindex="0" data-week-cell="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'">'+
+            '<span class="att-status">'+esc(summary.label)+'</span><span class="att-detail">'+esc(metric)+'</span>'+
+            (canEditAttendance?'<button type="button" class="att-week-edit" title="Modifier le résumé" data-edit-attendance="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'">✎</button>':'')+
+            '</div></td>';
+        }).join('');
+        return '<tr><td class="name">'+esc(agent.full_name)+'</td>'+cells+'</tr>';
+      }).join('');
+      $('#week-status').textContent=liveAgents.length+' agents · '+WEEK_DATA.dates.length+' jours';
+    } catch(e) { $('#week-status').textContent=e.message; $('#week-body').innerHTML='<tr><td colspan="8"><p class="empty-note">'+esc(e.message)+'</p></td></tr>'; }
+  }
+  async function exportWeek() {
+    var from=$('#week-from').value,to=$('#week-to').value;
+    try {
+      var data=await loadPeriod(from,to,true);
+      var rows=[['Date','Agent','Statut','Shift','Présence nette (min)','Retard (min)','Pause (min)','Dépassement pause (min)','Lunch (min)','Dépassement lunch (min)','Sorties (min)','Dépassement sorties (min)','Correction','Motif']];
+      AGENTS.filter(function(a){return a.active!==false;}).forEach(function(agent){
+        data.dates.forEach(function(date){var k=agent.id+'|'+date,s=summarizeAgentDay(agent.id,date,data.eventMap[k]||[],data.planMap[k],data.overrideMap[k]);
+          rows.push([date,agent.full_name,s.label,s.plan?s.plan.shift_code:'',s.metrics.presence,s.metrics.late,s.metrics.pause,s.pauseOver,s.metrics.lunch,s.lunchOver,s.metrics.sortie,s.sortieOver,s.override?'Oui':'Non',s.override?s.override.reason:'']);
+        });
+      });
+      if(!window.SigmaXLSX){OPS.toast('Module Excel indisponible.','error');return;}
+      window.SigmaXLSX.write([{name:'Présence',widths:[13,25,16,12,20,14,14,22,14,22,14,25,12,40],rows:rows}], 'Sigma-PGV-Presence-'+from+'-'+to+'.xlsx');
+      OPS.toast('Fichier Excel téléchargé.');
+    } catch(e){OPS.toast(e.message||'Export impossible.','error');}
+  }
+
+  function fillHistoryAgents() {
+    var select=$('#history-agent');
+    select.innerHTML='<option value="">Toute l’équipe</option>'+AGENTS.filter(function(a){return a.active!==false;}).map(function(a){return '<option value="'+esc(a.id)+'">'+esc(a.full_name)+'</option>';}).join('');
+  }
+  async function loadHistory() {
+    var date=$('#history-date').value||TODAY; $('#history-date').value=date;
+    $('#history-status').textContent='Chargement…';
+    try {
+      HISTORY_DATA=await loadPeriod(date,date,true);
+      renderHistory(); $('#history-status').textContent='Historique chargé.';
+    } catch(e){ $('#history-status').textContent=e.message; $('#history-body').innerHTML='<tr><td colspan="6"><p class="empty-note">'+esc(e.message)+'</p></td></tr>'; }
+  }
+  function stateSegments(agentId,date,events) {
+    var segs=[], state=null, start=null;
+    function close(end){if(state&&start!=null&&state!=='Terminé')segs.push({state:state,start:start,end:end,seconds:Math.max(0,Math.floor((end-start)/1000))});}
+    (events||[]).slice().sort(function(a,b){return new Date(a.occurred_at)-new Date(b.occurred_at);}).forEach(function(e){
+      var t=new Date(e.occurred_at).getTime(), next=null;
+      if(e.event_type==='in'||e.event_type==='break_end') next=e.event_type==='in'?'En poste':'En poste';
+      else if(e.event_type==='break_start') next=BREAK_LABEL[e.break_type]||'Pause';
+      else if(e.event_type==='out') next='Terminé';
+      if(next){close(t);state=next;start=t;}
+    });
+    if(state&&state!=='Terminé'){
+      var end=date===TODAY?Date.now():OPS.parseISO(date).getTime()+86400000;
+      close(end);
+    }
+    return segs;
+  }
+  function renderHistory() {
+    var date=$('#history-date').value||TODAY, filter=$('#history-agent').value;
+    $('#history-caption').textContent=OPS.fmtDateLong(date);
+    var agents=AGENTS.filter(function(a){return a.active!==false&&(!filter||a.id===filter);});
+    var rows=[];
+    agents.forEach(function(agent){
+      var key=agent.id+'|'+date, ev=HISTORY_DATA.eventMap[key]||[], summary=summarizeAgentDay(agent.id,date,ev,HISTORY_DATA.planMap[key],HISTORY_DATA.overrideMap[key]);
+      var segs=stateSegments(agent.id,date,ev);
+      rows.push('<tr class="att-history-agent"><td>'+esc(agent.full_name)+'</td><td>'+esc(summary.label)+'</td><td colspan="4" class="att-history-summary">'+esc(detailText(summary))+(summary.override?' · '+esc(summary.override.reason):'')+'</td></tr>');
+      if(segs.length) segs.forEach(function(seg){
+        rows.push('<tr><td></td><td>'+esc(seg.state)+'</td><td class="mono">'+OPS.fmtTime(new Date(seg.start))+'</td><td class="mono">'+OPS.fmtTime(new Date(seg.end))+'</td><td class="num mono">'+OPS.minutes(Math.floor(seg.seconds/60))+'</td><td></td></tr>');
+      });
+      else rows.push('<tr><td></td><td colspan="5" class="att-history-summary">Aucun événement de pointage pour cette journée.</td></tr>');
+    });
+    $('#history-body').innerHTML=rows.join('')||'<tr><td colspan="6"><p class="empty-note">Aucun agent à afficher.</p></td></tr>';
+  }
+
+  var editTarget=null;
+  function openAttendanceEdit(agentId,date) {
+    if(!canEditAttendance||!agentId||!date)return;
+    var key=agentId+'|'+date,agent=AGENTS.filter(function(a){return a.id===agentId;})[0]||{full_name:'Agent'};
+    var ev=(WEEK_DATA.eventMap&&WEEK_DATA.eventMap[key])||(HISTORY_DATA.eventMap&&HISTORY_DATA.eventMap[key])||[];
+    var plan=(WEEK_DATA.planMap&&WEEK_DATA.planMap[key])||(HISTORY_DATA.planMap&&HISTORY_DATA.planMap[key])||PLANNING[agentId];
+    var override=(WEEK_DATA.overrideMap&&WEEK_DATA.overrideMap[key])||(HISTORY_DATA.overrideMap&&HISTORY_DATA.overrideMap[key])||null;
+    var summary=summarizeAgentDay(agentId,date,ev,plan,override);
+    editTarget={agent_id:agentId,work_date:date};
+    $('#attendance-edit-agent').textContent=agent.full_name+' · '+OPS.fmtDateLong(date);
+    $('#edit-status').value=override?override.status_override:(summary.status==='WAITING'?'PRESENT':summary.status);
+    $('#edit-presence').value=summary.metrics.presence||0; $('#edit-late').value=summary.metrics.late||0;
+    $('#edit-pause').value=summary.metrics.pause||0; $('#edit-lunch').value=summary.metrics.lunch||0; $('#edit-sortie').value=summary.metrics.sortie||0;
+    $('#edit-reason').value=override?override.reason:'';
+    $('#attendance-edit-modal').hidden=false; document.body.classList.add('modal-open');
+  }
+  function closeAttendanceEdit(){ $('#attendance-edit-modal').hidden=true;document.body.classList.remove('modal-open');editTarget=null; }
+  $('#attendance-edit-close').addEventListener('click',closeAttendanceEdit);
+  $('#attendance-edit-modal').addEventListener('click',function(e){if(e.target===$('#attendance-edit-modal'))closeAttendanceEdit();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('#attendance-edit-modal').hidden)closeAttendanceEdit();});
+  $('#week-body').addEventListener('click',function(e){
+    var edit=e.target.closest('[data-edit-attendance]');
+    if(edit){e.stopPropagation();openAttendanceEdit(edit.dataset.agent,edit.dataset.date);return;}
+    var cell=e.target.closest('[data-week-cell]'); if(!cell)return;
+    $('#history-date').value=cell.dataset.date; $('#history-agent').value=cell.dataset.agent; showTab('history');
+  });
+  $('#week-load').addEventListener('click',renderWeek);
+  $('#week-export').addEventListener('click',exportWeek);
+  $('#history-load').addEventListener('click',loadHistory);
+  $('#history-date').addEventListener('change',loadHistory);
+  $('#history-agent').addEventListener('change',renderHistory);
+  $('#attendance-edit-save').addEventListener('click',async function(){
+    if(!editTarget)return;
+    var reason=$('#edit-reason').value.trim();
+    if(!$('#edit-status').value){OPS.toast('Choisis un statut corrigé.','error');return;}
+    if(reason.length<3){OPS.toast('Le motif doit contenir au moins 3 caractères.','error');return;}
+    var vals=['edit-presence','edit-late','edit-pause','edit-lunch','edit-sortie'].map(function(id){var v=$('#'+id).value;return v===''?null:Number(v);});
+    if(vals.some(function(v){return v!==null&&(!Number.isInteger(v)||v<0||v>1440);})){OPS.toast('Les durées doivent être des entiers entre 0 et 1440.','error');return;}
+    try{
+      await pgvData.saveAttendanceOverride({work_date:editTarget.work_date,agent_id:editTarget.agent_id,status_override:$('#edit-status').value,
+       presence_minutes:vals[0],late_minutes:vals[1],pause_minutes:vals[2],lunch_minutes:vals[3],sortie_minutes:vals[4],reason:reason});
+      OPS.toast('Correction enregistrée et auditée.');closeAttendanceEdit();await renderWeek();if(HISTORY_DATA.from)await loadHistory();
+    }catch(e){OPS.toast(e.message||'Correction impossible.','error');}
+  });
+  $('#attendance-edit-clear').addEventListener('click',async function(){
+    if(!editTarget)return;var reason=$('#edit-reason').value.trim();if(reason.length<3){OPS.toast('Indique un motif pour retirer la correction.','error');return;}
+    try{await pgvData.saveAttendanceOverride({work_date:editTarget.work_date,agent_id:editTarget.agent_id,status_override:null,
+      presence_minutes:null,late_minutes:null,pause_minutes:null,lunch_minutes:null,sortie_minutes:null,reason:reason});
+      OPS.toast('Correction retirée; l’affichage revient au calcul automatique.');closeAttendanceEdit();await renderWeek();if(HISTORY_DATA.from)await loadHistory();
+    }catch(e){OPS.toast(e.message||'Suppression impossible.','error');}
+  });
 
   function netOf(ev) {
     var presence = 0, brk = 0, open = null, bopen = null;
@@ -941,17 +1246,7 @@
 
   /* ---------------- onglets + horloge ---------------- */
   $$('.at-tab').forEach(function (t) {
-    t.addEventListener('click', function () {
-      currentTab = t.getAttribute('data-tab');
-      $$('.at-tab').forEach(function (x) { x.classList.toggle('active', x === t); });
-      $('#tab-live').hidden = currentTab !== 'live';
-      $('#tab-me').hidden = currentTab !== 'me';
-      $('#tab-week').hidden = currentTab !== 'week';
-      $('#tab-activity').hidden = currentTab !== 'activity';
-      if (currentTab === 'live') loadDay();
-      if (currentTab === 'week') renderWeek();
-      if (currentTab === 'activity') loadActivity();
-    });
+    t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
   });
 
   function tick() {
@@ -972,8 +1267,19 @@
       });
     }
     if (currentTab === 'me' && myAgentId) {
-      myDay = computeDay(myAgentId, VIEW_DAY);
+      myDay = applyPresenceSnapshot(computeDay(myAgentId, VIEW_DAY));
       renderMyStatus(myDay);
+    }
+    if (!isManager && myAgentId && VIEW_DAY === TODAY) {
+      var pauseDay = currentTab === 'me' ? myDay : applyPresenceSnapshot(computeDay(myAgentId, VIEW_DAY));
+      var pauseLimitSec = ((+((BREAKS.pause || {}).daily_limit_minutes)) || 30) * 60;
+      var pauseConsumedSec = ((pauseDay.breaksSec || {}).pause || 0) + (pauseDay.openBreak === 'pause' ? (pauseDay.openBreakSec || 0) : 0);
+      if (pauseDay.openBreak === 'pause' && pauseConsumedSec >= pauseLimitSec &&
+          !pauseAutoResumeInProgress && Date.now() - pauseAutoResumeLastAttempt >= 10000) {
+        pauseAutoResumeInProgress = true; pauseAutoResumeLastAttempt = Date.now();
+        OPS.toast('Quota quotidien de pause atteint : reprise enregistrée automatiquement.');
+        post('break_end').finally(function () { pauseAutoResumeInProgress = false; });
+      }
     }
   }
   tick(); setInterval(tick, 1000);
@@ -1022,7 +1328,10 @@
     if (attendanceChannel && db) db.removeChannel(attendanceChannel);
   }, { once: true });
   // Secours si le navigateur ou le réseau perd le canal Realtime.
-  setInterval(function () { if (currentTab === 'live' || (currentTab === 'me' && !isManager)) loadDay(); }, 60000);
+  setInterval(function () { if (currentTab === 'live' || (currentTab === 'me' && !isManager)) loadDay(); }, isManager ? 30000 : 15000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && (currentTab === 'live' || currentTab === 'me')) loadDay();
+  });
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

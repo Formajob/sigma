@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17242D"><meta name="robots" content="noindex,nofollow">
+<title>Tester la vue agent · Sigma</title>
+<link rel="stylesheet" href="css/ops.css"><link rel="stylesheet" href="css/polish.css">
+</head>
+<body><div class="app-shell"><aside class="sidebar"></aside><main class="main"><header class="topbar"></header><div class="content">
+  <div id="ops-banner" class="p-banner" hidden></div>
+  <div class="welcome-row"><div><span class="welcome-kicker">PGV · Outil super admin</span><h1>Tester la vue agent</h1>
+    <p>Aperçu des écrans agent avec les données de l’agent sélectionné. Les écritures de test et changements de mot de passe sont bloqués.</p></div></div>
+  <div class="panel" style="max-width:900px"><div class="panel-head"><h2>Choisir un agent</h2><small>Mode aperçu sécurisé</small></div><div class="panel-body">
+    <div class="f-row c2"><div><label class="f-label" for="preview-agent">Agent PGV</label><select id="preview-agent" class="f-select"></select></div>
+      <div><label class="f-label">À propos du mode test</label><p class="f-note">Tu navigues dans l’interface comme l’agent. Les actions qui écriraient en base affichent un refus explicite; aucun pointage, congé ou compteur ne sera créé.</p></div></div>
+    <div id="preview-links" class="p-grid2" style="margin-top:16px"></div>
+  </div></div>
+</div></main></div>
+<script src="js/i18n.js"></script><script>window.__SIGMA_PAGE='agent-preview';</script><script>window.__SIGMA_ACTIVITY='pgv';</script>
+<script src="js/supabase-config.js"></script><script src="js/supabase-client.js"></script><script src="scripts/app-shared.js"></script>
+<script src="js/pgv-grid.js"></script><script src="js/pgv-data.js"></script><script src="js/ops-common.js"></script>
+<script>
+(async function(){
+  'use strict';var $=OPS.$,esc=OPS.esc;
+  var session=await OPS.boot({active:'agent-preview',title:'Tester la vue agent'});
+  if(!session)return;
+  if(session.profile.role!=='super_admin'){
+    OPS.banner('Accès réservé','Cet outil est réservé au super administrateur.','error');return;
+  }
+  try{await pgvData.init();var agents=(await pgvData.loadAgents()).filter(function(a){return a.activity==='pgv'&&a.active!==false;});
+    $('#preview-agent').innerHTML=agents.map(function(a){return '<option value="'+esc(a.id)+'">'+esc(a.full_name)+'</option>';}).join('');
+    function render(){var id=$('#preview-agent').value;if(!id)return;var q='?activity=pgv&agent_preview=1&agent_id='+encodeURIComponent(id);
+      var links=[['Vue d’ensemble','pgv-dashboard.html'],['Présence','attendance.html'],['Planning','planning.html'],['Emails','emails.html'],['Calendrier','calendrier.html']];
+      $('#preview-links').innerHTML=links.map(function(x){return '<a class="panel" style="padding:16px;text-decoration:none" href="'+x[1]+q+'"><strong>'+esc(x[0])+'</strong><p class="f-note">Ouvrir cette page en aperçu agent</p></a>';}).join('');}
+    $('#preview-agent').addEventListener('change',render);render();
+  }catch(e){OPS.banner('Chargement impossible',esc(e.message||e),'error');}
+})();
+</script><script src="js/support-widget.js" defer></script></body></html>

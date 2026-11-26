@@ -1,0 +1,12 @@
+CORRECTIFS SIGMA PGV — PRÉSENCE AGENT ET TEMPS RÉEL
+
+- Pointage agent : les événements de la journée sont relus via un RPC restreint au titulaire. L’écran « Ma journée » s’appuie aussi sur l’état horodaté du serveur, ce qui évite de réactiver « Commencer ma journée » si une lecture du journal échoue temporairement.
+- Temps réel équipe : les agents utilisent un RPC vérifié par rôle pour les statuts agrégés de l’équipe. Les journées sans pointage sont affichées comme « Pas encore pointé », et non comme une synchronisation manquante. Les durées avancent avec une horloge monotone et le rafraîchissement de secours est passé à 15 secondes pour les agents.
+- Pause : quota total quotidien de 30 minutes, répartissable sur jusqu’à trois prises. Le bouton est désactivé quand le quota ou le nombre de prises est épuisé; si une pause reste ouverte jusqu’à 30 minutes cumulées, l’application enregistre la reprise automatiquement. Un garde-fou SQL refuse de démarrer une nouvelle pause après épuisement du quota.
+- Lunch reste à 60 minutes; sortie temporaire reste à 5 minutes.
+
+Migration source : sql-presence-stabilisation-pauses-30m.sql. Les modifications SQL ont été appliquées au projet Supabase PGV; ne pas réexécuter le fichier. Vérification de la base : 3 états de présence actuels sont présents; Zineb est marquée « online » avec un state_since non nul. Paramètres SQL : pause 30 min/3 prises, lunch 60 min, sortie 5 min.
+
+Tests passés : t-enhancements.js, t-agent-team-realtime.js, t-temp-password-admin.js, t-vacation-email-team.js, t-calendrier.js; syntaxe JavaScript intégrée vérifiée. Aucun essai sur une session connectée réelle d’agent n’a été effectué.
+
+Les fichiers front-end n’ont pas été déployés. Extraire à la racine du dépôt Git Sigma, examiner les changements puis lancer PUSH-SIGMA-CORRECTIF-COMPLET.ps1 dans PowerShell. Les migrations sont déjà appliquées; ne pas les exécuter à nouveau. Après push, vérifier le déploiement automatique et actualiser avec Ctrl+F5.

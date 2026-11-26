@@ -22,37 +22,25 @@
         <div>
           <span class="welcome-kicker">PGV · Courrier</span>
           <h1>Emails</h1>
-          <p>Un agent de service par jour ouvré, à tour de rôle. Suivi des emails SAC reçus et traités.</p>
+          <p>Saisie quotidienne du total des emails reçus et traités par toute l’équipe.</p>
         </div>
         <div class="welcome-right">
           <button class="button button-primary" id="btn-entry">＋ Saisir la journée</button>
         </div>
       </div>
 
-      <!-- Tour du jour -->
+      <!-- Suivi de la journée emails -->
       <div class="em-hero">
         <div class="em-hero-main">
           <strong id="duty-name">—</strong>
-          <span id="duty-sub">Agent de service emails</span>
+          <span id="duty-sub">Responsable de la journée emails</span>
         </div>
         <div class="em-hero-side">
           <b id="duty-rest">—</b>
-          <small id="duty-rest-label">restant à traiter</small>
+          <small id="duty-rest-label">écart de traitement du jour</small>
         </div>
       </div>
 
-      <section class="panel" id="agent-team-email-entry" style="margin-bottom:14px" hidden>
-        <div class="panel-head"><h2>Saisie quotidienne des emails par agent</h2><small>Modification autorisée à l’équipe PGV</small></div>
-        <div class="panel-body">
-          <p class="f-note">Choisis une date et saisis les emails traités pour chaque agent. Les totaux d’emails reçus restent saisis par un responsable. Les modifications sont journalisées.</p>
-          <div style="display:flex;gap:8px;align-items:end;margin-bottom:12px;flex-wrap:wrap">
-            <div><label class="f-label" for="team-email-date">Journée</label><input class="f-input" type="date" id="team-email-date"></div>
-            <button class="btn-sm" id="team-email-load" type="button">Charger</button>
-          </div>
-          <div class="scroll-x"><table class="p-table"><thead><tr><th>Agent</th><th class="num">Emails SAC traités</th><th class="num">Autres emails traités</th><th>Action</th></tr></thead><tbody id="team-email-entry-body"></tbody></table></div>
-          <p id="team-email-entry-status" class="f-note" role="status" aria-live="polite"></p>
-        </div>
-      </section>
 
       <div class="period-bar" style="margin-bottom:14px">
         <div class="period-info"><strong>Période</strong><span id="period-label">—</span></div>
@@ -66,14 +54,14 @@
       <div class="kpi-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:14px">
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Reçus</span><span class="kpi-icon">✉</span></div><strong class="kpi-value" id="k-recv">—</strong><span class="kpi-foot">toutes catégories</span></article>
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Dont SAC</span><span class="kpi-icon">◎</span></div><strong class="kpi-value" id="k-sac">—</strong><span class="kpi-foot">à traiter par le SAC</span></article>
-        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Traités SAC</span><span class="kpi-icon">✓</span></div><strong class="kpi-value" id="k-done">—</strong><span class="kpi-foot">clôturés</span></article>
-        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Taux</span><span class="kpi-icon">%</span></div><strong class="kpi-value" id="k-rate">—</strong><span class="kpi-foot">traités ÷ reçus SAC</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Traités équipe</span><span class="kpi-icon">✓</span></div><strong class="kpi-value" id="k-done">—</strong><span class="kpi-foot">clôturés</span></article>
+        <article class="kpi"><div class="kpi-top"><span class="kpi-label">Taux</span><span class="kpi-icon">%</span></div><strong class="kpi-value" id="k-rate">—</strong><span class="kpi-foot">traités ÷ reçus total</span></article>
         <article class="kpi"><div class="kpi-top"><span class="kpi-label">Poids du SAC</span><span class="kpi-icon">◈</span></div><strong class="kpi-value" id="k-weight">—</strong><span class="kpi-foot">SAC ÷ total reçus</span></article>
       </div>
 
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-head"><h2>Calendrier du mois</h2><small id="cal-caption">—</small></div>
-        <p class="f-note" style="padding:0 14px">Clique une journée pour voir le tour et, si tu es superviseur, modifier l’agent de service.</p>
+        <p class="f-note" style="padding:0 14px">Clique une journée pour consulter ou corriger les totaux reçus et traités. Les responsables peuvent aussi modifier l’agent du tour.</p>
         <div class="panel-body">
           <div class="em-cal" id="cal-head"></div>
           <div class="em-cal" id="cal"></div>
@@ -91,7 +79,7 @@
         <div class="panel">
           <div class="panel-head"><h2>Journées</h2><small>détaillées</small></div>
           <div class="panel-body" style="padding:0">
-            <div class="scroll-x"><table class="p-table"><thead><tr><th>Date</th><th>Prévu</th><th>Réel</th><th class="num">Reçus</th><th class="num">SAC</th><th class="num">Traités</th></tr></thead>
+            <div class="scroll-x"><table class="p-table"><thead><tr><th>Date</th><th>Prévu</th><th>Réel</th><th class="num">Reçus</th><th class="num">SAC reçus</th><th class="num">Traités équipe</th></tr></thead>
             <tbody id="days-body"></tbody></table></div>
           </div>
         </div>
@@ -105,19 +93,22 @@
 <div id="dlg" class="ops-modal" role="dialog" aria-modal="true" aria-labelledby="dlg-title" hidden>
   <div class="ops-modal-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h2 id="dlg-title" style="margin:0;font:600 19px var(--serif)">Saisie de la journée</h2>
+      <h2 id="dlg-title" style="margin:0;font:600 19px var(--serif)">Saisie de la journée emails</h2>
       <button type="button" class="btn-sm" id="d-close">Fermer</button>
     </div>
     <div class="f-row c2">
       <div><label class="f-label" for="d-date">Date</label><input class="f-input" type="date" id="d-date"></div>
-      <div><label class="f-label" for="d-duty">Tour de service · agent responsable</label><select class="f-select" id="d-duty"></select></div>
+      <div><label class="f-label" for="d-duty">Agent responsable du tour</label><select class="f-select" id="d-duty"></select></div>
     </div>
-    <div class="f-row c3">
-      <div><label class="f-label" for="d-total">Reçus total</label><input class="f-input" type="number" min="0" id="d-total" value="0"></div>
-      <div><label class="f-label" for="d-sac">Dont SAC</label><input class="f-input" type="number" min="0" id="d-sac" value="0"></div>
-      <div><label class="f-label" for="d-done">Traités SAC</label><input class="f-input" type="number" min="0" id="d-done" value="0"></div>
+    <div class="f-row c2">
+      <div><label class="f-label" for="d-total">Emails reçus · total équipe</label><input class="f-input" type="number" min="0" step="1" id="d-total" value="0"></div>
+      <div><label class="f-label" for="d-team-treated">Emails traités · toute l’équipe</label><input class="f-input" type="number" min="0" step="1" id="d-team-treated" value="0"></div>
     </div>
-    <div class="f-row">
+    <div class="f-row c2" id="manager-email-details">
+      <div><label class="f-label" for="d-sac">Dont emails SAC reçus</label><input class="f-input" type="number" min="0" step="1" id="d-sac" value="0"></div>
+      <div><label class="f-label" for="d-done">Emails SAC traités</label><input class="f-input" type="number" min="0" step="1" id="d-done" value="0"></div>
+    </div>
+    <div class="f-row" id="manager-email-note">
       <div><label class="f-label" for="d-note">Note</label><input class="f-input" id="d-note" placeholder="optionnel"></div>
     </div>
     <div id="dlg-warn" class="cal-warn" hidden></div>
@@ -146,10 +137,6 @@
   var TODAY = pgvData.iso();
   var FROM = pgvData.startOfMonth(), TO = pgvData.endOfMonth();
 
-  if (!isManager) {
-    $('#btn-entry').style.display = 'none';
-    $('#agent-team-email-entry').hidden = false;
-  }
 
   try {
     await pgvData.init();
@@ -203,48 +190,6 @@
     render();
   }
 
-  async function loadTeamEmailEntry() {
-    var date = $('#team-email-date').value || TODAY;
-    $('#team-email-date').value = date;
-    try {
-      var rows = await pgvData.loadEmailAgents(date, date), map = {};
-      rows.forEach(function (r) { map[r.agent_id] = r; });
-      $('#team-email-entry-body').innerHTML = AGENTS.filter(function (a) { return a.active !== false; }).map(function (a) {
-        var r = map[a.id] || {};
-        return '<tr data-team-email-agent="' + esc(a.id) + '"><td class="name">' + esc(a.full_name) + '</td>' +
-          '<td><input class="f-input team-email-sac num" type="number" min="0" step="1" value="' + (+r.treated_sac || 0) + '" aria-label="Emails SAC traités · ' + esc(a.full_name) + '"></td>' +
-          '<td><input class="f-input team-email-other num" type="number" min="0" step="1" value="' + (+r.treated_other || 0) + '" aria-label="Autres emails traités · ' + esc(a.full_name) + '"></td>' +
-          '<td><button class="btn-sm team-email-save" type="button">Enregistrer</button></td></tr>';
-      }).join('') || '<tr><td colspan="4"><p class="empty-note">Aucun agent actif.</p></td></tr>';
-      $('#team-email-entry-status').textContent = 'Données chargées pour le ' + OPS.fmtDateLong(date) + '.';
-    } catch (error) {
-      $('#team-email-entry-body').innerHTML = '<tr><td colspan="4"><p class="empty-note">Lecture indisponible : ' + esc(error.message || error) + '</p></td></tr>';
-    }
-  }
-  $('#team-email-date').value = TODAY;
-  $('#team-email-load').addEventListener('click', loadTeamEmailEntry);
-  $('#team-email-date').addEventListener('change', loadTeamEmailEntry);
-  $('#team-email-entry-body').addEventListener('click', async function (event) {
-    var button = event.target.closest('.team-email-save');
-    if (!button || button.disabled) return;
-    var row = button.closest('tr'), agentId = row.getAttribute('data-team-email-agent');
-    var sac = Number(row.querySelector('.team-email-sac').value || 0);
-    var other = Number(row.querySelector('.team-email-other').value || 0);
-    if (!Number.isInteger(sac) || !Number.isInteger(other) || sac < 0 || other < 0) {
-      OPS.toast('Saisis des nombres entiers positifs ou nuls.', 'error'); return;
-    }
-    button.disabled = true; button.textContent = 'Enregistrement…';
-    try {
-      await pgvData.saveTeamEmailAgentRow($('#team-email-date').value, agentId, sac, other);
-      OPS.toast('Saisie emails enregistrée pour ' + name(agentId));
-      await load();
-      await loadTeamEmailEntry();
-    } catch (error) {
-      OPS.toast((error && error.message) || 'Enregistrement impossible.', 'error');
-      button.disabled = false; button.textContent = 'Réessayer';
-    }
-  });
-
   function dayMap() {
     var m = {};
     DAYS.forEach(function (d) { m[d.work_date] = d; });
@@ -262,10 +207,10 @@
     var extra = [];
     if (planned && duty && planned !== duty) extra.push('remplace ' + name(planned));
     if (!todayMap.open) extra.push('aucun agent planifié ce jour');
-    $('#duty-sub').textContent = 'Agent de service emails' + (extra.length ? ' · ' + extra.join(' · ') : '') +
+    $('#duty-sub').textContent = 'Responsable de la journée emails' + (extra.length ? ' · ' + extra.join(' · ') : '') +
       ' · ' + OPS.fmtDateLong(TODAY);
 
-    var rest = rec ? Math.max(0, (rec.received_sac || 0) - (rec.treated_sac || 0)) : null;
+    var rest = rec ? Math.max(0, (rec.received_total || 0) - (rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total)) : null;
     $('#duty-rest').textContent = rest == null ? '—' : rest;
     $('#duty-rest-label').textContent = rest == null ? 'non saisi' : (rest === 0 ? 'tout est traité' : 'restant à traiter');
   }
@@ -276,11 +221,11 @@
     $('#period-label').textContent = OPS.fmtDate(FROM) + ' → ' + OPS.fmtDate(TO);
 
     var recv = 0, sac = 0, done = 0;
-    DAYS.forEach(function (d) { recv += d.received_total || 0; sac += d.received_sac || 0; done += d.treated_sac || 0; });
+    DAYS.forEach(function (d) { recv += d.received_total || 0; sac += d.received_sac || 0; done += d.treated_total == null ? (d.treated_sac || 0) : d.treated_total; });
     $('#k-recv').textContent = recv || '—';
     $('#k-sac').textContent = sac || '—';
     $('#k-done').textContent = done || '—';
-    $('#k-rate').textContent = sac ? OPS.pct(done, sac) + ' %' : '—';
+    $('#k-rate').textContent = recv ? OPS.pct(done, recv) + ' %' : '—';
     $('#k-weight').textContent = recv ? OPS.pct(sac, recv) + ' %' : '—';
 
     renderCalendar();
@@ -310,9 +255,9 @@
       var open = s ? s.open : true;
       var cls = 'em-day';
       if (!open) cls += ' closed';
-      else if (!rec || (!rec.received_total && !rec.treated_sac)) cls += (duty ? ' noduty' : '');
-      else if ((rec.treated_sac || 0) >= (rec.received_sac || 0) && (rec.received_sac || 0) > 0) cls += ' done';
-      else if ((rec.treated_sac || 0) > 0) cls += ' partial';
+      else if (!rec || (!rec.received_total && !(rec.treated_total || rec.treated_sac))) cls += (duty ? ' noduty' : '');
+      else if ((rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total) >= (rec.received_total || 0) && (rec.received_total || 0) > 0) cls += ' done';
+      else if ((rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total) > 0) cls += ' partial';
       else cls += ' missed';
       if (d === TODAY) cls += ' today';
 
@@ -320,7 +265,7 @@
       cells.push('<button class="' + cls + '" data-date="' + d + '" title="' + esc(OPS.fmtDateLong(d)) + '">' +
         '<span class="d">' + OPS.fmtDate(d) + '</span>' +
         '<span class="who">' + esc(initials) + '</span>' +
-        '<span class="n">' + (rec ? ((rec.treated_sac || 0) + '/' + (rec.received_sac || 0)) : '·') + '</span></button>');
+        '<span class="n">' + (rec ? ((rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total) + '/' + (rec.received_total || 0)) : '·') + '</span></button>');
       d = pgvData.nextDay(d);
     }
     $('#cal').innerHTML = cells.join('');
@@ -366,7 +311,7 @@
         '<td>' + esc(rec.duty_agent_id ? name(rec.duty_agent_id) : '—') + '</td>' +
         '<td class="num">' + (rec.received_total || 0) + '</td>' +
         '<td class="num">' + (rec.received_sac || 0) + '</td>' +
-        '<td class="num">' + (rec.treated_sac || 0) + '</td></tr>';
+        '<td class="num">' + (rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total) + '</td></tr>';
     });
     $('#days-body').innerHTML = rows.length ? rows.join('')
       : '<tr><td colspan="6"><p class="empty-note">Aucune journée ouvrée sur la période.</p></td></tr>';
@@ -375,40 +320,72 @@
   /* ---------------- saisie ---------------- */
   function openEntry(dateISO) {
     var dlg = $('#dlg');
-    $('#dlg-title').textContent = isManager ? 'Saisie de la journée' : 'Détail du planning emails';
+    $('#dlg-title').textContent = 'Saisie de la journée emails';
     $('#d-date').value = dateISO || TODAY;
-    $('#d-date').disabled = !isManager;
-    ['#d-total', '#d-sac', '#d-done', '#d-note'].forEach(function (sel) { $(sel).disabled = !isManager; });
+    $('#d-date').disabled = false;
+    $('#d-total').disabled = false;
+    $('#d-team-treated').disabled = false;
+    $('#manager-email-details').style.display = isManager ? '' : 'none';
+    $('#manager-email-note').style.display = isManager ? '' : 'none';
     $('#d-duty').disabled = !isManager;
-    $('#d-save').hidden = !isManager;
+    $('#d-duty').parentNode.style.display = isManager ? '' : 'none';
+    $('#d-save').hidden = false;
     $('#d-duty').innerHTML = AGENTS.map(function (a) {
       return '<option value="' + a.id + '">' + esc(a.full_name) + '</option>';
     }).join('');
-    var rec = dayMap()[dateISO];
-    var sim = simulate(dateISO, dateISO)[0] || {};
-    $('#d-duty').value = (rec && rec.duty_agent_id) || sim.duty || (AGENTS[0] && AGENTS[0].id) || '';
-    $('#d-total').value = rec ? rec.received_total : 0;
-    $('#d-sac').value = rec ? rec.received_sac : 0;
-    $('#d-done').value = rec ? rec.treated_sac : 0;
-    $('#d-note').value = rec ? (rec.note || '') : '';
+    fillEntryValues(dateISO, dayMap()[dateISO] || {});
     $('#dlg-warn').hidden = true;
     dlg.hidden = false;
     document.body.classList.add('modal-open');
   }
 
+  function fillEntryValues(dateISO, rec) {
+    var sim = simulate(dateISO, dateISO)[0] || {};
+    $('#d-duty').value = rec.duty_agent_id || sim.duty || (AGENTS[0] && AGENTS[0].id) || '';
+    $('#d-total').value = rec.received_total || 0;
+    $('#d-team-treated').value = rec.treated_total == null ? (rec.treated_sac || 0) : rec.treated_total;
+    $('#d-sac').value = rec.received_sac || 0;
+    $('#d-done').value = rec.treated_sac || 0;
+    $('#d-note').value = rec.note || '';
+  }
+
+  $('#d-date').addEventListener('change', async function () {
+    var dateISO = this.value;
+    if (!dateISO) return;
+    var rec = dayMap()[dateISO];
+    if (!rec) {
+      try { rec = (await pgvData.loadEmailDays(dateISO, dateISO))[0] || {}; }
+      catch (error) { OPS.toast('Lecture de la journée impossible : ' + (error.message || error), 'error'); return; }
+    }
+    fillEntryValues(dateISO, rec);
+    check();
+  });
+
   function check() {
     var t = +$('#d-total').value || 0, s = +$('#d-sac').value || 0;
     var done = +$('#d-done').value || 0;
     var w = [];
-    if (s > t) w.push('Les emails SAC dépassent le total reçu.');
-    if (done > s) w.push('Les emails traités dépassent les emails SAC reçus.');
+    if (![t, s, done, +$('#d-team-treated').value].every(Number.isInteger)) w.push('Les compteurs doivent être des nombres entiers.');
+    if (isManager && s > t) w.push('Les emails SAC dépassent le total reçu.');
+    if (isManager && done > s) w.push('Les emails SAC traités dépassent les emails SAC reçus.');
+    if (+$('#d-team-treated').value > t) w.push('Le total traité dépasse les emails reçus ce jour (vérifie les éventuels rattrapages).');
     var el = $('#dlg-warn');
     if (w.length) { el.hidden = false; el.textContent = w.join(' '); } else { el.hidden = true; }
     return !w.length;
   }
-  ['#d-total', '#d-sac', '#d-done'].forEach(function (s) {
+  ['#d-total', '#d-sac', '#d-done', '#d-team-treated'].forEach(function (s) {
     $(s).addEventListener('input', check);
   });
+
+  function ensurePeriodContains(dateISO) {
+    if (dateISO >= FROM && dateISO <= TO) return;
+    var parts = dateISO.split('-'), year = +parts[0], month = +parts[1];
+    var last = new Date(year, month, 0).getDate();
+    var mm = month < 10 ? '0' + month : '' + month;
+    FROM = parts[0] + '-' + mm + '-01';
+    TO = parts[0] + '-' + mm + '-' + (last < 10 ? '0' + last : last);
+    $('#p-from').value = FROM; $('#p-to').value = TO;
+  }
 
   function closeEntry() {
     $('#dlg').hidden = true;
@@ -422,41 +399,33 @@
   $('#btn-entry').addEventListener('click', function () { openEntry(TODAY); });
 
   $('#d-save').addEventListener('click', async function () {
-    if (!isManager) return;
     var consistent = check();
     var dateISO = $('#d-date').value;
     if (!dateISO) { OPS.toast('Choisis une date', 'error'); return; }
     if (!consistent && !confirm('Les chiffres sont incohérents. Enregistrer quand même ?')) return;
-    var sim = simulate(dateISO, dateISO)[0] || {};
     var btn = this; btn.disabled = true; btn.textContent = 'Enregistrement…';
     try {
-      await pgvData.saveEmailDay({
-        work_date: dateISO,
-        planned_agent_id: sim.planned || null,
-        duty_agent_id: $('#d-duty').value || null,
-        received_total: +$('#d-total').value || 0,
-        received_sac: +$('#d-sac').value || 0,
-        // Les anciennes colonnes ne sont plus saisies. On préserve les valeurs
-        // déjà stockées et laisse les nouvelles journées à zéro.
-        non_sac_spam: ((dayMap()[dateISO] || {}).non_sac_spam) || 0,
-        non_sac_pub: ((dayMap()[dateISO] || {}).non_sac_pub) || 0,
-        non_sac_autre_departement: ((dayMap()[dateISO] || {}).non_sac_autre_departement) || 0,
-        non_sac_autre: ((dayMap()[dateISO] || {}).non_sac_autre) || 0,
-        treated_sac: +$('#d-done').value || 0,
-        note: $('#d-note').value.trim()
-      });
-      // répartition par agent : tout au titulaire, sauf saisie fine ultérieure
-      var duty = $('#d-duty').value;
-      if (duty) {
-        try {
-          var db = await window.sigmaSupabase.getClient();
-          await db.from('email_agent_daily').upsert({
-            activity: 'pgv', work_date: dateISO, agent_id: duty,
-            treated_sac: +$('#d-done').value || 0, treated_other: 0
-          }, { onConflict: 'activity,work_date,agent_id' });
-        } catch (err) { /* non bloquant */ }
+      if (!isManager) {
+        await pgvData.saveTeamEmailDay(dateISO, +$('#d-total').value || 0, +$('#d-team-treated').value || 0);
+      } else {
+        var sim = simulate(dateISO, dateISO)[0] || {};
+        await pgvData.saveEmailDay({
+          work_date: dateISO,
+          planned_agent_id: sim.planned || null,
+          duty_agent_id: $('#d-duty').value || null,
+          received_total: +$('#d-total').value || 0,
+          received_sac: +$('#d-sac').value || 0,
+          non_sac_spam: ((dayMap()[dateISO] || {}).non_sac_spam) || 0,
+          non_sac_pub: ((dayMap()[dateISO] || {}).non_sac_pub) || 0,
+          non_sac_autre_departement: ((dayMap()[dateISO] || {}).non_sac_autre_departement) || 0,
+          non_sac_autre: ((dayMap()[dateISO] || {}).non_sac_autre) || 0,
+          treated_sac: +$('#d-done').value || 0,
+          treated_total: +$('#d-team-treated').value || 0,
+          note: $('#d-note').value.trim()
+        });
       }
-      OPS.toast('Journée enregistrée');
+      OPS.toast('Journée emails enregistrée');
+      ensurePeriodContains(dateISO);
       closeEntry();
       await load();
     } catch (e) {
@@ -475,7 +444,6 @@
   $('#p-to').value = TO;
 
   await load();
-  if (!isManager) await loadTeamEmailEntry();
 })();
 </script>
 <script src="js/support-widget.js" defer></script>

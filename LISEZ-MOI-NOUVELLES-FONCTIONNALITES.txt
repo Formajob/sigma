@@ -1,0 +1,20 @@
+MISE À JOUR SIGMA PGV — CONGÉS, EMAILS ÉQUIPE ET ROTATION SAMEDI
+
+Inclus dans cette archive :
+- Demande de congé journée(s) entière(s) depuis « Mon compte », historique agent et décision admin/super admin dans Administration.
+- La validation inscrit VAC uniquement sur un jour planifié normalement travaillé et préserve OFF, VAC, MAL, FORM et les autres absences.
+- Sur Emails, suppression de l’ancien panneau de saisie par agent. Tous les agents gardent le bouton « Saisir la journée » pour entrer ou corriger, par date, les deux totaux de l’équipe : emails reçus et emails traités.
+- Cliquer une date du calendrier Emails ouvre la saisie de cette date; les anciens jours sont modifiables. Le choix manuel d’une date antérieure recharge ses valeurs et bascule la période après enregistrement si nécessaire.
+- Les compteurs individuels historiques restent visibles dans le rapport « Par agent », mais ne sont plus saisis depuis le panneau d’en haut.
+- Choix de shifts restreints à M, SAT, OFF, VAC, MAL, FORM; les entrées historiques restent protégées.
+- Rotation PGV prolongée jusqu’au samedi 9 janvier 2027 inclus; le planning est renseigné jusqu’au dimanche 10 janvier.
+
+Fichiers SQL fournis comme source versionnée :
+- sql-demandes-conge-emails-equipe.sql
+- sql-prolonger-rotation-samedi.sql
+- sql-emails-saisie-journee-equipe.sql
+Les migrations ont été appliquées au projet Supabase PGV. Ne pas les réexécuter.
+
+Validation : suites de tests locales et vérification de syntaxe JS réussies; Supabase confirme la nouvelle colonne traités-équipe et le RPC agent de saisie/correction. Aucun essai avec une vraie session agent n’a été effectué. Aucun déploiement front-end n’a été poussé.
+
+Déploiement du front-end : extraire à la racine du dépôt Git Sigma, examiner les changements et lancer PUSH-SIGMA-CORRECTIF-COMPLET.ps1 dans PowerShell; confirmer le push uniquement après inspection de la liste. Puis vérifier le déploiement automatique et recharger Sigma (Ctrl+F5).
