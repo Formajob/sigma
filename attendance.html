@@ -35,7 +35,7 @@
       <div class="at-tabs" role="tablist">
         <button class="at-tab" data-tab="live" role="tab">Temps réel</button>
         <button class="at-tab" data-tab="me" role="tab">Ma journée</button>
-        <button class="at-tab" data-tab="week" role="tab">Semaine</button>
+        <button class="at-tab" data-tab="week" role="tab">Pointage</button>
         <button class="at-tab" data-tab="history" role="tab">Historique</button>
         <button class="at-tab" data-tab="activity" role="tab">Activité</button>
       </div>
@@ -481,8 +481,14 @@
   /* ---------------- rendu temps réel ---------------- */
   // La vue calcule elapsed_seconds avec l’horloge PostgreSQL. On ajoute ensuite
   // le temps écoulé depuis le chargement avec l’horloge monotone du navigateur.
+  function formatStatusClock(value) {
+    var total = Math.max(0, Math.floor(Number(value) || 0));
+    var h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+    return [h, m, s].map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+  }
+
   function teamStatusElapsedSeconds(record) {
-    if (!record || record.elapsed_seconds == null) return null;
+    if (!record || record.elapsed_seconds == null || !record.state_since || record.status === 'not_started') return null;
     var base = Number(record.elapsed_seconds);
     if (!Number.isFinite(base)) return null;
     var localSinceFetch = Math.max(0, Math.floor((performance.now() - TEAM_STATUS_FETCHED_AT) / 1000));
@@ -549,8 +555,8 @@
         '<div class="attendance-card-top"><div><strong>' + esc(r.agent.full_name) + '</strong>' +
         '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : (r.record ? 'Aucun pointage actif' : 'Pas encore de pointage')) + '</small></div>' +
         '<span class="at-badge ' + r.cls + '">' + esc(r.label) + '</span></div>' +
-        '<div class="attendance-card-metrics"><div><small>Durée du statut actuel</small>' +
-        '<b data-state-duration="' + esc(r.agent.id) + '">' + (r.seconds == null ? '—' : OPS.minutes(Math.floor(r.seconds / 60))) + '</b></div></div></article>';
+        '<div class="attendance-card-metrics"><div><small>Compteur du statut en cours</small>' +
+        '<b data-state-duration="' + esc(r.agent.id) + '" data-state-seconds="' + (r.seconds == null ? '' : r.seconds) + '">' + (r.seconds == null ? '—' : formatStatusClock(r.seconds)) + '</b></div></div></article>';
     }).join('') || '<p class="empty-note">Aucun agent actif à afficher.</p>';
   }
 
@@ -600,7 +606,7 @@
         '<div class="attendance-card-metrics">' +
           '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
           '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
-          '<div><small>Durée du statut · ' + esc(st[0]) + '</small><b data-state-duration="' + esc(d.agentId) + '">' + OPS.minutes(d.statusDurationMin) + '</b></div>' +
+          '<div><small>Compteur du statut en cours · ' + esc(st[0]) + '</small><b data-state-duration="' + esc(d.agentId) + '" data-state-seconds="' + (d.stateSince != null && ['off','unplanned'].indexOf(d.status) < 0 ? d.statusDurationSec : '') + '">' + (d.stateSince != null && ['off','unplanned'].indexOf(d.status) < 0 ? formatStatusClock(d.statusDurationSec) : '—') + '</b></div>' +
           '<div><small>Pauses cumulées</small><b>' + (d.breakCounts.pause || 0) + ' prises · ' + (d.breaksMin.pause + (d.openBreak === 'pause' ? d.openBreakMin : 0)) + ' / 30 min</b></div>' +
           '<div><small>Lunch</small><b>' + (d.breakCounts.lunch || 0) + ' prise(s) · ' + d.breaksMin.lunch + ' / 60 min</b></div>' +
           '<div><small>Sorties temp.</small><b>' + (d.breakCounts.sortie || 0) + ' prises · ' + d.breaksMin.sortie + ' / 5 min max.</b></div>' +
@@ -1256,14 +1262,15 @@
         var el = document.querySelector('[data-state-duration="' + a.id + '"]');
         if (!el) return;
         var d = computeDay(a.id, VIEW_DAY);
-        el.textContent = OPS.minutes(d.statusDurationMin);
+        el.textContent = d.stateSince != null && ['off','unplanned'].indexOf(d.status) < 0
+          ? formatStatusClock(d.statusDurationSec) : '—';
       });
       else AGENTS.forEach(function (a) {
         var el = document.querySelector('[data-state-duration="' + a.id + '"]');
         if (!el) return;
         var record = TEAM_STATUS.filter(function (x) { return x.agent_id === a.id; })[0];
         var elapsed = teamStatusElapsedSeconds(record);
-        el.textContent = elapsed == null ? '—' : OPS.minutes(Math.floor(elapsed / 60));
+        el.textContent = elapsed == null ? '—' : formatStatusClock(elapsed);
       });
     }
     if (currentTab === 'me' && myAgentId) {

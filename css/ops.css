@@ -348,6 +348,8 @@ body.modal-open{overflow:hidden}
 .cal-cell.today{border-color:#C0622D;border-width:2px;padding:5px}
 .cal-cell.is-weekend{background:#FCFBF8}
 .cal-daynum{font:800 7.5px var(--sans);letter-spacing:.08em;color:#8C9497;display:flex;justify-content:space-between}
+.cal-cell-events{display:flex;flex-direction:column;gap:2px;min-height:0;max-height:58px;overflow-y:auto;overscroll-behavior:contain;padding-right:3px;scrollbar-width:thin;scrollbar-color:#9AA3A6 #F1F2F3}
+.cal-cell-events::-webkit-scrollbar{width:7px}.cal-cell-events::-webkit-scrollbar-track{background:#F1F2F3;border-radius:8px}.cal-cell-events::-webkit-scrollbar-thumb{background:#9AA3A6;border-radius:8px;border:1px solid #F1F2F3}
 .cal-chip{display:block;font:600 8.5px/1.35 var(--sans);padding:2px 4px;border-radius:3px;text-decoration:none;
   width:100%;text-align:left;border-top:0;border-right:0;border-bottom:0;cursor:pointer;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:2px solid transparent}
@@ -371,6 +373,7 @@ body.modal-open{overflow:hidden}
 @media (max-width:820px){
   .fiss-grid{grid-template-columns:minmax(0,1fr)}
   .cal-cell{min-height:70px}
+  .cal-cell-events{max-height:36px}
   .cal-chip{font-size:7.5px}
 }
 

@@ -1,4 +1,7 @@
 const {open, wait, check, state} = require('./harness');
+const fs = require('fs');
+const calendarSource = fs.readFileSync('/home/user/sigma-build/calendrier.html', 'utf8');
+const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8');
 (async () => {
   const {w,d,errors} = open('calendrier.html');
   await wait(1300);
@@ -15,6 +18,8 @@ const {open, wait, check, state} = require('./harness');
   // les 2 documents de démo doivent apparaître comme puces
   check('3 puces au total', d.querySelectorAll('#cal .cal-chip').length, 3);
   check('1 puce calibrage', d.querySelectorAll('#cal .cal-chip.cal').length, 1);
+  check('calendrier : toutes les puces de la journée sont dans une zone scrollable', calendarSource.includes('class="cal-cell-events"') && !calendarSource.includes('list.slice(0, 3)'), true);
+  check('calendrier : scroll vertical visible quand plusieurs événements', /\.cal-cell-events[^}]*overflow-y:auto/.test(calendarCss), true);
 
   // clic direct sur une puce -> détail en pop-up (plus de panneau sous le calendrier)
   const chip = d.querySelector('#cal .cal-chip');

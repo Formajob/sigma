@@ -33,6 +33,8 @@ assert(data.includes("db.rpc('pgv_get_team_attendance_events'") && historySql.in
 assert(historySql.includes('attendance_daily_override_audit') && historySql.includes('pgv_admin_save_attendance_override'), 'daily status/duration corrections are stored separately and audited');
 assert(common.includes('agent_preview') && common.includes('previewDatabase') && common.includes('PREVIEW_BLOCK_MESSAGE') && preview.includes('agent_preview=1'), 'super admin can open an agent-view preview with production writes blocked');
 assert(attendance.includes('data-state-duration') && attendance.includes('setInterval(tick, 1000)'), 'presence durations advance live between pointages');
+assert(attendance.includes('Compteur du statut en cours') && attendance.includes('formatStatusClock') && attendance.includes('data-state-seconds'), 'admin and agent cards display a live HH:MM:SS status counter');
+assert(attendance.includes('data-tab="week" role="tab">Pointage</button>'), 'weekly attendance tab is named Pointage');
 assert(planning.includes("table: 'planning_entries'") && planning.includes("planningChannel.subscribe"), 'team planning refreshes by realtime');
 assert(calendar.includes("table: 'calibrations'") && calendar.includes("table: 'calibration_results'"), 'calendar listens for calibration and result changes');
 assert(!calendar.includes("CAL = CAL.filter(function (c) { return c.agent_id === profile.agentId; })"), 'agent calendar is not client-filtered to own calibrations');
