@@ -99,6 +99,8 @@
   var session = await OPS.boot({ active: 'calendrier', title: 'Calendrier' });
   if (!session) return;
   var isManager = session.isManager, profile = session.profile;
+  var isPgvAgent = profile.role === 'agent' && profile.activity === 'pgv' && !!profile.agentId;
+  var canCreateCalibration = isManager || isPgvAgent;
 
   var AGENTS = [], agentById = {}, ELEMENTS = [], elementById = {}, elementByCode = {};
   var CAL = [], DOCS = [], CURRENT_EVENT = null;
@@ -123,8 +125,15 @@
     $('#filter-agent').appendChild(o);
   });
   function name(id) { return agentById[id] ? agentById[id].full_name : 'Agent inconnu'; }
-  if (isManager) { $('#new-calibration').hidden = false; $('#new-document').hidden = false; }
-  else $('#agent-calendar-note').hidden = false;
+  if (canCreateCalibration) {
+    $('#new-calibration').hidden = false;
+    if (isPgvAgent) $('#new-calibration').textContent = '＋ Mon calibrage';
+  }
+  if (isManager) $('#new-document').hidden = false;
+  else {
+    $('#agent-calendar-note').hidden = false;
+    if (isPgvAgent) $('#agent-calendar-note').textContent = 'Les calibrages de toute l’équipe sont visibles ici. Vous pouvez créer un auto-calibrage uniquement pour vous; il sera visible par l’équipe et les responsables. Les documents de suivi restent limités à votre propre dossier.';
+  }
 
   function monthBounds(ym) {
     var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
@@ -233,7 +242,7 @@
 
     $$('#cal .cal-cell[data-date]').forEach(function (cell) {
       cell.addEventListener('dblclick', function () {
-        if (!isManager) return;
+        if (!canCreateCalibration) return;
         SELECTED = cell.getAttribute('data-date');
         openCreateCalibration();
       });
@@ -265,7 +274,8 @@
       return;
     }
     list.sort(function (a, b) { return (a.kind === 'cal' ? 0 : 1) - (b.kind === 'cal' ? 0 : 1); });
-    CURRENT_EVENT = list[0];
+    var selectedEvent = list[0];
+    CURRENT_EVENT = Object.assign({}, selectedEvent, { id:selectedEvent.id || (selectedEvent.record && selectedEvent.record.id) });
     var actions = $('#event-actions');
     actions.innerHTML = '';
     if (isManager) {
@@ -339,7 +349,9 @@
   }
 
   function editCurrentEvent() {
-    if (!CURRENT_EVENT || !isManager) return;
+    if (!CURRENT_EVENT) return;
+    var canCreateOwnCalibration = canCreateCalibration && CURRENT_EVENT.kind === 'cal' && !CURRENT_EVENT.record.id;
+    if (!isManager && !canCreateOwnCalibration) return;
     var e = CURRENT_EVENT, r = e.record;
     $('#event-title').textContent = (r.id ? 'Modifier ' : 'Nouveau ') + (e.kind === 'cal' ? 'calibrage' : 'document de suivi');
     $('#event-modal').hidden = false;
@@ -383,7 +395,9 @@
       // critères regroupés par typologie, réponses radio et score live à droite.
       var resultMap = {};
       (r.calibration_results || []).forEach(function (x) { resultMap[x.element_id] = x; });
-      var agentOpts = AGENTS.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
+      var editorAgents = isManager ? AGENTS : AGENTS.filter(function (a) { return a.id === profile.agentId; });
+      if (!isManager && !editorAgents.length && profile.agentId) editorAgents = [{ id:profile.agentId, full_name:profile.agentName || profile.displayName }];
+      var agentOpts = editorAgents.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === r.agent_id ? ' selected' : '') + '>' + esc(a.full_name) + '</option>'; }).join('');
       var typology = {};
       Object.keys(window.PGV_FAMILIES).forEach(function (key) { typology[key] = window.PGV_FAMILIES[key].name; });
       var categoryOrder = ['accueil','traitement','posture'];
@@ -393,7 +407,7 @@
       });
       var form = '<div class="cal-editor-layout"><div class="cal-editor-main">' +
         '<div class="cal-editor-meta f-row c2">' +
-          '<div><label class="f-label" for="ec-agent">Agent évalué</label><select id="ec-agent" class="f-select">' + agentOpts + '</select></div>' +
+          '<div><label class="f-label" for="ec-agent">' + (isManager ? 'Agent évalué' : 'Mon calibrage') + '</label><select id="ec-agent" class="f-select"' + (isManager ? '' : ' disabled') + '>' + agentOpts + '</select></div>' +
           '<div><label class="f-label" for="ec-date">Date du calibrage</label><input type="date" id="ec-date" class="f-input" value="' + esc(r.calibration_date || '') + '"></div>' +
           '<div><label class="f-label" for="ec-call-date">Date de l’appel</label><input type="date" id="ec-call-date" class="f-input" value="' + esc(r.call_date || '') + '"></div>' +
           '<div><label class="f-label" for="ec-call">ID d’appel · nom du fichier audio</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
@@ -419,7 +433,7 @@
         '<div id="ec-level" class="p-pill grey" style="margin-top:8px">Grille incomplète</div><div id="ec-critical" class="cal-score-warning" hidden></div>' +
         '<div id="ec-progress" class="cal-score-progress">0 / 11 critères renseignés</div><div id="ec-family-scores" class="cal-family-scores"></div>' +
         '</div></section><section class="panel cal-score-extra"><div class="panel-body">' +
-          '<div class="f-row"><div><label class="f-label" for="ec-evaluator">Évaluateur</label><input class="f-input" id="ec-evaluator" value="' + esc(r.evaluator_name || '') + '" placeholder="Ton nom"></div></div>' +
+          '<div class="f-row"><div><label class="f-label" for="ec-evaluator">Évaluateur</label><input class="f-input" id="ec-evaluator" value="' + esc(isPgvAgent ? profile.displayName : (r.evaluator_name || '')) + '" placeholder="Ton nom"' + (isPgvAgent ? ' readonly' : '') + '></div></div>' +
           '<label class="cal-followup-check"><input type="checkbox" id="ec-create-doc"><span>Créer une documentation de suivi</span></label>' +
           '<p class="f-note" style="margin:6px 0 0">Rencontre planifiée avec l’agent et points non maîtrisés du calibrage.</p>' +
           '<div id="ec-doc-fields" hidden><div class="f-row c2" style="margin-top:12px"><div><label class="f-label" for="ec-doc-meet">Date de rencontre</label><input class="f-input" type="date" id="ec-doc-meet" value="' + esc(r.calibration_date || '') + '"></div><div><label class="f-label" for="ec-doc-next">Échéance de suivi</label><input class="f-input" type="date" id="ec-doc-next"></div></div></div>' +
@@ -582,10 +596,14 @@
           if (missing >= 0) throw new Error('Motif obligatoire pour « ' + window.PGV_GRID[missing].label + ' ».');
           var elements = window.PGV_GRID.map(function (g) { return elementByCode[g.code]; });
           if (elements.some(function (x) { return !x; })) throw new Error('La grille PGV n’est pas complète en base.');
-          var agentId = $('#ec-agent').value;
+          var agentId = isManager ? $('#ec-agent').value : profile.agentId;
+          var callId = $('#ec-call').value.trim();
+          if (!agentId) throw new Error('Aucun agent PGV n’est associé à ce compte.');
+          if (!callId) throw new Error('Renseigne l’ID d’appel (ou importe le JSON de l’audio) avant l’enregistrement.');
+          var evaluatorName = isPgvAgent ? profile.displayName : $('#ec-evaluator').value.trim();
           var calibrationRow = { agentId:agentId, status:$('#ec-status').value,
-            callDate:$('#ec-call-date').value, date:$('#ec-date').value, callId:$('#ec-call').value.trim(),
-            evaluator:$('#ec-evaluator').value.trim(), evaluator_kind:r.evaluator || 'Autre', language:r.language || 'Français',
+            callDate:$('#ec-call-date').value, date:$('#ec-date').value, callId:callId,
+            evaluator:evaluatorName, evaluator_kind:r.evaluator || 'Autre', language:r.language || 'Français',
             notes:$('#ec-notes').value.trim(), values:values, reasons:reasons, elements:elements };
           var savedCal = r.id ? await pgvData.updateCalibration(r.id, calibrationRow) : await pgvData.saveCalibration(calibrationRow);
           var docMsg = '';
@@ -616,10 +634,11 @@
   }
 
   function openCreateCalibration() {
-    if (!isManager) return;
+    if (!canCreateCalibration) return;
     var date = SELECTED || today;
-    CURRENT_EVENT = { kind:'cal', record:{ id:null, agent_id:AGENTS[0] && AGENTS[0].id, status:'Terminé',
-      call_date:date, calibration_date:date, evaluator:'', evaluator_name:'', evaluator_kind:'Autre',
+    var ownerAgentId = isPgvAgent ? profile.agentId : (AGENTS[0] && AGENTS[0].id);
+    CURRENT_EVENT = { kind:'cal', record:{ id:null, agent_id:ownerAgentId, status:'Terminé',
+      call_date:date, calibration_date:date, evaluator:'Autre', evaluator_name:isPgvAgent ? profile.displayName : '', evaluator_kind:'Autre',
       language:'Français', notes:'', calibration_results:[] } };
     editCurrentEvent();
   }
@@ -636,11 +655,12 @@
 
   async function deleteCurrentEvent() {
     if (!CURRENT_EVENT || !isManager) return;
-    var e = CURRENT_EVENT;
+    var e = CURRENT_EVENT, id = e.id || (e.record && e.record.id);
+    if (!id) { OPS.toast('Suppression impossible : identifiant manquant.', 'error'); return; }
     if (!confirm('Supprimer définitivement ' + (e.kind === 'cal' ? 'ce calibrage ?' : 'ce document ?'))) return;
     try {
-      if (e.kind === 'cal') await pgvData.deleteCalibration(e.id);
-      else await pgvData.deleteDocument(e.id);
+      if (e.kind === 'cal') await pgvData.deleteCalibration(id);
+      else await pgvData.deleteDocument(id);
       OPS.toast('Élément supprimé'); closeEvent(); await load();
     } catch (err) { OPS.toast(err.message || 'Suppression refusée', 'error'); }
   }

@@ -130,8 +130,13 @@
 
   async function saveCalibration(row) {
     // row = { agentId, callId, callDate, date, status, evaluator, notes, values[], reasons[], elements[] }
-    var user = null;
-    try { var a = await db.auth.getUser(); user = a.data && a.data.user; } catch (e) {}
+    // getSession lit l'utilisateur depuis la session locale/JWT. getUser() déclenche
+    // un aller-retour /auth/v1/user qui peut expirer alors que la session et PostgREST
+    // sont encore valides; created_by doit toutefois toujours être défini pour la policy RLS.
+    var auth = await db.auth.getSession();
+    if (auth.error) raise(auth.error, 'auth_session');
+    var user = auth.data && auth.data.session && auth.data.session.user;
+    if (!user || !user.id) throw new Error('Session Supabase introuvable. Reconnecte-toi puis réessaie l’enregistrement.');
 
     var cal = await db.from('calibrations').insert({
       agent_id: row.agentId,
@@ -216,6 +221,7 @@
   }
 
   async function deleteDocument(id) {
+    if (!id || id === 'undefined' || id === 'null') throw new Error('Suppression impossible : identifiant du document manquant.');
     var r = await db.from('documents').delete().eq('id', id);
     if (r.error) raise(r.error, 'documents');
     return true;
@@ -247,6 +253,7 @@
   }
 
   async function deleteCalibration(id) {
+    if (!id || id === 'undefined' || id === 'null') throw new Error('Suppression impossible : identifiant du calibrage manquant.');
     var r = await db.from('calibration_results').delete().eq('calibration_id', id);
     if (r.error) raise(r.error, 'calibration_results');
     var c = await db.from('calibrations').delete().eq('id', id);

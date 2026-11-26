@@ -62,7 +62,7 @@ window.__SIGMA_READY=Promise.resolve(window.__MOCK_PROFILE);
    maybeSingle:function(){return Promise.resolve({data:rows[0]||null,error:null})},
    single:function(){ if(rows.length) return Promise.resolve({data:rows[0],error:null});
      var last=DATA[t]&&DATA[t][DATA[t].length-1]; return Promise.resolve({data:last||null,error:null}); },
-   insert:function(r){var a=Array.isArray(r)?r:[r]; a.forEach(function(x){if(t==='attendance_events'&&!x.occurred_at)x.occurred_at=new Date().toISOString();DATA[t].push(x)}); return chain(t)},
+   insert:function(r){var a=Array.isArray(r)?r:[r]; a.forEach(function(x){if(t==='attendance_events'&&!x.occurred_at)x.occurred_at=new Date().toISOString();if(t==='calibrations'&&!x.id)x.id='cal-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);DATA[t].push(x)});var out=chain(t);out.single=function(){return Promise.resolve({data:a[0],error:null})};out.then=function(resolve,reject){return Promise.resolve({data:a,error:null}).then(resolve,reject)};return out},
    upsert:function(r){var a=Array.isArray(r)?r:[r]; a.forEach(function(x){DATA[t].push(x)}); return chain(t)},
    delete:function(){return api},
    then:function(res){res({data:rows,error:null})}};
@@ -74,7 +74,7 @@ window.__SIGMA_READY=Promise.resolve(window.__MOCK_PROFILE);
   if(name==='pgv_get_team_attendance_events'){return Promise.resolve({data:(DATA.attendance_events||[]).filter(function(e){return e.work_date>=args.p_from&&e.work_date<=args.p_to}).map(function(e){return {agent_id:e.agent_id,work_date:e.work_date,event_type:e.event_type,break_type:e.break_type||null,occurred_at:e.occurred_at}}),error:null})}
   if(name==='pgv_admin_save_attendance_override'){var q=args||{},i=(DATA.attendance_daily_overrides||[]).findIndex(function(r){return r.agent_id===q.p_agent_id&&r.work_date===q.p_work_date});if(q.p_status_override==null){if(i>=0)DATA.attendance_daily_overrides.splice(i,1)}else{var obj={activity:'pgv',work_date:q.p_work_date,agent_id:q.p_agent_id,status_override:q.p_status_override,presence_minutes:q.p_presence_minutes,late_minutes:q.p_late_minutes,pause_minutes:q.p_pause_minutes,lunch_minutes:q.p_lunch_minutes,sortie_minutes:q.p_sortie_minutes,reason:q.p_reason};if(i>=0)DATA.attendance_daily_overrides[i]=obj;else DATA.attendance_daily_overrides.push(obj)}return Promise.resolve({data:{ok:true},error:null})}
   return Promise.resolve({data:[],error:null})
- },auth:{getUser:function(){return Promise.resolve({data:{user:{id:'u1',email:'j@acx.ma'}}})},resetPasswordForEmail:function(){return Promise.resolve({error:null})}}})},signOut:function(){return Promise.resolve()}};
+ },auth:{getUser:function(){window.__MOCK_GET_USER_CALLS=(window.__MOCK_GET_USER_CALLS||0)+1;return Promise.resolve({data:{user:{id:'u1',email:'j@acx.ma'}}})},getSession:function(){window.__MOCK_GET_SESSION_CALLS=(window.__MOCK_GET_SESSION_CALLS||0)+1;return Promise.resolve({data:{session:{user:{id:'u1',email:'j@acx.ma'}}},error:null})},resetPasswordForEmail:function(){return Promise.resolve({error:null})}}})},signOut:function(){return Promise.resolve()}};
 })();
 `;
 module.exports = { TABLES, MOCK };

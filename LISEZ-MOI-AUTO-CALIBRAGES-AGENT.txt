@@ -1,0 +1,9 @@
+SIGMA PGV — AUTO-CALIBRAGE PAR LES AGENTS
+
+- Les agents PGV peuvent créer un calibrage pour leur propre fiche seulement. Le champ agent est verrouillé sur le compte connecté et l'évaluateur est prérempli avec le nom de l'agent.
+- Les calibrages d'équipe restent visibles à tous les agents PGV; les documents de suivi restent limités par leurs règles actuelles.
+- Les responsables gardent la création pour l'équipe ainsi que leurs droits habituels. Un agent ne peut pas modifier ou supprimer un calibrage existant.
+- L'agent renseigne l'ID d'appel (le nom du fichier audio peut être rempli par import JSON). En cas de critères vides, l'enregistrement propose « Tout mettre à OUI », « Tout mettre à N/A » ou « Annuler »; seules les réponses vides sont complétées.
+- Le SQL RLS `sql-pgv-agent-self-calibration.sql` a été appliqué au projet Supabase PGV `kxmddtxtjumjmqadcdyu` sous la migration `pgv_agent_self_calibration_v1`. Les politiques vérifiées autorisent seulement INSERT pour le profil agent actif, son `agent_id` et les lignes de résultats liées à son propre calibrage; pas d'UPDATE/DELETE.
+- Tests locaux: calendrier, auto-calibrage agent, propriété/visibilité équipe, règles RLS vérifiées par assertions; aucune donnée de production de calibrage créée pendant les tests.
+- Le code front-end n'est pas encore poussé sur GitHub/Vercel. Extraire le paquet cumulatif à la racine du clone, inspecter les fichiers, puis lancer `PUSH-SIGMA-CORRECTIF-COMPLET.ps1`.
