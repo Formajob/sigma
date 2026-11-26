@@ -228,10 +228,10 @@
       var chips = list.map(function (e) {
         if (e.kind === 'cal') {
           return '<button type="button" class="cal-chip cal" data-event-kind="cal" data-event-id="' + esc(e.id) + '" title="Ouvrir le calibrage · ' + esc(name(e.agentId)) + '">' +
-            esc(name(e.agentId).split(' ')[0]) + ' · calibrage</button>';
+            '<span class="cal-chip-title"><span aria-hidden="true">◉</span> Calibrage</span><span class="cal-chip-agent">' + esc(name(e.agentId)) + '</span></button>';
         }
         return '<button type="button" class="cal-chip ' + ('doc-' + slug(e.type)) + '" data-event-kind="doc" data-event-id="' + esc(e.id) + '" title="Ouvrir ' + esc(e.type + ' · ' + name(e.agentId)) + '">' +
-          esc(name(e.agentId).split(' ')[0]) + ' · ' + esc(e.type) + '</button>';
+          '<span class="cal-chip-title"><span aria-hidden="true">▤</span> ' + esc(e.type) + '</span><span class="cal-chip-agent">' + esc(name(e.agentId)) + '</span></button>';
       }).join('');
       cells.push('<div class="' + cls + '" data-date="' + iso + '">' +
         '<div class="cal-daynum"><span>' + day + '</span>' +

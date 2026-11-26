@@ -10,7 +10,12 @@
 <link rel="stylesheet" href="css/ops.css">
 <link rel="stylesheet" href="css/polish.css">
 <style>
-.attendance-week-table{min-width:900px}.attendance-week-table th{position:sticky;top:0;z-index:1;background:#a30e3d;color:#fff}.att-week-cell{position:relative;display:flex;flex-direction:column;gap:4px;min-width:106px;min-height:74px;padding:8px;border:1px solid #e5e1dc;border-radius:8px;background:#fff;color:#24313a;text-align:left;cursor:pointer}.att-week-cell .att-status{font-weight:800;font-size:11px}.att-week-cell .att-detail{font-size:9px;line-height:1.35;color:#69737a}.att-week-cell.present{background:#e4f7ec;border-color:#b6e0c6}.att-week-cell.absent{background:#fde9e7;border-color:#f0c0bb}.att-week-cell.vac{background:#e8f0ff;border-color:#cbd8f2}.att-week-cell.off{background:#f1f2f3}.att-week-cell.late{box-shadow:inset 0 0 0 2px #e3a43b}.att-week-edit{position:absolute;right:4px;top:4px;border:0;background:#fff;border-radius:5px;padding:3px 5px;cursor:pointer}.att-history-agent{background:#f5f6f7;font-weight:800}.att-history-summary{font-size:10px;color:#58636a}
+.attendance-week-table{min-width:900px}.attendance-week-table th{position:sticky;top:0;z-index:1;background:#a30e3d;color:#fff}
+.att-week-cell{position:relative;display:flex;flex-direction:column;gap:7px;min-width:106px;min-height:78px;padding:9px;border:1px solid #e5e1dc;border-radius:9px;background:#fff;color:#24313a;text-align:left;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+.att-week-cell:hover{transform:translateY(-2px);box-shadow:0 4px 12px #17242d1c}.att-week-state{display:flex;align-items:center;gap:6px;padding-right:22px}.att-week-cell .att-status{font-weight:850;font-size:11px}.att-week-icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;border-radius:50%;background:#ffffffb8;font-size:12px;font-weight:900}.att-week-cell .att-detail{font-size:9px;line-height:1.4;color:#46545a;font-weight:600}
+.att-week-cell.present{background:linear-gradient(145deg,#edfaf1,#ddf3e5);border-color:#83c49a;color:#185a35}.att-week-cell.warn,.att-week-cell.late{background:linear-gradient(145deg,#fff8e5,#ffedbd);border-color:#e2b344;color:#795006}.att-week-cell.absent{background:linear-gradient(145deg,#fff0ee,#fbdcda);border-color:#df8f88;color:#922f2a}.att-week-cell.off{background:linear-gradient(145deg,#f4f5f6,#e7e9eb);border-color:#cbd0d4;color:#59636b}.att-week-cell.vac{background:linear-gradient(145deg,#f0f4ff,#e0e9ff);border-color:#bac9eb;color:#3a5081}.att-week-cell.waiting,.att-week-cell.nonplanifie{background:#f7f8f7;border-color:#e0e5e2;color:#65716d}
+.att-week-edit{position:absolute;right:5px;top:5px;border:0;background:#ffffffd9;color:#36454b;border-radius:6px;padding:4px 6px;cursor:pointer;box-shadow:0 1px 4px #17242d18}.att-history-agent{background:#f5f6f7;font-weight:800}.att-history-summary{font-size:10px;color:#58636a}
+.attendance-legend{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:12px}.attendance-legend span{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid;border-radius:999px;font-size:10px;font-weight:750}.attendance-legend .legend-good{background:#e7f6ec;border-color:#a9d7b7;color:#185a35}.attendance-legend .legend-warn{background:#fff3d2;border-color:#e8ca79;color:#795006}.attendance-legend .legend-absent{background:#fde9e7;border-color:#e9b1ac;color:#922f2a}.attendance-legend .legend-off{background:#eef0f2;border-color:#d0d4d8;color:#59636b}
 </style>
 </head>
 <body>
@@ -110,7 +115,8 @@
             <button class="button button-primary" id="week-export" type="button">⇩ Exporter Excel</button>
             <small id="week-status" class="f-note" aria-live="polite"></small>
           </div>
-          <p class="f-note" style="margin:10px 0 0">Clique une case pour consulter l’historique de cette journée. Les corrections de statut et de résumé sont réservées aux responsables.</p>
+          <div class="attendance-legend" aria-label="Légende des statuts de pointage"><span class="legend-good">✓ Shift tenu sans retard ni dépassement</span><span class="legend-warn">⚠ Retard ou dépassement</span><span class="legend-absent">✕ Absence</span><span class="legend-off">— OFF</span></div>
+          <p class="f-note" style="margin:8px 0 0">Clique une case pour consulter l’historique de cette journée. Les corrections de statut et de résumé sont réservées aux responsables.</p>
         </div></div>
         <div class="panel"><div class="panel-body" style="padding:0">
           <div class="scroll-x"><table class="p-table attendance-week-table" id="week-table">
@@ -202,7 +208,7 @@
       <div><label class="f-label" for="edit-status">Statut corrigé</label><select class="f-select" id="edit-status">
         <option value="">Choisir un statut</option><option value="PRESENT">Présent</option><option value="ABSENT">Absent</option><option value="VAC">VAC</option><option value="OFF">OFF</option>
       </select></div>
-      <div><label class="f-label" for="edit-presence">Présence nette · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-presence"></div>
+      <div><label class="f-label" for="edit-presence">Présence nette · heures</label><input class="f-input" type="number" min="0" max="24" step="0.01" inputmode="decimal" id="edit-presence"><small class="f-note">Saisie en heures (ex. 7,50 = 7 h 30). Enregistrée en minutes.</small></div>
       <div><label class="f-label" for="edit-late">Retard · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-late"></div>
       <div><label class="f-label" for="edit-pause">Pauses cumulées · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-pause"></div>
       <div><label class="f-label" for="edit-lunch">Lunch · minutes</label><input class="f-input" type="number" min="0" max="1440" step="1" id="edit-lunch"></div>
@@ -517,6 +523,17 @@
     return day;
   }
 
+  function liveStatusIcon(status) {
+    if(status==='online') return '✓';
+    if(status&&status.indexOf('break_')===0) return '◷';
+    if(status==='out') return '↗';
+    if(status==='late'||status==='unavailable') return '⚠';
+    if(status==='absent') return '✕';
+    if(status==='not_started'||status==='off'||status==='unplanned') return '—';
+    if(status==='waiting') return '◷';
+    return '·';
+  }
+
   function renderAgentTeamLive() {
     var labels = {
       online: ['En poste', 'online'], break_pause: ['Pause', 'break'], break_lunch: ['Lunch', 'lunch'],
@@ -533,7 +550,7 @@
       var meta = labels[status] || ['Statut inconnu', 'off'];
       var since = record && record.state_since ? new Date(record.state_since) : null;
       var seconds = teamStatusElapsedSeconds(record);
-      return { agent: agent, label: meta[0], cls: meta[1], since: since, seconds: seconds, record: record };
+      return { agent: agent, label: meta[0], cls: meta[1], since: since, seconds: seconds, record: record, status: status };
     });
     var counts = { online: 0, break: 0, out: 0, off: 0 };
     rows.forEach(function (r) {
@@ -554,7 +571,7 @@
       return '<article class="attendance-card status-' + r.cls + '">' +
         '<div class="attendance-card-top"><div><strong>' + esc(r.agent.full_name) + '</strong>' +
         '<small>' + (r.since ? 'Depuis ' + OPS.fmtTime(r.since) : (r.record ? 'Aucun pointage actif' : 'Pas encore de pointage')) + '</small></div>' +
-        '<span class="at-badge ' + r.cls + '">' + esc(r.label) + '</span></div>' +
+        '<span class="at-badge ' + r.cls + '"><span aria-hidden="true">' + liveStatusIcon(r.status) + '</span> ' + esc(r.label) + '</span></div>' +
         '<div class="attendance-card-metrics"><div><small>Compteur du statut en cours</small>' +
         '<b data-state-duration="' + esc(r.agent.id) + '" data-state-seconds="' + (r.seconds == null ? '' : r.seconds) + '">' + (r.seconds == null ? '—' : formatStatusClock(r.seconds)) + '</b></div></div></article>';
     }).join('') || '<p class="empty-note">Aucun agent actif à afficher.</p>';
@@ -602,7 +619,7 @@
       var alerts = alertsFor(d);
       return '<article class="attendance-card status-' + st[1] + '">' +
         '<div class="attendance-card-top"><div><strong>' + esc(a.full_name) + '</strong><small>' + esc(shift) + '</small></div>' +
-          '<span class="at-badge ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
+          '<span class="at-badge ' + st[1] + '"><span aria-hidden="true">' + liveStatusIcon(d.status) + '</span> ' + esc(st[0]) + '</span></div>' +
         '<div class="attendance-card-metrics">' +
           '<div><small>Début pointé</small><b>' + (d.firstIn ? OPS.fmtTime(new Date(d.firstIn)) : '—') + '</b></div>' +
           '<div><small>Fin pointée</small><b>' + (d.lastOut ? OPS.fmtTime(new Date(d.lastOut)) : (VIEW_DAY === TODAY && d.status !== 'off' ? 'En cours' : '—')) + '</b></div>' +
@@ -988,9 +1005,28 @@
     if(summary.override) bits.push('Corrigé');
     return bits.join(' · ')||'Aucun pointage';
   }
-  function statusClass(status) {
-    if(status==='PRESENT') return 'present'; if(status==='ABSENT'||status==='LATE') return 'absent';
-    if(status==='VAC') return 'vac'; if(status==='OFF') return 'off'; return '';
+  function summaryHasWarning(summary) {
+    var m=summary.metrics||{};
+    return (+m.late>0 || summary.pauseOver>0 || summary.lunchOver>0 || summary.sortieOver>0);
+  }
+  function statusClass(summary) {
+    if(summary.status==='ABSENT') return 'absent';
+    if(summary.status==='OFF') return 'off';
+    if(summary.status==='VAC') return 'vac';
+    if(summary.status==='PRESENT') return summaryHasWarning(summary)?'warn':'present';
+    if(summary.status==='LATE') return 'warn';
+    if(summary.status==='WAITING') return 'waiting';
+    if(summary.status==='NON_PLANIFIE') return 'nonplanifie';
+    return 'nonplanifie';
+  }
+  function statusIcon(summary) {
+    if(summary.status==='ABSENT') return '✕';
+    if(summary.status==='OFF') return '—';
+    if(summary.status==='VAC') return '◇';
+    if(summary.status==='PRESENT') return summaryHasWarning(summary)?'⚠':'✓';
+    if(summary.status==='LATE') return '⚠';
+    if(summary.status==='WAITING') return '◷';
+    return '·';
   }
   function showTab(tab) {
     currentTab=tab;
@@ -1026,10 +1062,10 @@
       $('#week-body').innerHTML=liveAgents.map(function(agent){
         var cells=WEEK_DATA.dates.map(function(date){
           var key=agent.id+'|'+date, summary=summarizeAgentDay(agent.id,date,WEEK_DATA.eventMap[key]||[],WEEK_DATA.planMap[key],WEEK_DATA.overrideMap[key]);
-          var metric=detailText(summary);
-          return '<td><div class="att-week-cell '+statusClass(summary.status)+(summary.status==='LATE'?' late':'')+'" role="button" tabindex="0" data-week-cell="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'">'+
-            '<span class="att-status">'+esc(summary.label)+'</span><span class="att-detail">'+esc(metric)+'</span>'+
-            (canEditAttendance?'<button type="button" class="att-week-edit" title="Modifier le résumé" data-edit-attendance="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'">✎</button>':'')+
+          var metric=detailText(summary), tone=statusClass(summary), icon=statusIcon(summary);
+          return '<td><div class="att-week-cell '+tone+'" role="button" tabindex="0" data-week-cell="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'" title="'+esc(summary.label+' · '+metric)+'">'+
+            '<span class="att-week-state"><span class="att-week-icon" aria-hidden="true">'+icon+'</span><span class="att-status">'+esc(summary.label)+'</span></span><span class="att-detail">'+esc(metric)+'</span>'+
+            (canEditAttendance?'<button type="button" class="att-week-edit" title="Modifier le résumé" aria-label="Modifier le pointage de '+esc(agent.full_name)+'" data-edit-attendance="1" data-agent="'+esc(agent.id)+'" data-date="'+date+'">✎</button>':'')+
             '</div></td>';
         }).join('');
         return '<tr><td class="name">'+esc(agent.full_name)+'</td>'+cells+'</tr>';
@@ -1109,7 +1145,7 @@
     editTarget={agent_id:agentId,work_date:date};
     $('#attendance-edit-agent').textContent=agent.full_name+' · '+OPS.fmtDateLong(date);
     $('#edit-status').value=override?override.status_override:(summary.status==='WAITING'?'PRESENT':summary.status);
-    $('#edit-presence').value=summary.metrics.presence||0; $('#edit-late').value=summary.metrics.late||0;
+    $('#edit-presence').value=summary.metrics.presence==null?'':(Number(summary.metrics.presence)/60).toFixed(2); $('#edit-late').value=summary.metrics.late||0;
     $('#edit-pause').value=summary.metrics.pause||0; $('#edit-lunch').value=summary.metrics.lunch||0; $('#edit-sortie').value=summary.metrics.sortie||0;
     $('#edit-reason').value=override?override.reason:'';
     $('#attendance-edit-modal').hidden=false; document.body.classList.add('modal-open');
@@ -1134,11 +1170,14 @@
     var reason=$('#edit-reason').value.trim();
     if(!$('#edit-status').value){OPS.toast('Choisis un statut corrigé.','error');return;}
     if(reason.length<3){OPS.toast('Le motif doit contenir au moins 3 caractères.','error');return;}
-    var vals=['edit-presence','edit-late','edit-pause','edit-lunch','edit-sortie'].map(function(id){var v=$('#'+id).value;return v===''?null:Number(v);});
-    if(vals.some(function(v){return v!==null&&(!Number.isInteger(v)||v<0||v>1440);})){OPS.toast('Les durées doivent être des entiers entre 0 et 1440.','error');return;}
+    var hoursRaw=$('#edit-presence').value.trim(),hours=hoursRaw===''?null:Number(hoursRaw);
+    if(hours!==null&&(!Number.isFinite(hours)||hours<0||hours>24)){OPS.toast('La présence nette doit être comprise entre 0 et 24 heures.','error');return;}
+    var presenceMinutes=hours===null?null:Math.round(hours*60);
+    var vals=['edit-late','edit-pause','edit-lunch','edit-sortie'].map(function(id){var v=$('#'+id).value;return v===''?null:Number(v);});
+    if(vals.some(function(v){return v!==null&&(!Number.isInteger(v)||v<0||v>1440);})){OPS.toast('Retard et pauses doivent être des entiers entre 0 et 1440 minutes.','error');return;}
     try{
       await pgvData.saveAttendanceOverride({work_date:editTarget.work_date,agent_id:editTarget.agent_id,status_override:$('#edit-status').value,
-       presence_minutes:vals[0],late_minutes:vals[1],pause_minutes:vals[2],lunch_minutes:vals[3],sortie_minutes:vals[4],reason:reason});
+       presence_minutes:presenceMinutes,late_minutes:vals[0],pause_minutes:vals[1],lunch_minutes:vals[2],sortie_minutes:vals[3],reason:reason});
       OPS.toast('Correction enregistrée et auditée.');closeAttendanceEdit();await renderWeek();if(HISTORY_DATA.from)await loadHistory();
     }catch(e){OPS.toast(e.message||'Correction impossible.','error');}
   });

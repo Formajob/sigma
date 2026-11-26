@@ -19,7 +19,8 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('3 puces au total', d.querySelectorAll('#cal .cal-chip').length, 3);
   check('1 puce calibrage', d.querySelectorAll('#cal .cal-chip.cal').length, 1);
   check('calendrier : toutes les puces de la journée sont dans une zone scrollable', calendarSource.includes('class="cal-cell-events"') && !calendarSource.includes('list.slice(0, 3)'), true);
-  check('calendrier : scroll vertical visible quand plusieurs événements', /\.cal-cell-events[^}]*overflow-y:auto/.test(calendarCss), true);
+  check('calendrier : barre verticale et cartes calibrage non réduites', /\.cal-cell-events[^}]*overflow-y:scroll/.test(calendarCss) && /\.cal-chip[^}]*min-height:36px/.test(calendarCss), true);
+  check('calendrier : nom complet et type affichés dans chaque puce', calendarSource.includes('cal-chip-agent') && calendarSource.includes('cal-chip-title'), true);
 
   // clic direct sur une puce -> détail en pop-up (plus de panneau sous le calendrier)
   const chip = d.querySelector('#cal .cal-chip');
