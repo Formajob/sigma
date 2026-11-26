@@ -396,7 +396,7 @@
           '<div><label class="f-label" for="ec-agent">Agent évalué</label><select id="ec-agent" class="f-select">' + agentOpts + '</select></div>' +
           '<div><label class="f-label" for="ec-date">Date du calibrage</label><input type="date" id="ec-date" class="f-input" value="' + esc(r.calibration_date || '') + '"></div>' +
           '<div><label class="f-label" for="ec-call-date">Date de l’appel</label><input type="date" id="ec-call-date" class="f-input" value="' + esc(r.call_date || '') + '"></div>' +
-          '<div><label class="f-label" for="ec-call">N° d’appel / ticket</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
+          '<div><label class="f-label" for="ec-call">ID d’appel · nom du fichier audio</label><input id="ec-call" class="f-input" value="' + esc(r.call_id || '') + '"></div>' +
           '<div><label class="f-label" for="ec-status">Statut</label><select id="ec-status" class="f-select">' + ['Planifié','Terminé'].map(function (x) { return '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
           '<div class="cal-editor-note"><label class="f-label" for="ec-notes">Note d’écoute</label><input id="ec-notes" class="f-input" value="' + esc(r.notes || '') + '" placeholder="Contexte, difficulté particulière…"></div>' +
         '</div><section class="cal-audio-panel" aria-labelledby="ec-audio-title"><div class="cal-audio-panel-copy"><strong id="ec-audio-title">Importer les suggestions du moteur local</strong><p>Analyse l’appel dans l’application locale, exporte le JSON, puis importe-le ici. Les réponses proposées et leurs explications seront préremplies dans les 11 questions; l’audio et la transcription complète ne sont pas transférés dans Sigma.</p></div><input type="file" id="ec-pgv-json-file" accept="application/json,.json" hidden><div class="cal-audio-actions"><button type="button" class="btn-sm" id="ec-pgv-json-choose">Importer le JSON d’analyse</button><button type="button" class="btn-sm" id="ec-pgv-json-clear" hidden>Retirer les suggestions</button></div><p id="ec-pgv-json-status" class="cal-audio-status" role="status" aria-live="polite">Aucune analyse importée. Après import, vérifiez chaque réponse préremplie et modifiez-la si nécessaire.</p><p class="cal-audio-privacy">Les réponses préremplies ne sont pas encore enregistrées. Vous pouvez les corriger; elles ne seront sauvegardées qu’en cliquant sur « Enregistrer le calibrage ».</p></section><p class="cal-grid-note">Un critère marqué <b>Critique</b> entraîne la non-conformité si la réponse est « Non ». N/A est disponible pour chaque critère lorsque celui-ci ne s’applique pas.</p><div class="cal-question-list">';
@@ -445,17 +445,19 @@
           var data = JSON.parse(await file.text());
           if (!data || data.format !== 'sigma-pgv-local-review-v1' || !Array.isArray(data.criteria)) throw new Error('Format non reconnu. Exportez le JSON depuis le moteur local SIGMA PGV.');
           if (data.criteria.length !== window.PGV_GRID.length) throw new Error('Le fichier ne contient pas exactement les 11 critères PGV.');
+          var importedCallId = data.call_id || data.audio_filename || '';
+          if (typeof importedCallId !== 'string' || importedCallId.length > 255) throw new Error('ID d’appel invalide dans le JSON.');
           var seen = {};
           data.criteria.forEach(function (item) {
             var i = window.PGV_GRID.findIndex(function (g) { return g.code === item.code; });
             if (i < 0 || seen[item.code]) throw new Error('Code de critère inconnu ou en double dans le JSON.');
             seen[item.code] = true;
             if (['Oui','Non','N/A','À valider'].indexOf(item.ai_suggestion) < 0) throw new Error('Suggestion invalide pour ' + item.code + '.');
-            if (item.ai_suggestion === 'N/A' && !window.PGV_GRID[i].na) throw new Error('N/A interdit pour ' + item.code + ' dans la grille PGV.');
           });
           var counts = renderLocalSuggestions(data.criteria);
+          if (importedCallId.trim()) $('#ec-call').value = importedCallId.trim();
           $('#ec-pgv-json-clear').hidden = false;
-          jsonStatus.textContent = counts.prefilled + ' réponse(s) préremplie(s), ' + counts.review + ' à valider dans la grille. Rien n’est enregistré avant votre clic sur « Enregistrer le calibrage ». Vérifiez les explications et corrigez si nécessaire.';
+          jsonStatus.textContent = (importedCallId.trim() ? 'ID d’appel rempli : ' + importedCallId.trim() + ' · ' : '') + counts.prefilled + ' réponse(s) préremplie(s), ' + counts.review + ' à valider dans la grille. Rien n’est enregistré avant votre clic sur « Enregistrer le calibrage ». Vérifiez les explications et corrigez si nécessaire.';
         } catch (err) {
           jsonInput.value = '';
           jsonStatus.textContent = err.message || 'Impossible de lire ce fichier JSON.';
@@ -494,6 +496,27 @@
         });
         return counts;
       }
+      function chooseMissingAnswer(count) {
+        return new Promise(function (resolve) {
+          var modal=document.createElement('div'); modal.className='ops-modal'; modal.id='ec-missing-choice-modal';
+          modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-labelledby','ec-missing-choice-title');
+          var card=document.createElement('div'); card.className='ops-modal-card';
+          var title=document.createElement('h2'); title.id='ec-missing-choice-title'; title.textContent='Critères sans réponse';
+          var note=document.createElement('p'); note.textContent=count+' critère(s) ne sont pas renseignés. Choisis une réponse à appliquer à tous les champs vides; les réponses déjà saisies ne changeront pas.';
+          var actions=document.createElement('div'); actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:18px';
+          var yes=document.createElement('button'); yes.type='button'; yes.className='button button-primary'; yes.textContent='Tout mettre à OUI';
+          var na=document.createElement('button'); na.type='button'; na.className='btn-sm'; na.textContent='Tout mettre à N/A';
+          var cancel=document.createElement('button'); cancel.type='button'; cancel.className='btn-sm'; cancel.textContent='Annuler';
+          var done=false;
+          function finish(value){if(done)return;done=true;modal.remove();resolve(value);}
+          yes.addEventListener('click',function(){finish('Oui');});
+          na.addEventListener('click',function(){finish('N/A');});
+          cancel.addEventListener('click',function(){finish(null);});
+          modal.addEventListener('click',function(e){if(e.target===modal)finish(null);});
+          actions.append(yes,na,cancel);card.append(title,note,actions);modal.appendChild(card);document.body.appendChild(modal);yes.focus();
+        });
+      }
+
       $('#ec-create-doc').addEventListener('change', function () { $('#ec-doc-fields').hidden = !this.checked; });
 
       function renderCalScore() {
@@ -542,6 +565,17 @@
         var b = this; b.disabled = true; b.textContent = 'Enregistrement…';
         try {
           var score = window.pgvScore(values);
+          if (score.restants) {
+            var fillValue = await chooseMissingAnswer(score.restants);
+            if (!fillValue) return;
+            values.forEach(function (value, index) {
+              if (!value) {
+                var option = $('#event-body').querySelector('[data-cal-answer="' + index + '"][data-value="' + fillValue + '"]');
+                if (option) option.click();
+              }
+            });
+            score = window.pgvScore(values);
+          }
           if (score.restants) throw new Error('Complète les ' + score.restants + ' critère(s) restant(s).');
           var reasons = window.PGV_GRID.map(function (_, i) { var input = $('[data-cal-reason="' + i + '"]'); return input ? input.value.trim() : ''; });
           var missing = values.findIndex(function (v, i) { return v === 'Non' && !reasons[i]; });
