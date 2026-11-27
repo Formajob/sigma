@@ -8,6 +8,7 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('nav 6 entrées après centralisation au calendrier', d.querySelectorAll('.side-nav a').length, 6);
   check('onglet Calendrier actif', d.querySelector('.side-nav a.active').getAttribute('href'), 'calendrier.html?activity=pgv');
   check('en-tête des jours', d.querySelectorAll('.cal-dow').length, 7);
+  check('grille calendrier complète de six semaines', d.querySelectorAll('#cal .cal-cell[data-date]').length, 42);
   const cells = d.querySelectorAll('#cal .cal-cell:not(.muted)');
   check('cases du mois', cells.length >= 28, true);
   check('compteur du mois', /calibrage/.test(d.querySelector('#month-counts').textContent), true);
@@ -19,8 +20,9 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('3 puces au total', d.querySelectorAll('#cal .cal-chip').length, 3);
   check('1 puce calibrage', d.querySelectorAll('#cal .cal-chip.cal').length, 1);
   check('calendrier : toutes les puces de la journée sont dans une zone scrollable', calendarSource.includes('class="cal-cell-events"') && !calendarSource.includes('list.slice(0, 3)'), true);
-  check('calendrier : barre verticale et cartes calibrage non réduites', /\.cal-cell-events[^}]*overflow-y:scroll/.test(calendarCss) && /\.cal-chip[^}]*min-height:36px/.test(calendarCss), true);
-  check('calendrier : nom complet et type affichés dans chaque puce', calendarSource.includes('cal-chip-agent') && calendarSource.includes('cal-chip-title'), true);
+  check('calendrier : barre seulement en cas de débordement et aucune gouttière réservée', /\.cal-cell-events[^}]*overflow-y:auto/.test(calendarCss) && !/scrollbar-gutter:stable/.test(calendarCss), true);
+  check('calendrier : puces compactes à une ligne avec nom complet', /\.cal-chip[^}]*min-height:29px/.test(calendarCss) && calendarSource.includes('cal-chip-agent'), true);
+  check('calendrier : filtres visuels par type en haut de la grille', d.querySelectorAll('#cal-legend [data-cal-filter]').length >= 7, true);
 
   // clic direct sur une puce -> détail en pop-up (plus de panneau sous le calendrier)
   const chip = d.querySelector('#cal .cal-chip');
@@ -118,8 +120,7 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('retour au mois courant', d.querySelector('#month-label').textContent, label);
 
   // filtre « calibrages seulement » -> plus de puces doc
-  d.querySelector('#filter-category').value = 'cal';
-  d.querySelector('#filter-category').dispatchEvent(new w.Event('change'));
+  d.querySelector('[data-cal-filter="cal"]').click();
   await wait(300);
   check('filtre calibrages : 1 puce', d.querySelectorAll('#cal .cal-chip').length, 1);
 

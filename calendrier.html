@@ -40,30 +40,27 @@
           <button class="btn-sm" id="btn-today">Aujourd’hui</button>
         </div>
         <div class="cal-filters">
-          <select class="f-select" id="filter-category" aria-label="Afficher">
-            <option value="all">Calibrages + suivis</option>
-            <option value="cal">Calibrages seulement</option>
-            <option value="doc">Documents de suivi seulement</option>
-          </select>
           <select class="f-select" id="filter-agent" aria-label="Agent"><option value="all">Tous les agents</option></select>
           <input type="search" id="search" placeholder="Agent, objet, n° d’appel…" aria-label="Rechercher">
         </div>
       </div>
 
       <p id="agent-calendar-note" class="f-note" hidden>Les calibrages de toute l’équipe sont visibles ici, avec les notes, réponses et motifs détaillés. Les documents de suivi restent limités à votre propre dossier.</p>
-      <div class="panel">
+      <div class="panel calendar-panel">
         <div class="panel-body">
+          <div class="cal-legend cal-filter-bar" id="cal-legend" aria-label="Filtrer les événements par type">
+            <button type="button" class="cal-filter-chip is-active" data-cal-filter="all" aria-pressed="true"><span class="filter-check">✓</span>Tout afficher</button>
+            <button type="button" class="cal-filter-chip cal-filter-cal" data-cal-filter="cal"><i></i>Calibrage</button>
+            <button type="button" class="cal-filter-chip cal-filter-rencontre" data-cal-filter="Rencontre"><i></i>Rencontre individuelle</button>
+            <button type="button" class="cal-filter-chip cal-filter-feedback" data-cal-filter="Feedback"><i></i>Feed back</button>
+            <button type="button" class="cal-filter-chip cal-filter-formation" data-cal-filter="Formation"><i></i>Formation</button>
+            <button type="button" class="cal-filter-chip cal-filter-reunion" data-cal-filter="Réunion"><i></i>Réunion</button>
+            <button type="button" class="cal-filter-chip cal-filter-observation" data-cal-filter="Observation"><i></i>Observation</button>
+            <button type="button" class="cal-filter-chip cal-filter-disc" data-cal-filter="Disciplinaire"><i></i>Disciplinaire</button>
+            <button type="button" class="cal-filter-chip cal-filter-rapport" data-cal-filter="Rapport de fait"><i></i>Rapport de fait</button>
+          </div>
           <div class="cal-month" id="cal-head"></div>
           <div class="cal-month" id="cal"></div>
-          <div class="cal-legend">
-            <span><i class="lg-cal"></i>Calibrage</span>
-            <span><i class="lg-rencontre"></i>Rencontre</span>
-            <span><i class="lg-feedback"></i>Feedback</span>
-            <span><i class="lg-observation"></i>Observation</span>
-            <span><i class="lg-rapport"></i>Rapport de fait</span>
-            <span><i class="lg-disc"></i>Disciplinaire</span>
-            <span><i class="lg-status-plan"></i>En pointillés : jamais ouvert</span>
-          </div>
         </div>
       </div>
 
@@ -107,6 +104,7 @@
   var today = pgvData.iso();
   var MONTH = today.slice(0, 7);           // YYYY-MM
   var SELECTED = null;
+  var TYPE_FILTER = 'all';
 
   try {
     await pgvData.init();
@@ -136,11 +134,14 @@
   }
 
   function monthBounds(ym) {
-    var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
-    return {
-      from: ym + '-01',
-      to: ym + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0')
-    };
+    // Charger les jours adjacents affichés dans la grille complète de 6 semaines.
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1;
+    var first = new Date(y, m, 1);
+    var offset = (first.getDay() + 6) % 7;
+    var fromDate = new Date(y, m, 1 - offset);
+    var toDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + 41);
+    function isoDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    return { from: isoDate(fromDate), to: isoDate(toDate) };
   }
 
   /* ---------------- chargement ---------------- */
@@ -180,11 +181,10 @@
   }
 
   function passesFilters(e) {
-    var cat = $('#filter-category').value;
     var ag = $('#filter-agent').value;
     var q = $('#search').value.trim().toLowerCase();
-    if (cat === 'cal' && e.kind !== 'cal') return false;
-    if (cat === 'doc' && e.kind !== 'doc') return false;
+    if (TYPE_FILTER === 'cal' && e.kind !== 'cal') return false;
+    if (TYPE_FILTER !== 'all' && TYPE_FILTER !== 'cal' && (e.kind !== 'doc' || e.type !== TYPE_FILTER)) return false;
     if (ag !== 'all' && e.agentId !== ag) return false;
     if (q) {
       var hay = [name(e.agentId)].join(' ').toLowerCase();
@@ -198,7 +198,6 @@
 
   /* ---------------- rendu ---------------- */
   function render() {
-    var b = monthBounds(MONTH);
     var y = +MONTH.slice(0, 4), m = +MONTH.slice(5, 7) - 1;
     $('#month-label').textContent = new Date(y, m, 1)
       .toLocaleDateString('fr-MA', { month: 'long', year: 'numeric' });
@@ -207,8 +206,9 @@
     var byDate = {};
     ev.forEach(function (e) { (byDate[e.date] = byDate[e.date] || []).push(e); });
 
-    var nCal = ev.filter(function (e) { return e.kind === 'cal'; }).length;
-    var nDoc = ev.filter(function (e) { return e.kind === 'doc'; }).length;
+    var monthEvents = ev.filter(function (e) { return e.date && e.date.slice(0, 7) === MONTH; });
+    var nCal = monthEvents.filter(function (e) { return e.kind === 'cal'; }).length;
+    var nDoc = monthEvents.filter(function (e) { return e.kind === 'doc'; }).length;
     $('#month-counts').textContent = nCal + ' calibrage(s) · ' + nDoc + ' document(s)';
 
     $('#cal-head').innerHTML = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -216,26 +216,30 @@
 
     var first = new Date(y, m, 1);
     var offset = (first.getDay() + 6) % 7;
-    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var gridStart = new Date(y, m, 1 - offset);
     var cells = [];
-    for (var i = 0; i < offset; i++) cells.push('<div class="cal-cell muted"></div>');
-
-    for (var day = 1; day <= daysInMonth; day++) {
-      var iso = MONTH + '-' + String(day).padStart(2, '0');
-      var wd = new Date(y, m, day).getDay();
+    for (var i = 0; i < 42; i++) {
+      var cellDate = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      var cellYear = cellDate.getFullYear(), cellMonth = cellDate.getMonth();
+      var iso = cellYear + '-' + String(cellMonth + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
+      var inMonth = cellYear === y && cellMonth === m;
+      var wd = cellDate.getDay();
       var list = byDate[iso] || [];
-      var cls = 'cal-cell' + (iso === today ? ' today' : '') + ((wd === 0 || wd === 6) ? ' is-weekend' : '');
+      var cls = 'cal-cell' + (!inMonth ? ' muted' : '') + (iso === today ? ' today' : '') + ((wd === 0 || wd === 6) ? ' is-weekend' : '');
+      if (list.length) cls += ' has-events';
       var chips = list.map(function (e) {
-        if (e.kind === 'cal') {
-          return '<button type="button" class="cal-chip cal" data-event-kind="cal" data-event-id="' + esc(e.id) + '" title="Ouvrir le calibrage · ' + esc(name(e.agentId)) + '">' +
-            '<span class="cal-chip-title"><span aria-hidden="true">◉</span> Calibrage</span><span class="cal-chip-agent">' + esc(name(e.agentId)) + '</span></button>';
-        }
-        return '<button type="button" class="cal-chip ' + ('doc-' + slug(e.type)) + '" data-event-kind="doc" data-event-id="' + esc(e.id) + '" title="Ouvrir ' + esc(e.type + ' · ' + name(e.agentId)) + '">' +
-          '<span class="cal-chip-title"><span aria-hidden="true">▤</span> ' + esc(e.type) + '</span><span class="cal-chip-agent">' + esc(name(e.agentId)) + '</span></button>';
+        var agentName = name(e.agentId);
+        var typeName = e.kind === 'cal' ? 'Calibrage' : e.type;
+        var eventStatus = String(e.status || '').toLowerCase();
+        var statusIcon = /plan|attente|prévu|prevu/.test(eventStatus) ? '◷' : (/annul|cancel/.test(eventStatus) ? '×' : '✓');
+        var eventClass = e.kind === 'cal' ? 'cal' : ('doc-' + slug(e.type));
+        var title = typeName + ' · ' + agentName + ' · ' + (e.status || 'Terminé');
+        return '<button type="button" class="cal-chip ' + eventClass + '" data-event-kind="' + e.kind + '" data-event-id="' + esc(e.id) + '" title="' + esc(title) + '" aria-label="' + esc(title) + '">' +
+          '<span class="cal-chip-dot" aria-hidden="true"></span><span class="cal-chip-status" aria-hidden="true">' + statusIcon + '</span><span class="cal-chip-agent">' + esc(agentName) + '</span></button>';
       }).join('');
       cells.push('<div class="' + cls + '" data-date="' + iso + '">' +
-        '<div class="cal-daynum"><span>' + day + '</span>' +
-          (list.length ? '<span>' + list.length + '</span>' : '') + '</div>' +
+        '<div class="cal-daynum"><span>' + cellDate.getDate() + '</span>' +
+          (list.length ? '<span class="cal-daycount">' + list.length + '</span>' : '') + '</div>' +
         '<div class="cal-cell-events" aria-label="' + list.length + ' événement(s)">' + chips + '</div></div>');
     }
     $('#cal').innerHTML = cells.join('');
@@ -261,7 +265,8 @@
   }
 
   function slug(t) {
-    return { 'Rencontre': 'rencontre', 'Feedback': 'feedback', 'Observation': 'observation',
+    return { 'Rencontre': 'rencontre', 'Rencontre individuelle': 'rencontre', 'Feedback': 'feedback',
+             'Formation': 'formation', 'Réunion': 'reunion', 'Reunion': 'reunion', 'Observation': 'observation',
              'Rapport de fait': 'rapport', 'Disciplinaire': 'disc' }[t] || 'rencontre';
   }
 
@@ -502,11 +507,14 @@
           } else {
             proposal.textContent = 'Suggestion : À valider · aucune réponse préremplie'; counts.review++;
           }
+          var criterionDescription = document.createElement('div'); criterionDescription.className = 'cal-local-analysis-reason';
+          criterionDescription.textContent = 'Description du critère : ' + (item.criterion || criterion.critere || 'Description indisponible dans ce fichier; consultez la grille PGV.');
           var reason = document.createElement('div'); reason.className = 'cal-local-analysis-reason';
-          reason.textContent = 'Explication : ' + (item.reason || 'À vérifier dans l’enregistrement.');
+          var modelReason = String(item.reason || '').trim();
+          reason.textContent = 'Explication de la suggestion : ' + (modelReason || 'À vérifier dans l’enregistrement.');
           var evidence = document.createElement('div'); evidence.className = 'cal-local-analysis-evidence';
           evidence.textContent = item.evidence ? 'Preuve' + (item.timestamp ? ' · ' + item.timestamp : '') + ' : « ' + item.evidence + ' »' : 'Preuve : aucune citation suffisante; vérifier l’appel original.';
-          note.append(proposal, reason, evidence); note.hidden = false;
+          note.append(proposal, criterionDescription, reason, evidence); note.hidden = false;
         });
         return counts;
       }
@@ -711,8 +719,19 @@
   $('#btn-today').addEventListener('click', function () {
     MONTH = today.slice(0, 7); SELECTED = null; load();
   });
-  ['#filter-category', '#filter-agent'].forEach(function (s) {
+  ['#filter-agent'].forEach(function (s) {
     $(s).addEventListener('change', render);
+  });
+  $$('#cal-legend [data-cal-filter]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      TYPE_FILTER = button.getAttribute('data-cal-filter') || 'all';
+      $$('#cal-legend [data-cal-filter]').forEach(function (chip) {
+        var active = chip === button;
+        chip.classList.toggle('is-active', active);
+        chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      render();
+    });
   });
   $('#search').addEventListener('input', (function () {
     var t = null;

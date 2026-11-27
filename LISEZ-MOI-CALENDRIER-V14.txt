@@ -1,0 +1,16 @@
+CORRECTIF CALENDRIER SIGMA — V14
+================================
+
+Améliorations visuelles basées sur l’exemple fourni
+---------------------------------------------------
+- Les cases vides n’affichent pas de barre de défilement. Une barre n’apparaît que dans une journée dont la liste dépasse la hauteur visible.
+- La grille affiche maintenant 6 semaines complètes, avec les jours voisins en atténué; les événements des dates adjacentes sont aussi chargés et visibles.
+- Les entrées sont compactes, sur une ligne, avec une couleur par type, un marqueur d’état et le nom complet de l’agent (tronqué visuellement si nécessaire; nom complet dans l’infobulle).
+- Les journées, en-têtes et cartes ont été repolisés (contraste, espacements, arrondis, bordures et ombres légères).
+- Les filtres par type sont devenus des pastilles visibles au-dessus de la grille; les filtres d’agent et de recherche restent disponibles.
+- Le compteur « calibrages / documents » ne compte que les événements du mois sélectionné, même si la grille montre les dates du mois précédent/suivant.
+- La grille reste horizontalement défilable sur petit écran plutôt que de comprimer les 7 jours jusqu’à rendre les noms illisibles.
+
+Validation
+----------
+Le test calendrier vérifie la grille de 42 cases, le filtre par type, les événements et l’absence de scrollbar permanente; le test calendrier et le test global des améliorations passent. Aucun push GitHub/Vercel n’a été effectué.
