@@ -15,7 +15,7 @@
   <aside class="sidebar"></aside>
   <main class="main">
     <header class="topbar"></header>
-    <div class="content">
+    <div class="content calendar-content">
       <div id="ops-banner" class="p-banner" hidden></div>
 
       <div class="welcome-row">
@@ -139,7 +139,9 @@
     var first = new Date(y, m, 1);
     var offset = (first.getDay() + 6) % 7;
     var fromDate = new Date(y, m, 1 - offset);
-    var toDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + 41);
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var weeks = Math.ceil((offset + daysInMonth) / 7);
+    var toDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + weeks * 7 - 1);
     function isoDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
     return { from: isoDate(fromDate), to: isoDate(toDate) };
   }
@@ -216,9 +218,12 @@
 
     var first = new Date(y, m, 1);
     var offset = (first.getDay() + 6) % 7;
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var weeks = Math.ceil((offset + daysInMonth) / 7);
     var gridStart = new Date(y, m, 1 - offset);
     var cells = [];
-    for (var i = 0; i < 42; i++) {
+    $('#cal').style.setProperty('--cal-weeks', String(weeks));
+    for (var i = 0; i < weeks * 7; i++) {
       var cellDate = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
       var cellYear = cellDate.getFullYear(), cellMonth = cellDate.getMonth();
       var iso = cellYear + '-' + String(cellMonth + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
@@ -243,6 +248,7 @@
         '<div class="cal-cell-events" aria-label="' + list.length + ' événement(s)">' + chips + '</div></div>');
     }
     $('#cal').innerHTML = cells.join('');
+    requestAnimationFrame(fitCalendarToViewport);
 
     $$('#cal .cal-cell[data-date]').forEach(function (cell) {
       cell.addEventListener('dblclick', function () {
@@ -263,6 +269,21 @@
       });
     });
   }
+
+  function fitCalendarToViewport() {
+    var grid = $('#cal');
+    if (!grid || !grid.children.length) return;
+    var rows = Math.ceil(grid.children.length / 7);
+    var top = grid.getBoundingClientRect().top;
+    var gap = parseFloat(getComputedStyle(grid).rowGap) || 7;
+    // Réserve la marge basse de la page et le padding du panneau pour éviter
+    // un scroll vertical global; les événements nombreux défilent dans leur jour.
+    var usable = window.innerHeight - top - 58 - gap * (rows - 1);
+    var rowHeight = Math.floor(usable / rows);
+    rowHeight = Math.max(54, Math.min(190, rowHeight));
+    grid.style.setProperty('--cal-row-height', rowHeight + 'px');
+  }
+  window.addEventListener('resize', fitCalendarToViewport);
 
   function slug(t) {
     return { 'Rencontre': 'rencontre', 'Rencontre individuelle': 'rencontre', 'Feedback': 'feedback',

@@ -8,7 +8,9 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('nav 6 entrées après centralisation au calendrier', d.querySelectorAll('.side-nav a').length, 6);
   check('onglet Calendrier actif', d.querySelector('.side-nav a.active').getAttribute('href'), 'calendrier.html?activity=pgv');
   check('en-tête des jours', d.querySelectorAll('.cal-dow').length, 7);
-  check('grille calendrier complète de six semaines', d.querySelectorAll('#cal .cal-cell[data-date]').length, 42);
+  const gridDays = d.querySelectorAll('#cal .cal-cell[data-date]').length;
+  check('grille calendrier adaptée au mois (4, 5 ou 6 semaines)', [28,35,42].includes(gridDays), true);
+  check('hauteur des lignes calculée selon la fenêtre', /px$/.test(d.querySelector('#cal').style.getPropertyValue('--cal-row-height')), true);
   const cells = d.querySelectorAll('#cal .cal-cell:not(.muted)');
   check('cases du mois', cells.length >= 28, true);
   check('compteur du mois', /calibrage/.test(d.querySelector('#month-counts').textContent), true);
@@ -21,7 +23,8 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('1 puce calibrage', d.querySelectorAll('#cal .cal-chip.cal').length, 1);
   check('calendrier : toutes les puces de la journée sont dans une zone scrollable', calendarSource.includes('class="cal-cell-events"') && !calendarSource.includes('list.slice(0, 3)'), true);
   check('calendrier : barre seulement en cas de débordement et aucune gouttière réservée', /\.cal-cell-events[^}]*overflow-y:auto/.test(calendarCss) && !/scrollbar-gutter:stable/.test(calendarCss), true);
-  check('calendrier : puces compactes à une ligne avec nom complet', /\.cal-chip[^}]*min-height:29px/.test(calendarCss) && calendarSource.includes('cal-chip-agent'), true);
+  check('calendrier : hauteur des lignes plafonnée pour éviter le scroll de page', /#cal\{[^}]*grid-template-rows:repeat\(var\(--cal-weeks/.test(calendarCss) && /\.cal-cell\{height:var\(--cal-row-height/.test(calendarCss), true);
+  check('calendrier : puces compactes à une ligne avec nom complet', /\.cal-chip[^}]*min-height:24px/.test(calendarCss) && calendarSource.includes('cal-chip-agent'), true);
   check('calendrier : filtres visuels par type en haut de la grille', d.querySelectorAll('#cal-legend [data-cal-filter]').length >= 7, true);
 
   // clic direct sur une puce -> détail en pop-up (plus de panneau sous le calendrier)
