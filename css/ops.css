@@ -348,11 +348,11 @@ body.modal-open{overflow:hidden}
 .cal-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 #cal{grid-template-rows:repeat(var(--cal-weeks,5),var(--cal-row-height,118px));grid-auto-rows:var(--cal-row-height,118px)}
 .cal-dow{font:700 13px/1.2 var(--sans);letter-spacing:0;text-transform:none;color:#52647A;padding:8px 3px 6px;text-align:center}
-.cal-cell{height:var(--cal-row-height,118px);min-height:0;border:1px solid #E5E7EB;border-radius:18px;background:#fff;padding:5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .15s}
+.cal-cell{height:var(--cal-row-height,112px);min-height:0;border:1px solid #E5E7EB;border-radius:18px;background:#fff;padding:4px;display:flex;flex-direction:column;gap:2px;cursor:pointer;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .15s}
 .cal-cell:hover{border-color:#B8C6D8;box-shadow:0 5px 16px rgba(23,48,78,.08);transform:translateY(-1px)}
 .cal-cell.muted{background:#FAFBFD;color:#9AA6B5;cursor:default}
 .cal-cell.muted:hover{border-color:#E5E7EB;box-shadow:none;transform:none}
-.cal-cell.today{border-color:#5B8DEF;border-width:2px;padding:4px;box-shadow:0 0 0 2px rgba(91,141,239,.08)}
+.cal-cell.today{border-color:#5B8DEF;border-width:2px;padding:3px;box-shadow:0 0 0 2px rgba(91,141,239,.08)}
 .cal-cell.is-weekend{background:#FCFCFE}
 .cal-daynum{font:700 13px/1.2 var(--sans);letter-spacing:0;color:#17345D;display:flex;justify-content:space-between;align-items:center;padding:0 2px;min-height:18px}
 .cal-cell.muted .cal-daynum{color:#9AA6B5}

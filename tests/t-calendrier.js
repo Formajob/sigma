@@ -10,7 +10,7 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('en-tête des jours', d.querySelectorAll('.cal-dow').length, 7);
   const gridDays = d.querySelectorAll('#cal .cal-cell[data-date]').length;
   check('grille calendrier adaptée au mois (4, 5 ou 6 semaines)', [28,35,42].includes(gridDays), true);
-  check('hauteur des lignes calculée selon la fenêtre', /px$/.test(d.querySelector('#cal').style.getPropertyValue('--cal-row-height')), true);
+  check('hauteur des lignes calculée selon la fenêtre avec plancher pour 3 puces', /px$/.test(d.querySelector('#cal').style.getPropertyValue('--cal-row-height')) && parseInt(d.querySelector('#cal').style.getPropertyValue('--cal-row-height'), 10) >= 112 && /Math\.max\(112/.test(calendarSource), true);
   const cells = d.querySelectorAll('#cal .cal-cell:not(.muted)');
   check('cases du mois', cells.length >= 28, true);
   check('compteur du mois', /calibrage/.test(d.querySelector('#month-counts').textContent), true);

@@ -276,11 +276,11 @@
     var rows = Math.ceil(grid.children.length / 7);
     var top = grid.getBoundingClientRect().top;
     var gap = parseFloat(getComputedStyle(grid).rowGap) || 7;
-    // Réserve la marge basse de la page et le padding du panneau pour éviter
-    // un scroll vertical global; les événements nombreux défilent dans leur jour.
-    var usable = window.innerHeight - top - 42 - gap * (rows - 1);
+    // Priorité à la lisibilité : chaque case garde assez de hauteur pour le jour
+    // et au moins trois puces de calibrage. Les événements au-delà défilent dans leur jour.
+    var usable = window.innerHeight - top - 32 - gap * (rows - 1);
     var rowHeight = Math.floor(usable / rows);
-    rowHeight = Math.max(54, Math.min(190, rowHeight));
+    rowHeight = Math.max(112, Math.min(220, rowHeight));
     grid.style.setProperty('--cal-row-height', rowHeight + 'px');
   }
   window.addEventListener('resize', fitCalendarToViewport);
