@@ -278,7 +278,7 @@
     var gap = parseFloat(getComputedStyle(grid).rowGap) || 7;
     // Réserve la marge basse de la page et le padding du panneau pour éviter
     // un scroll vertical global; les événements nombreux défilent dans leur jour.
-    var usable = window.innerHeight - top - 58 - gap * (rows - 1);
+    var usable = window.innerHeight - top - 42 - gap * (rows - 1);
     var rowHeight = Math.floor(usable / rows);
     rowHeight = Math.max(54, Math.min(190, rowHeight));
     grid.style.setProperty('--cal-row-height', rowHeight + 'px');

@@ -26,6 +26,7 @@ const calendarCss = fs.readFileSync('/home/user/sigma-build/css/ops.css', 'utf8'
   check('calendrier : hauteur des lignes plafonnée pour éviter le scroll de page', /#cal\{[^}]*grid-template-rows:repeat\(var\(--cal-weeks/.test(calendarCss) && /\.cal-cell\{height:var\(--cal-row-height/.test(calendarCss), true);
   check('calendrier : puces compactes à une ligne avec nom complet', /\.cal-chip[^}]*min-height:24px/.test(calendarCss) && calendarSource.includes('cal-chip-agent'), true);
   check('calendrier : filtres visuels par type en haut de la grille', d.querySelectorAll('#cal-legend [data-cal-filter]').length >= 7, true);
+  check('calendrier : navigation et filtres agent/recherche alignés sur une ligne en grand écran', /\.cal-toolbar[^}]*flex-wrap:nowrap/.test(calendarCss) && /\.cal-filters[^}]*flex-wrap:nowrap/.test(calendarCss), true);
 
   // clic direct sur une puce -> détail en pop-up (plus de panneau sous le calendrier)
   const chip = d.querySelector('#cal .cal-chip');
